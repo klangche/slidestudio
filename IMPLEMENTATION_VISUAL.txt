@@ -1,0 +1,78 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                        TEXT EDITOR IMPLEMENTATION                        ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+BEFORE:
+┌────────────────────────────────────────────────────────────────┐
+│  Add Text Popup                                         [×]    │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│     ┌─────────────────────────────────────────────┐          │
+│     │  Text editing has been removed from this    │          │
+│     │  popup. Use the sidebar controls...         │          │
+│     └─────────────────────────────────────────────┘          │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+
+
+AFTER:
+┌────────────────────────────────────────────────────────────────┐
+│  Add Text                                               [×]    │
+├────────────────────────────────────────────────────────────────┤
+│ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │ ← Gray background
+│ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │   (viewport)
+│ ░░░░░░░░░░░░░┌───────────────┐░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│ ░░░░░░░░░░░░░│               │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│ ░░░░░░░░░░░░░│               │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │ ← 1080 × 1920px
+│ ░░░░░░░░░░░░░│  Click to     │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │   canvas (scaled)
+│ ░░░░░░░░░░░░░│  add text...  │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│ ░░░░░░░░░░░░░│               │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │   9:16 ratio
+│ ░░░░░░░░░░░░░│               │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│ ░░░░░░░░░░░░░│               │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│ ░░░░░░░░░░░░░└───────────────┘░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+└────────────────────────────────────────────────────────────────┘
+
+
+KEY FEATURES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ Canvas dimensions: EXACTLY 1080px × 1920px (no padding on wrapper)
+✓ Aspect ratio: 9:16 (portrait/stories format)
+✓ Scaling: Diagonal scaling to fit viewport (CSS transform)
+✓ Font size: 48px (never changes, only visual scale)
+✓ Background: White canvas on gray viewport
+✓ Padding: 40px inside canvas for text content
+✓ Editable: contenteditable="true" for direct text input
+✓ Responsive: Auto-scales when viewport/window resized
+✓ Dark mode: Supported with appropriate colors
+
+
+SCALING EXAMPLE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Viewport: 600px wide × 800px tall
+Canvas: 1080px × 1920px
+
+Scale calculation:
+  scaleX = 600 / 1080 = 0.556
+  scaleY = 800 / 1920 = 0.417
+  scale = Math.min(0.556, 0.417) = 0.417
+
+Result:
+  Visual width: 1080 × 0.417 = 450px
+  Visual height: 1920 × 0.417 = 800px
+  Font appears as: 48px × 0.417 = ~20px visually
+  Actual font-size: 48px (unchanged in code)
+
+
+TECHNICAL DETAILS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Files modified:
+  1. index.html - Updated popup HTML structure
+  2. style.css - Added canvas styles + dark mode
+  3. text-editor.js - Added scaling logic with ResizeObserver
+
+Test file created:
+  test-text-editor.html - Standalone test page

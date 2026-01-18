@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Editor Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .test-button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .ss-text-popup {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .ss-text-popup.active {
+            display: flex;
+        }
+        
+        .ss-text-popup-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(2px);
+        }
+        
+        .ss-text-popup-content {
+            position: relative;
+            width: min(95vw, 800px);
+            max-height: calc(100vh - 80px);
+            background: white;
+            color: #333;
+            border-radius: 10px;
+            box-shadow: 0 14px 50px rgba(0,0,0,0.55);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .ss-text-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            gap: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .ss-text-popup-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .ss-text-popup-close {
+            color: #333;
+            font-size: 22px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.2s ease;
+        }
+        
+        .ss-text-popup-close:hover {
+            background: rgba(0,0,0,0.05);
+        }
+        
+        .ss-text-editor-viewport {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 70vh;
+            max-height: 800px;
+            padding: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+            background: #e0e0e0;
+        }
+        
+        .ss-text-editor-canvas-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .ss-text-editor-canvas {
+            width: 1080px;
+            height: 1920px;
+            background: white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transform-origin: center center;
+            position: relative;
+            overflow: auto;
+            padding: 40px;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            font-size: 48px;
+            line-height: 1.4;
+            color: #333;
+            outline: none;
+            cursor: text;
+        }
+        
+        .ss-text-editor-canvas:empty::before {
+            content: attr(data-placeholder);
+            color: rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+        
+        .info {
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .info h2 {
+            margin: 0 0 10px 0;
+        }
+        
+        .info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h2>Text Editor Test</h2>
+        <p>This tests the scaled text editor canvas:</p>
+        <ul>
+            <li>Canvas is exactly 1080px × 1920px (9:16 aspect ratio)</li>
+            <li>Scales diagonally to fit inside the viewport</li>
+            <li>Font size (48px) remains the same, only visual scale changes</li>
+            <li>No padding on the canvas wrapper - fills the viewport</li>
+        </ul>
+    </div>
+    
+    <button class="test-button" onclick="openEditor()">Open Text Editor</button>
+    
+    <div class="ss-text-popup" id="ss-textPopup">
+        <div class="ss-text-popup-overlay" onclick="closeEditor()"></div>
+        <div class="ss-text-popup-content">
+            <div class="ss-text-popup-header">
+                <h3>Add Text</h3>
+                <button class="ss-text-popup-close" onclick="closeEditor()">×</button>
+            </div>
+            <div class="ss-text-editor-viewport" id="ss-textEditorViewport">
+                <div class="ss-text-editor-canvas-wrapper">
+                    <div class="ss-text-editor-canvas" 
+                         id="ss-textEditorCanvas" 
+                         contenteditable="true" 
+                         spellcheck="false"
+                         data-placeholder="Click to add text...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const popup = document.getElementById('ss-textPopup');
+        const canvas = document.getElementById('ss-textEditorCanvas');
+        const viewport = document.getElementById('ss-textEditorViewport');
+        
+        function scaleCanvas() {
+            if (!canvas || !viewport) return;
+            
+            const viewportRect = viewport.getBoundingClientRect();
+            const padding = 40;
+            const availableWidth = viewportRect.width - padding;
+            const availableHeight = viewportRect.height - padding;
+            
+            const canvasWidth = 1080;
+            const canvasHeight = 1920;
+            
+            const scaleX = availableWidth / canvasWidth;
+            const scaleY = availableHeight / canvasHeight;
+            const scale = Math.min(scaleX, scaleY);
+            
+            canvas.style.transform = `scale(${scale})`;
+            
+            console.log('Viewport:', viewportRect.width, 'x', viewportRect.height);
+            console.log('Scale:', scale);
+        }
+        
+        function openEditor() {
+            popup.classList.add('active');
+            setTimeout(() => {
+                scaleCanvas();
+                canvas.focus();
+            }, 10);
+        }
+        
+        function closeEditor() {
+            popup.classList.remove('active');
+        }
+        
+        // Handle resize
+        let resizeObserver;
+        if (typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(scaleCanvas);
+            resizeObserver.observe(viewport);
+        }
+        
+        window.addEventListener('resize', scaleCanvas);
+        
+        // Handle placeholder
+        canvas.addEventListener('focus', function() {
+            if (this.textContent.trim() === '' || this.textContent === 'Click to add text...') {
+                this.textContent = '';
+            }
+        });
+        
+        canvas.addEventListener('blur', function() {
+            if (this.textContent.trim() === '') {
+                this.textContent = '';
+            }
+        });
+        
+        // Handle ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && popup.classList.contains('active')) {
+                closeEditor();
+            }
+        });
+    </script>
+</body>
+</html>
