@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1a1a1a"/>
+    <meta name="description" content="SlideStudio - Create beautiful presentations">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SlideStudio">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    
+    <title>SlideStudio</title>
+    <link rel="stylesheet" href="style.css">
+        <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1a1a1a"/>
+    <meta name="description" content="SlideStudio - Create beautiful presentations">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="SlideStudio">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <!-- Preload some Google Fonts for testing -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Frijole&family=Kalam:wght@300;400;700&family=Mogra&family=Splash&family=Streetwear">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Nunito:wght@400;700&family=Source+Sans+Pro:wght@400;700&family=Noto+Sans:wght@400;700&family=Work+Sans:wght@400;700&family=Poppins:wght@400;700&family=JetBrains+Mono:wght@400;700">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Streetwear&family=BlowBrush&family=Graffonti&family=Trashhand&family=Urban+Jungle">
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/blowbrush" integrity="" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/urban-jungle" integrity="" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/graffonti" integrity="" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/trashhand" integrity="" crossorigin="anonymous">
+    <style>
+        /* Additional styles for the designer workspace */
+        .ss-workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--ss-bg-color);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+        .ss-workspace-placeholder {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.03);
+            border: 3px dashed var(--ss-border-color);
+            border-radius: 8px;
+            margin: 20px;
+            padding: 40px;
+            text-align: center;
+            color: var(--ss-text-color);
+            transition: all 0.3s ease;
+        }
+        .ss-workspace-placeholder h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .ss-workspace-placeholder p {
+            font-size: 16px;
+            margin-bottom: 25px;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+        
+        .ss-workspace-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.7;
+        }
+        
+        .ss-sidebar-hidden .ss-workspace {
+            margin-left: 0;
+        }
+        
+        .ss-sidebar-visible .ss-workspace {
+            margin-left: 0;
+        }
+        
+        /* Canvas area for future functionality */
+        .ss-canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            padding: 20px;
+        }
+        
+        .ss-canvas {
+            background-color: white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--ss-border-color);
+            position: relative;
+        }
+
+        /* Designer canvas styles */
+        .ss-designer-canvas {
+            width: 1080px;
+            height: 1920px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--ss-border-color);
+            position: relative;
+            transform-origin: center center;
+            transition: transform 0.3s ease;
+        }
+
+        /* Zoom value display */
+        .ss-zoom-value {
+            font-size: 11px;
+            font-weight: 500;
+            color: #666;
+            min-width: 36px;
+            text-align: center;
+        }
+
+        /* Text editor modal styles */
+        .ss-text-popup { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10000; }
+        .ss-text-popup-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); cursor: default; }
+        .ss-google-font-popup { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 11000; }
+        .ss-google-font-popup--open { display: flex; }
+        .ss-google-font-popup__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(2px); } 
+        .ss-google-font-popup__content { position: relative; width: min(90vw, 420px); background: var(--ss-bg-color); color: var(--ss-text-color); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); padding: 0; z-index: 11010; overflow: hidden; }
+        .ss-google-font-popup__header { padding: 14px 16px 10px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,0,0,0.08); background: var(--ss-control-box-bg); }
+        .ss-google-font-popup__header h3 { margin:0; font-size:16px; font-weight:600; }
+        .ss-google-font-popup__action-row { display:flex; align-items:center; gap:8px; }
+        .ss-google-font-popup__close,
+        .ss-google-font-popup__google-link { width:28px; height:28px; border-radius:6px; border:1px solid transparent; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; transition: background 0.2s ease; }
+        .ss-google-font-popup__close { background:none; color:var(--ss-text-color); }
+        .ss-google-font-popup__close:hover { background: rgba(0,0,0,0.05); }
+        .ss-google-font-popup__google-link { border-color: rgba(0,0,0,0.1); background: var(--ss-control-box-bg); color:#4285f4; }
+        .ss-google-font-popup__google-link:hover { background: rgba(66,133,244,0.1); }
+        .ss-google-font-popup__body { padding: 16px; display:flex; flex-direction:column; gap:12px; }
+        .ss-google-font-popup__instructions { font-size:13px; color:#555; }
+        .ss-google-font-popup__textarea { width:100%; min-height:120px; border:1px solid var(--ss-border-color); border-radius:10px; padding:10px; font-size:13px; font-family: 'Segoe UI', sans-serif; background: var(--ss-control-box-bg); color: var(--ss-text-color); resize:vertical; }
+        .ss-google-font-popup__upload-row { display:flex; align-items:center; gap:8px; }
+        .ss-google-font-popup__hint { font-size:11px; color:#777; }
+        .ss-text-popup-content { position: relative; width: min(85vw, 720px); min-width: 280px; background: var(--ss-bg-color); color: var(--ss-text-color); border-radius: 10px; box-shadow: 0 14px 50px rgba(0,0,0,0.55); overflow: hidden; display:flex; flex-direction:column; align-items:stretch; padding:0; --ss-font-panel-height: 220px; --ss-text-footer-height: 260px; --ss-text-popup-height: min(calc((100vh - 80px) * 1.3), 832px); height: var(--ss-text-popup-height); max-height: var(--ss-text-popup-height); }
+        .ss-text-popup button { background: none; border: none; color: #666; font-size: 12px; font-weight: 500; cursor: pointer; padding: 6px 10px; border-radius: 6px; transition: all 0.2s ease; text-decoration: none; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+        .ss-text-popup button:hover:not(:disabled) { color: #3498db; background: rgba(52, 152, 219, 0.1); }
+        .ss-text-popup-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; gap:12px; position:relative; }
+        .ss-text-popup-header h3 { margin:0; font-size:18px; font-weight:600; text-align:left; flex:1; }
+        .ss-text-edit-button {
+            background:none;
+            border:none;
+            box-shadow:none;
+            padding:6px 0;
+            font-size:13px;
+            font-weight:600;
+            color: var(--ss-text-color);
+            text-transform:none;
+            cursor:pointer;
+        }
+        .ss-text-popup-header button { flex:0 0 auto; }
+        .ss-text-color-controls { display:flex; align-items:center; gap:6px; margin-left:8px; }
+        .ss-text-color-controls input[type="color"] { width:32px; height:28px; border:1px solid var(--ss-border-color); border-radius:6px; background: var(--ss-control-box-bg); }
+        .ss-text-color-controls input[type="text"] { width:68px; padding:5px 6px; border:1px solid var(--ss-border-color); border-radius:6px; font-size:11px; font-family:monospace; background: var(--ss-control-box-bg); color: var(--ss-text-color); }
+        .ss-header-size-control { display:flex; flex-direction:column; gap:2px; font-size:10px; color: var(--ss-text-color); margin-left:6px; text-transform:uppercase; letter-spacing:0.05em; }
+        .ss-header-size-control .ss-text-font-size-input { width:70px; }
+        .ss-header-size-control input { width:100%; padding:6px 8px; border:1px solid var(--ss-border-color); border-radius:6px; background: var(--ss-control-box-bg); color: var(--ss-text-color); font-size:12px; text-align:center; }
+        .ss-text-color-controls { display:flex; align-items:center; gap:6px; margin-left:8px; }
+        .ss-text-color-controls input[type="color"] { width:32px; height:28px; border:1px solid var(--ss-border-color); border-radius:6px; background: var(--ss-control-box-bg); }
+        .ss-text-color-controls input[type="text"] { width:68px; padding:5px 6px; border:1px solid var(--ss-border-color); border-radius:6px; font-size:11px; font-family:monospace; background: var(--ss-control-box-bg); color: var(--ss-text-color); }
+        .ss-text-font-dropdown { position:relative; flex:1 1 auto; min-width:0; margin:0; }
+        .ss-font-upload-toast { position:absolute; top:12px; right:18px; display:flex; align-items:center; gap:10px; padding:6px 12px; border-radius:8px; border:1px solid var(--ss-border-color); background: var(--ss-bg-color); color: var(--ss-text-color); font-size:12px; font-weight:500; box-shadow:0 8px 20px rgba(0,0,0,0.15); opacity:0; pointer-events:none; transform:translateY(-6px); transition: opacity 0.25s ease, transform 0.25s ease; z-index:6; }
+        .ss-font-upload-toast.visible { opacity:1; pointer-events:auto; transform:translateY(0); }
+        .ss-font-upload-toast__message { max-width:220px; line-height:1.2; }
+        .ss-font-upload-toast__close { width:28px; height:28px; border-radius:50%; border:1px solid transparent; background: rgba(0,0,0,0.05); color: var(--ss-text-color); font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+        .ss-font-upload-toast__close:hover { border-color: currentColor; background: rgba(0,0,0,0.08); }
+            .ss-text-toolbar { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
+            .ss-text-button-row { display:flex; gap:6px; }
+            .ss-text-button { flex:1; display:flex; align-items:center; justify-content:center; padding:8px; border-radius:6px; border:1px solid transparent; background: none; cursor:pointer; font-size:12px; font-weight:600; color:var(--ss-text-color); transition: all 0.2s ease; position:relative; }
+            .ss-text-button svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.6; }
+            .ss-text-button span { margin-left:4px; }
+            .ss-text-button:hover:not(:disabled) { color: #3498db; background: rgba(52, 152, 219, 0.1); }
+            .ss-text-button--caps::after {
+                content: '';
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: rgba(0,0,0,0.15);
+                border: 1px solid rgba(255,255,255,0.5);
+                transition: background 0.2s ease;
+            }
+            .ss-text-button--caps[aria-pressed="true"]::after {
+                background: #3ed577;
+                border-color: #1c4624;
+                box-shadow: 0 0 0 2px rgba(62,213,119,0.25);
+            }
+        .ss-text-font-button { width:100%; padding:8px 12px; border-radius:6px; border:1px solid transparent; background: none; font-size:13px; font-weight:500; text-align:left; cursor:pointer; transition: all 0.2s ease; position:relative; color: var(--ss-text-color); }
+        .ss-text-font-button:hover:not(:disabled) { color: #3498db; background: rgba(52, 152, 219, 0.1); }
+        .ss-text-font-button span { display:inline-block; pointer-events:none; }
+        .ss-text-font-button svg { position:absolute; right:12px; top:50%; transform:translateY(-50%); width:12px; height:6px; }
+        .ss-text-font-button[aria-expanded="true"] { border-color: var(--ss-button-bg); box-shadow:0 3px 6px rgba(0,0,0,0.18); }
+        .ss-text-font-dropdown-list { position:absolute; left:0; bottom:calc(100% + 6px); top:auto; transform:none; width:100%; max-height:220px; overflow-y:auto; background: var(--ss-bg-color); border:1px solid var(--ss-border-color); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.18); padding:8px; display:none; grid-template-columns:repeat(2,minmax(0,1fr)); grid-gap:8px; z-index:12; }
+        .ss-text-font-dropdown-list.open { display:grid; }
+        .ss-text-font-option { background:none; border:none; text-align:left; font-size:14px; font-weight:500; color:var(--ss-text-color); cursor:pointer; border-radius:6px; display:flex; align-items:center; justify-content:flex-start; gap:10px; padding:0.65rem 0.75rem; position:relative; width:100%; overflow:hidden; }
+        .ss-text-font-option::after { content:''; position:absolute; inset:0; border-radius:6px; border:1px solid transparent; transition:border 0.2s ease, background 0.2s ease; pointer-events:none; z-index:-1; box-sizing:border-box; }
+        .ss-text-font-option:hover::after { border-color: rgba(52,152,219,0.5); background: rgba(52,152,219,0.08); }
+        .ss-text-font-option[aria-selected="true"]::after { border-color: rgba(0,0,0,0.2); background: rgba(0,0,0,0.05); }
+        .ss-font-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ss-font-remove { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:16px; color:#ff3b30; cursor:pointer; background:none; border:none; padding:0; line-height:1; opacity:0.7; font-family:'Trebuchet MS', 'Segoe UI', sans-serif; }
+        .ss-font-remove:hover { opacity:1; }
+        .ss-text-popup-controls { display:flex; align-items:center; gap:10px; margin-left:auto; }
+        .ss-text-popup-controls button { min-width:0; min-height:0; }
+        .ss-add-to-page-btn {
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:6px;
+            padding:6px 12px;
+            border-radius:8px;
+            border:1px solid rgba(0,0,0,0.12);
+            background: rgba(0,0,0,0.04);
+            color: var(--ss-text-color);
+            font-size:12px;
+            font-weight:600;
+            text-transform:none;
+            transition: border-color 0.2s ease, background 0.2s ease;
+            white-space:nowrap;
+        }
+        .ss-add-to-page-btn:hover:not(:disabled) { background: rgba(52,152,219,0.12); border-color: rgba(52,152,219,0.4); }
+        .ss-add-to-page-btn:disabled,
+        .ss-add-to-page-btn[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .ss-add-to-page-icon svg { width:18px; height:18px; }
+        .ss-add-to-page-label { font-size:12px; font-weight:600; text-transform:none; }
+        .ss-text-font-secondary {
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:6px;
+            padding:8px 12px;
+            border-radius:6px;
+            border:1px solid transparent;
+            background:none;
+            color:var(--ss-text-color);
+            font-size:12px;
+            font-weight:600;
+            cursor:pointer;
+            transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+            min-width:0;
+            max-width:none;
+            flex:0 0 auto;
+        }
+        .ss-text-font-secondary:hover:not(:disabled) {
+            color:#3498db;
+            background: rgba(52, 152, 219, 0.1);
+            border-color: rgba(52, 152, 219, 0.2);
+        }
+        .ss-text-tool-action {
+            background: none !important;
+            border: none !important;
+            color: #666;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-width: 0;
+            width: auto;
+            opacity: 0.7;
+        }
+        .ss-text-font-actions { display:flex; flex-direction:column; gap:16px; width:100%; }
+        .ss-text-font-action-row { display:flex; align-items:center; gap:8px; width:100%; flex-wrap:wrap; }
+        .ss-text-font-action-row .ss-text-popup-match-btn { margin-top:0; }
+        .ss-text-fixed-button { flex:0 0 auto; min-width:120px; height:34px; display:inline-flex; align-items:center; justify-content:center; text-transform:none; }
+        .ss-text-popup-close { color: var(--ss-text-color); font-size:22px; background:none; border:none; cursor:pointer; width:28px; height:28px; padding:0; display:flex; align-items:center; justify-content:center; border-radius:6px; transition: background 0.2s ease; user-select:none; min-width:28px; max-width:28px; min-height:28px; max-height:28px; line-height:1; }
+        .ss-text-popup-close:hover { background: rgba(0,0,0,0.05); }
+        .ss-text-popup-body {
+            flex:1;
+            position:relative;
+            overflow:hidden;
+            min-height:0;
+            padding-bottom: 0;
+            display:flex;
+            flex-direction:column;
+            justify-content:flex-start;
+            align-items:stretch;
+        }
+        .ss-text-editor-viewport {
+            flex:1;
+            position:relative;
+            top:0;
+            height:100%;
+            max-height:100%;
+            min-height:0;
+            width:100%;
+            max-width:100%;
+            overflow:hidden;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+            margin:0;
+            display:flex;
+            align-items:flex-start;
+            justify-content:center;
+        }
+        .ss-text-editor-empty { width:100%; padding:32px 28px; border-top:1px solid rgba(0,0,0,0.08); text-align:center; font-size:15px; color: rgba(0,0,0,0.65); background: var(--ss-control-box-bg); }
+        .ss-text-font-panel { max-height:0; overflow:hidden; transition: max-height 0.3s ease, padding 0.3s ease; background: var(--ss-bg-color); padding:0 20px; box-sizing:border-box; position:relative; }
+        .ss-text-font-size-input input::-webkit-outer-spin-button,
+        .ss-text-font-size-input input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+        .ss-text-font-color input[type="color"] {
+            width: 36px;
+            height: 28px;
+            border: 1px solid var(--ss-border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            background: var(--ss-control-box-bg);
+        }
+        .ss-text-font-color input[type="text"] {
+            width: 70px;
+            padding: 5px 3px;
+            border: 1px solid var(--ss-border-color);
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: monospace;
+            text-align: center;
+            background: var(--ss-control-box-bg);
+            color: var(--ss-text-color);
+        }
+        .ss-text-popup-content.ss-font-panel-open .ss-text-font-panel {
+            max-height: 220px;
+            padding: 12px 20px 12px;
+            overflow: visible;
+        }
+        .ss-text-popup-content.ss-font-panel-open .ss-text-editor-viewport {
+            transform: translateY(0);
+        }
+        .ss-text-popup-footer {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 12px 20px 20px;
+            font-size: 13px;
+            color: var(--ss-text-color);
+            text-align: left;
+            background: var(--ss-bg-color);
+            box-shadow: 0 -8px 30px rgba(0,0,0,0.2);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 2;
+        }
+        .ss-text-popup-footer span {
+            font-size: 12px;
+            color: var(--ss-text-color);
+            padding-bottom: 4px;
+        }
+        .ss-text-popup-content.ss-font-panel-open .ss-text-popup-footer {
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="ss-sidebar-visible">
+    <header class="ss-header">
+        <div class="ss-header-left">
+            <button class="ss-menu" id="ss-menuToggle" aria-label="Huvudmeny">
+                <svg width="30" height="30" viewBox="0 0 100 100">
+                    <path class="ss-line ss-line1" d="M 20,29.000046 H 80.000231 C 80.000231,29.000046 94.498839,28.817352 94.532987,66.711331 94.543142,77.980673 90.966081,81.670246 85.259173,81.668997 79.552261,81.667751 75.000211,74.999942 75.000211,74.999942 L 25.000021,25.000058" />
+                    <path class="ss-line ss-line2" d="M 20,50 H 80" />
+                    <path class="ss-line ss-line3" d="M 20,70.999954 H 80.000231 C 80.000231,70.999954 94.498839,71.182648 94.532987,33.288669 94.543142,22.019327 90.966081,18.329754 85.259173,18.331003 79.552261,18.332249 75.000211,25.000058 75.000211,25.000058 L 25.000021,74.999942" />
+                </svg>
+            </button>
+            <!-- Moved Project Name next to the menu button -->
+            <div class="ss-project-name-container">
+                <div class="ss-project-name" contenteditable="true" id="ss-projectName">Project name - Click to edit</div>
+                <button class="ss-clear-button" id="ss-clearButton">×</button>
+            </div>
+            
+            <!-- Centered SlideStudio logo (moves About trigger to header center) -->
+            <div id="ss-logoHeader" class="ss-logo-header ss-logo-center" title="About SlideStudio">
+                <div class="ss-logo">
+                    <img class="ss-duotone" src="icons/icon.svg" alt="SlideStudio" style="width:28px; height:28px; vertical-align:middle;">
+                    <span style="vertical-align:middle;">SlideStudio</span>
+                </div>
+            </div>
+
+        </div>
+        
+        <!-- Right side with project info and controls -->
+        <div class="ss-header-right">
+            <button class="ss-theme-toggle" id="ss-themeToggle" aria-label="Toggle theme">
+                <span class="ss-sun-icon">
+                    <svg width="20" height="20" viewBox="0 0 90 90" fill="currentColor">
+                        <path d="M 45 68 c -12.682 0 -23 -10.317 -23 -23 c 0 -12.682 10.318 -23 23 -23 c 12.683 0 23 10.318 23 23 C 68 57.683 57.683 68 45 68 z"/>
+                        <path d="M 38.652 17.61 c -0.292 0 -0.573 -0.127 -0.765 -0.356 c -0.239 -0.284 -0.301 -0.677 -0.161 -1.021 l 6.348 -15.61 C 44.227 0.247 44.593 0 45 0 s 0.773 0.247 0.926 0.623 l 6.349 15.61 c 0.14 0.344 0.077 0.737 -0.162 1.021 c -0.238 0.284 -0.616 0.414 -0.978 0.333 c -4.045 -0.881 -8.228 -0.881 -12.271 0 C 38.794 17.603 38.723 17.61 38.652 17.61 z"/>
+                        <path d="M 45 90 c -0.407 0 -0.773 -0.246 -0.926 -0.623 l -6.348 -15.61 c -0.14 -0.344 -0.078 -0.737 0.161 -1.021 c 0.239 -0.284 0.615 -0.412 0.978 -0.333 c 4.043 0.882 8.226 0.882 12.271 0 c 0.363 -0.08 0.74 0.05 0.978 0.333 c 0.239 0.283 0.302 0.677 0.162 1.021 l -6.349 15.61 C 45.773 89.754 45.407 90 45 90 z"/>
+                        <path d="M 16.61 52.349 c -0.127 0 -0.255 -0.024 -0.377 -0.073 l -15.61 -6.349 C 0.247 45.773 0 45.407 0 45 s 0.247 -0.773 0.624 -0.926 l 15.61 -6.348 c 0.343 -0.14 0.737 -0.078 1.021 0.161 c 0.284 0.239 0.412 0.616 0.333 0.978 c -0.441 2.021 -0.665 4.086 -0.665 6.135 c 0 2.049 0.224 4.113 0.665 6.136 c 0.079 0.362 -0.049 0.739 -0.333 0.978 C 17.071 52.269 16.842 52.349 16.61 52.349 z"/>
+                        <path d="M 73.39 52.349 c -0.231 0 -0.461 -0.08 -0.644 -0.235 c -0.284 -0.238 -0.412 -0.615 -0.333 -0.978 c 0.44 -2.022 0.664 -4.087 0.664 -6.136 c 0 -2.049 -0.224 -4.114 -0.664 -6.135 c -0.079 -0.362 0.049 -0.739 0.333 -0.978 c 0.283 -0.239 0.676 -0.301 1.021 -0.161 l 15.61 6.348 C 89.754 44.227 90 44.593 90 45 s -0.246 0.773 -0.623 0.926 l -15.61 6.349 C 73.645 52.324 73.517 52.349 73.39 52.349 z"/>
+                        <path d="M 20.437 30.415 c -0.028 0 -0.057 -0.001 -0.085 -0.004 c -0.37 -0.032 -0.692 -0.266 -0.836 -0.607 l -6.549 -15.527 c -0.158 -0.375 -0.073 -0.808 0.214 -1.096 c 0.288 -0.288 0.722 -0.371 1.096 -0.214 l 15.527 6.549 c 0.342 0.144 0.576 0.466 0.607 0.835 c 0.032 0.37 -0.144 0.727 -0.456 0.927 c -1.743 1.119 -3.36 2.42 -4.809 3.868 c -1.448 1.449 -2.75 3.066 -3.868 4.809 C 21.093 30.243 20.775 30.415 20.437 30.415 z"/>
+                        <path d="M 76.112 77.112 c -0.131 0 -0.263 -0.025 -0.389 -0.078 l -15.526 -6.549 c -0.342 -0.145 -0.576 -0.467 -0.607 -0.836 c -0.032 -0.37 0.144 -0.727 0.456 -0.928 c 1.745 -1.121 3.363 -2.423 4.808 -3.868 l 0 0 c 1.445 -1.444 2.747 -3.063 3.868 -4.808 c 0.201 -0.312 0.553 -0.489 0.928 -0.456 c 0.369 0.031 0.691 0.266 0.836 0.607 l 6.549 15.526 c 0.157 0.375 0.073 0.809 -0.215 1.096 C 76.628 77.011 76.372 77.112 76.112 77.112 z"/>
+                        <path d="M 69.563 30.414 c -0.339 0 -0.656 -0.171 -0.842 -0.459 c -1.121 -1.746 -2.423 -3.363 -3.868 -4.809 l 0 0 c -1.447 -1.447 -3.065 -2.749 -4.808 -3.868 c -0.313 -0.2 -0.488 -0.557 -0.456 -0.927 c 0.031 -0.37 0.266 -0.691 0.607 -0.835 l 15.526 -6.549 c 0.373 -0.158 0.808 -0.074 1.096 0.214 c 0.288 0.288 0.372 0.721 0.215 1.096 l -6.549 15.527 c -0.145 0.342 -0.467 0.576 -0.836 0.607 C 69.62 30.413 69.592 30.414 69.563 30.414 z"/>
+                        <path d="M 13.887 77.112 c -0.26 0 -0.516 -0.102 -0.707 -0.293 c -0.288 -0.288 -0.373 -0.721 -0.214 -1.096 l 6.549 -15.526 c 0.144 -0.342 0.466 -0.576 0.835 -0.607 c 0.37 -0.043 0.727 0.144 0.927 0.456 c 1.119 1.742 2.421 3.36 3.868 4.808 l 0 0 c 1.446 1.446 3.063 2.747 4.809 3.868 c 0.312 0.201 0.488 0.558 0.456 0.928 c -0.032 0.369 -0.266 0.691 -0.607 0.836 l -15.527 6.549 C 14.15 77.087 14.019 77.112 13.887 77.112 z"/>
+                    </svg>
+                </span>
+                <span class="ss-moon-icon">
+                    <svg width="20" height="20" viewBox="0 0 90 90" fill="currentColor">
+                        <path d="M 87.823 60.7 c -0.463 -0.423 -1.142 -0.506 -1.695 -0.214 c -15.834 8.398 -35.266 2.812 -44.232 -12.718 c -8.966 -15.530 -4.09 -35.149 11.101 -44.665 c 0.531 -0.332 0.796 -0.963 0.661 -1.574 c -0.134 -0.612 -0.638 -1.074 -1.259 -1.153 c -9.843 -1.265 -19.59 0.692 -28.193 5.66 C 13.8 12.041 6.356 21.743 3.246 33.35 S 1.732 57.08 7.741 67.487 c 6.008 10.407 15.709 17.851 27.316 20.961 C 38.933 89.486 42.866 90 46.774 90 c 7.795 0 15.489 -2.044 22.42 -6.046 c 8.601 -4.966 15.171 -12.43 18.997 -21.586 C 88.433 61.79 88.285 61.123 87.823 60.7 z"/>
+                    </svg>
+                </span>
+            </button>
+        </div>
+    </header>
+
+    <main class="ss-main">
+        <div class="ss-sidebar" id="ss-sidebar">
+            <div class="ss-sidebar-content">
+                
+                
+                <!-- Upload Button - Always at top -->
+                <div class="ss-sidebar-section">
+                    <div class="ss-control-box ss-upload-controls">
+                        <button class="ss-upload-images-button" id="ss-uploadImagesBtn">Upload Images</button>
+                        <button class="ss-add-text-button" id="ss-addTextBtn" title="Add Text" aria-label="Add Text">Add Text</button>
+                    </div>
+                </div>
+                
+                <!-- Slide Management -->
+                <div class="ss-sidebar-section ss-collapsible">
+                    <div class="ss-collapsible-header">Slide Management</div>
+                    <div class="ss-collapsible-content">
+                        <div class="ss-control-box ss-slide-management" id="ss-slideManagement">
+                            <div class="ss-slide-management-buttons">
+                                <button class="ss-slide-management-button" id="ss-removeSection" title="Remove Section">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                </button>
+                                <div class="ss-section-count" id="ss-sectionCount">1</div>
+                                <button class="ss-slide-management-button" id="ss-addSection" title="Add Section">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <!-- Guidance Controls moved to Slide Management -->
+                            <div class="ss-guidance-controls-buttons">
+                                <button class="ss-guidance-button" id="ss-guidanceBtn">SoMe Guides</button>
+                                <button class="ss-magnet-button" id="ss-magnetBtn" title="Snap to edges">
+                                    <svg class="ss-magnet-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="12" y1="8" x2="12" y2="16"/>
+                                        <line x1="8" y1="12" x2="16" y2="12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <!-- Transparency slider directly in slide management -->
+                            <div class="ss-slider-container">
+                                <div class="ss-slider" id="ss-transparencySlider">
+                                    <div class="ss-slider-track"></div>
+                                    <div class="ss-slider-fill" id="ss-transparencyFill" style="width: 0%;"></div>
+                                    <div class="ss-slider-thumb" id="ss-transparencyThumb"></div>
+                                </div>
+                            </div>
+                            <div class="ss-controls-row">
+                                <div class="ss-transparency-value" id="ss-transparencyValue">99%</div>
+                            </div>
+                            
+                            <!-- Add color picker inputs (always visible) -->
+                            <div class="ss-slide-color-controls">
+                                <div class="ss-color-picker-container" id="ss-colorPickerContainer">
+                                    <input type="color" id="ss-slideColorPicker" value="#ffffff">
+                                    <input type="text" id="ss-slideColorHex" placeholder="ffffff" maxlength="6">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Zoom Controls -->
+                <div class="ss-sidebar-section ss-collapsible">
+                    <div class="ss-collapsible-header">Zoom Controls</div>
+                    <div class="ss-collapsible-content">
+                        <div class="ss-control-box ss-zoom-controls" id="ss-zoomControls">
+                            <div class="ss-slider-container">
+                                <div class="ss-slider" id="ss-slider">
+                                    <div class="ss-slider-track"></div>
+                                    <div class="ss-slider-fill" id="ss-sliderFill" style="width: 0%;"></div>
+                                    <div class="ss-slider-thumb" id="ss-sliderThumb"></div>
+                                </div>
+                            </div>
+                            <div class="ss-controls-row">
+                                <button class="ss-fit-all-button" id="ss-fitAllBtn">fit all</button>
+                                <button class="ss-free-move-button" id="ss-freeMoveBtn">Free Move</button>
+                                <div class="ss-zoom-value" id="ss-zoomValue">50%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tools -->
+                <div class="ss-sidebar-section ss-collapsible">
+                    <div class="ss-collapsible-header">Tools</div>
+                    <div class="ss-collapsible-content">
+                        <div class="ss-control-box ss-image-tools">
+                            <div class="ss-image-tools-buttons">
+                                <button class="ss-image-tool-button" id="ss-flipHorizontalBtn" title="Flip Horizontal">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 3v18M8 9l-4 4 4 4M16 9l4 4-4 4"/>
+                                    </svg>
+                                </button>
+                                <button class="ss-image-tool-button" id="ss-flipVerticalBtn" title="Flip Vertical">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 12h18M9 16l4 4 4-4M9 8l4-4 4 4"/>
+                                    </svg>
+                                </button>
+                                <button class="ss-image-tool-button" id="ss-duplicateImageBtn" title="Duplicate Image">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                                <button class="ss-image-tool-button" id="ss-deleteImageBtn" title="Delete Image">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                                <button class="ss-image-tool-button" id="ss-replaceImageBtn" title="Replace Image">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H9H8"/>
+                                    </svg>
+                                </button>
+                                <button class="ss-image-tool-button" id="ss-lockImageBtn" title="Lock Image">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                    </svg>
+                                </button>
+                                <button class="ss-image-tool-button" id="ss-polaroidFrameBtn" title="Polaroid Frame">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                        <rect x="7" y="7" width="10" height="8"/>
+                                        <line x1="7" y1="18" x2="17" y2="18"/>
+                                        <line x1="12" y1="18" x2="12" y2="16"/>
+                                    </svg>
+                                </button>
+                                <button class="ss-image-tool-button" id="ss-addFrameBtn" title="Add Frame">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                        <rect x="6" y="6" width="12" height="12"/>
+                                    </svg>
+                                </button>
+                                <button class="ss-image-tool-button" id="ss-dropShadowBtn" title="Drop Shadow">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="4" y="4" width="16" height="16" rx="1" stroke="currentColor" stroke-width="2"/>
+                                        <rect x="2" y="2" width="16" height="16" rx="1" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                </button>
+                                <button class="ss-image-tool-button" id="ss-grayscaleBtn" title="Grayscale">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                        <rect x="6" y="6" width="12" height="12" fill="currentColor" opacity="0.3"/>
+                                    </svg>
+                                </button>
+                                
+                                <!-- Crop button removed; UI uses direct handles for cropping per new spec -->
+                                
+                                <button class="ss-image-tool-button" id="ss-selectMultipleBtn" title="Select Multiple">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="14" width="7" height="7"></rect>
+                                        <rect x="3" y="14" width="7" height="7"></rect>
+                                    </svg>
+                                </button>
+                                <button class="ss-image-tool-button" id="ss-groupBtn" title="Group">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                                        <line x1="15" y1="3" x2="15" y2="21"></line>
+                                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                                        <line x1="3" y1="15" x2="21" y2="15"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <!-- Layer Order buttons with spacing (separator removed) -->
+                            <div class="ss-layer-order-buttons" style="margin-top: 8px;">
+                                <button class="ss-layer-order-button" id="ss-moveToTopBtn" title="Move to Top">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 19V5M5 12l7-7 7 7"/>
+                                    </svg>
+                                </button>
+                                <button class="ss-layer-order-button" id="ss-moveUpBtn" title="Move Up">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 19V9M9 14l3-3 3 3"/>
+                                    </svg>
+                                </button>
+                                <button class="ss-layer-order-button" id="ss-moveDownBtn" title="Move Down">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v10M9 10l3 3 3-3"/>
+                                    </svg>
+                                </button>
+                                <button class="ss-layer-order-button" id="ss-moveToBottomBtn" title="Move to Bottom">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M19 12l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                
+
+                <!-- Export button (moved from header) -->
+                <div class="ss-sidebar-section">
+                    <div class="ss-sidebar-export" style="display:flex; justify-content:center; padding:8px 12px;">
+                        <button class="ss-export-button" id="ss-exportBtn" disabled>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Export pages
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Backup Tools -->
+                <div class="ss-sidebar-section ss-collapsible ss-collapsed">
+                    <div class="ss-collapsible-header">Backup Work</div>
+                    <div class="ss-collapsible-content">
+                        <div class="ss-control-box ss-backup-tools">
+                            <div class="ss-backup-tools-buttons">
+                                <button class="ss-backup-tool-button" id="ss-backupBtn">Backup</button>
+                                <button class="ss-backup-tool-button" id="ss-saveTemplateBtn">Save Template</button>
+                                <button class="ss-backup-tool-button" id="ss-loadBackupBtn">Load Backup / Template</button>
+                                <button class="ss-backup-tool-button" id="ss-restoreDefaultsBtn">Restore Defaults</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Resolution display (moved from header) -->
+                <div class="ss-sidebar-section">
+                    <div class="ss-resolution-container">
+                        <div class="ss-resolution-display" id="ss-resolutionDisplay">1080 × 1920</div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- Designer Workspace -->
+        <div class="ss-workspace" id="ss-workspace">
+<div class="ss-workspace-placeholder" id="ss-workspacePlaceholder">
+    <!-- Use the same logo as in the header but centered -->
+    <div class="ss-logo" style="display:flex; flex-direction: column; align-items:center; gap:0.5em; font-family:sans-serif; font-size:48px; font-weight:bold; color:var(--ss-text-color); margin-bottom: 20px;">
+            <img class="ss-duotone" src="icons/icon.svg" alt="SlideStudio" style="height:1em; width:auto; vertical-align:middle;">
+      <span style="text-align: center;">SlideStudio</span>
+    </div>
+    <p style="font-size: 18px; color: var(--ss-text-color); opacity: 0.8; margin-top: 10px;">under construction</p>
+</div>
+            
+            <!-- Canvas container for future functionality -->
+            <div class="ss-canvas-container" id="ss-canvasContainer" style="display: none;">
+                <!-- Designer canvas will be inserted here by designer.js -->
+            </div>
+        </div>
+    </main>
+
+    
+
+    <!-- About Popup -->
+    <div class="ss-about-popup" id="ss-aboutPopup" style="display:none;">
+        <div class="ss-about-popup-content">
+            <div class="ss-about-logo">
+                <!-- Updated: Centered icon above text -->
+                <div class="ss-logo" style="display:flex; flex-direction: column; align-items:center; gap:0.5em; font-family:sans-serif; font-size:48px; font-weight:bold; color:var(--ss-text-color);">
+                                    <img class="ss-duotone" src="icons/icon.svg" alt="Slide Studio" style="height:3em; width:auto; vertical-align:middle;">
+                  <span style="text-align: center;">Slide Studio</span>
+                </div>
+            </div>
+            <div class="ss-about-info">
+                <p>Welcome to SlideStudio.</p>
+                <p>I started this project because I couldn't find any app or service, online or in any app store, that produced consistent results when preparing images for Instagram. I wanted to match posts in 1:1 or 4:5 with stories, and there was always some manual adjustment required.</p>
+                <p>I prefer not to use ads. This project takes a considerable amount of time, and it also involves real costs for server hosting and bringing in external developers when needed. If you want to support the project, donations are appreciated.</p>
+
+                <p><a href="https://paypal.me/klangche?country.x=SE&locale.x=en_US" target="_blank">buy me a bottle of wine, lunch or a new computer ;)</a></p>
+                <p>Linus Klang</p>
+            </div>
+            <button class="ss-about-close" id="ss-aboutClose">Close</button>
+        </div>
+    </div>
+
+        <!-- Text Editor Modal -->
+    <div class="ss-text-popup" id="ss-textPopup" aria-hidden="true" role="dialog" aria-label="Text editor" aria-modal="true" style="display:none;">
+        <div class="ss-text-popup-overlay" id="ss-textPopupOverlay" aria-hidden="true"></div>
+        <div class="ss-text-popup-content" role="document" tabindex="-1" aria-labelledby="ss-textPopupLabel">
+            <div class="ss-text-popup-header">
+                <h3 id="ss-textPopupLabel">Add Text</h3>
+                <div class="ss-text-color-controls">
+                    <input type="color" id="ss-textColorPicker" value="#121212">
+                    <input type="text" id="ss-textColorHex" placeholder="#121212" maxlength="7" value="#121212">
+                </div>
+                <div class="ss-header-size-control">
+
+                    <div class="ss-text-font-size-input">
+                        <input type="number" id="ss-textFontSizeInput" min="8" max="200" step="1" inputmode="numeric">
+                    </div>
+                </div>
+                <button class="ss-text-edit-button" id="ss-textEditBtn" type="button" aria-pressed="false">
+                    <span aria-hidden="true">
+                        <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m10.5785 19 4.2979-10.92966c.0369-.09379.1674-.09379.2042 0L19.3785 19m-8.8 0H9.47851m1.09999 0h1.65m7.15 0h-1.65m1.65 0h1.1m-7.7-3.9846h4.4M3 16l1.56685-3.9846m0 0 2.73102-6.94506c.03688-.09379.16738-.09379.20426 0l2.50367 6.94506H4.56685Z"/>
+                        </svg>
+                    </span>
+                    <span>Format</span>
+                </button>
+                <div class="ss-text-popup-controls">
+                    <button id="ss-textMatchSlideBtn" class="ss-text-popup-match-btn" type="button" aria-pressed="false" title="Match slide background">
+                        <svg id="text-editor-theme-toggle" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <circle id="canvas-circle" cx="50" cy="50" r="16.875" fill="#ecf0f1" />
+                            <circle id="theme-ring" cx="50" cy="50" r="45" fill="none" stroke-width="8" />
+                        </svg>
+                    </button>
+                    <button class="ss-add-to-page-btn" type="button" aria-label="Add text to slide">
+                        <span class="ss-add-to-page-icon" aria-hidden="true">
+                            <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4"/>
+                            </svg>
+                        </span>
+                        <span class="ss-add-to-page-label">Add</span>
+                    </button>
+                    <button id="ss-textPopupClose" class="ss-text-popup-close" aria-label="Close text editor">×</button>
+                </div>
+            </div>
+            <div class="ss-text-popup-body">
+                <div class="ss-text-editor-viewport" id="ss-textEditorViewport">
+                    <div id="ss-textEditorCanvas" contenteditable="true"></div>
+                </div>
+            </div>
+            <div class="ss-text-popup-footer" aria-hidden="true">
+                <div class="ss-text-font-panel" id="ss-textFontPanel" aria-hidden="true">
+                    <div class="ss-text-font-actions">
+                        <div class="ss-text-font-action-row">
+                            <div class="ss-text-font-dropdown" id="ss-textFontDropdown">
+                                <button class="ss-text-font-button" id="ss-textFontBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
+                                    <span>Trebuchet MS</span>
+                                    <svg viewBox="0 0 10 6" aria-hidden="true">
+                                        <path d="M1 1.3 5 4.5 9 1.3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" />
+                                    </svg>
+                                </button>
+                                <div class="ss-text-font-dropdown-list" id="ss-textFontDropdownList" role="listbox" aria-label="Choose font" aria-hidden="true"></div>
+                            </div>
+                            <button type="button" id="ss-textAddGoogleBtn" class="ss-text-font-secondary ss-text-tool-action ss-text-fixed-button" aria-label="Add fonts">Add fonts</button>
+                        </div>
+                        <div class="ss-text-font-action-row">
+                            <button type="button" class="ss-text-button" id="ss-textAlignLeftBtn" aria-label="Left align" data-align="left">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M4 6h16M4 11h12M4 16h16" stroke-linecap="round" />
+                                </svg>
+                            </button>
+                            <button type="button" class="ss-text-button" id="ss-textAlignCenterBtn" aria-label="Center align" data-align="center">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M6 6h12M4 11h16M6 16h12" stroke-linecap="round" />
+                                </svg>
+                            </button>
+                            <button type="button" class="ss-text-button" id="ss-textAlignRightBtn" aria-label="Right align" data-align="right">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M4 6h16M8 11h12M4 16h16" stroke-linecap="round" />
+                                </svg>
+                            </button>
+                            <button type="button" class="ss-text-button ss-text-button--adaptive" id="ss-textAlignJustifyBtn" aria-label="Adaptive alignment" data-align="justify">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M4 5h16" stroke-linecap="round" />
+                                    <path d="M3 9h18" stroke-linecap="round" />
+                                    <path d="M4 13h16" stroke-linecap="round" />
+                                    <path d="M3 17h18" stroke-linecap="round" />
+                                    <path d="M4 21h16" stroke-linecap="round" />
+                                </svg>
+                            </button>
+                            <button type="button" class="ss-text-button ss-text-button--caps ss-text-fixed-button" id="ss-textAllCapsBtn" aria-pressed="false" aria-label="Toggle all caps">
+                                <span aria-hidden="true">
+                                    <svg width="32px" height="32px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                                        <polygon points="1 8 1 10 7 10 7 24 9 24 9 10 15 10 15 8 1 8"/>
+                                        <polygon points="17 8 17 10 23 10 23 24 25 24 25 10 31 10 31 8 17 8"/>
+                                    </svg>
+                                </span>
+                                <span>Caps</span>
+                            </button>
+                        </div>
+                        <div class="ss-text-font-action-row">
+                            <button type="button" class="ss-text-button" id="ss-textBoldBtn" aria-label="Bold" data-format="bold">
+                                <svg viewBox="0 0 20 20" aria-hidden="true">
+                                    <text x="3" y="15" font-size="14" font-weight="700">B</text>
+                                </svg>
+                            </button>
+                            <button type="button" class="ss-text-button" id="ss-textItalicBtn" aria-label="Italic" data-format="italic">
+                                <svg viewBox="0 0 20 20" aria-hidden="true">
+                                    <text x="2" y="15" font-size="14" font-style="italic">I</text>
+                                </svg>
+                            </button>
+                            <button type="button" class="ss-text-button" id="ss-textUnderlineBtn" aria-label="Underline" data-format="underline">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M6 7c0 3.5 1.5 5 4 5s4-1.5 4-5h-1" />
+                                    <path d="M5 17h14" stroke-linecap="round" />
+                                </svg>
+                            </button>
+                            <button type="button" class="ss-text-button" id="ss-textStrikethroughBtn" aria-label="Strikethrough" data-format="strikethrough">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M6 7c0 3.5 1.5 5 4 5s4-1.5 4-5h-1" />
+                                    <path d="M6 13h12" stroke-linecap="round" />
+                                </svg>
+                            </button>
+                            <button type="button" class="ss-text-button ss-text-fixed-button" id="ss-textClearCustomBtn" aria-pressed="false" aria-label="Clear customizations">
+                                <span aria-hidden="true">
+                                    <svg fill="#000000" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M13,14.4142136 L13,20 L15,20 L15,22 L9,22 L9,20 L11,20 L11,12.4142136 L4.57580249,5.99001605 L3,5.95292783 L3,4.41421356 L1.29289322,2.70710678 L2.70710678,1.29289322 L22.7071068,21.2928932 L21.2928932,22.7071068 L13,14.4142136 Z M13,8.78578649 L11,6.78578649 L11,4 L8.21421351,4 L6.21421351,2 L21,2 L21,6 L19,5.95292783 L19,4 L13,4 L13,8.78578649 Z"/>
+                                    </svg>
+                                </span>
+                                <span>Clear</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ss-font-upload-toast" id="ss-fontUploadFeedback" role="status" aria-live="polite">
+                        <span class="ss-font-upload-toast__message" aria-live="polite"></span>
+                        <button type="button" class="ss-font-upload-toast__close" aria-label="Close notification">×</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+            <div class="ss-google-font-popup" id="ss-googleFontPopup" aria-hidden="true">
+                <div class="ss-google-font-popup__overlay" id="ss-googleFontOverlay"></div>
+                <div class="ss-google-font-popup__content" role="dialog" aria-modal="true" aria-labelledby="ss-googleFontPopupTitle">
+                    <header class="ss-google-font-popup__header">
+                        <h3 id="ss-googleFontPopupTitle">Add Google Fonts</h3>
+                        <div class="ss-google-font-popup__action-row">
+                            <button type="button" class="ss-google-font-popup__google-link" id="ss-googleFontsLink" aria-label="Open Google Fonts">G</button>
+                            <button type="button" class="ss-google-font-popup__close" id="ss-googleFontPopupClose" aria-label="Close Google Fonts dialog">×</button>
+                        </div>
+                    </header>
+                    <div class="ss-google-font-popup__body">
+                        <p class="ss-google-font-popup__instructions">Paste the Google Fonts <code>&lt;link&gt;</code> or <code>@import</code> snippet below to load instantly.</p>
+                        <textarea id="ss-googleFontInput" class="ss-google-font-popup__textarea" placeholder="Paste Google Fonts snippet here"></textarea>
+                        <div class="ss-google-font-popup__upload-row">
+                            <button type="button" id="ss-googleFontUploadBtn" class="ss-text-font-secondary">Upload Font</button>
+                            <span class="ss-google-font-popup__hint">Supports .ttf, .otf, .woff, .woff2</span>
+                        </div>
+                        <input type="file" id="ss-fontUploadInput" accept=".ttf,.otf,.woff,.woff2" multiple hidden>
+                    </div>
+                </div>
+            </div>
+
+    <script src="slidestudio.js"></script>
+    <script src="designer.js"></script>
+    <script src="text-editor.js"></script>
+
+    <script src="image-transform.js"></script>
+    <script src="backupexport.js"></script>
+    <script>
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('SW registered: ', registration);
+            })
+            .catch(registrationError => {
+                console.log('SW registration failed: ', registrationError);
+            });
+    });
+}
+
+// Add to Home Screen prompt
+let deferredPrompt;
+const installButton = document.createElement('button');
+installButton.innerHTML = '📱 Install App';
+installButton.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #333;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1000;
+    font-size: 14px;
+`;
+installButton.style.display = 'none';
+
+installButton.addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            installButton.style.display = 'none';
+        }
+        deferredPrompt = null;
+    }
+});
+
+document.body.appendChild(installButton);
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installButton.style.display = 'block';
+});
+</script>
+
+</body>
+</html>
