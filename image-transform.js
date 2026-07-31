@@ -215,6 +215,13 @@
             ctx.shadowBlur = 0;
             ctx.filter = 'none';
 
+            // Locked selected images get a red border on the inside of the image
+            if (img.locked && state.selectedImageId === img.id) {
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 6 / img.scale;
+                ctx.strokeRect(img.visibleRect.x, img.visibleRect.y, img.visibleRect.width, img.visibleRect.height);
+            }
+
             ctx.restore();
         });
 

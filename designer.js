@@ -119,10 +119,16 @@ function initializeDesignerWorkspace() {
     initializeKeyboardMovement();
     initializeGlobalClickHandler();
     
-    // Initialize transparency slider as disabled (since guidance starts as inactive)
+    // So-Me Guides and Snap are enabled by default on page load
+    const guidanceBtn = document.getElementById('ss-guidanceBtn');
+    if (guidanceBtn) guidanceBtn.classList.add('ss-active');
+    guidanceState.active = true;
+    createEnhancedGuidanceOverlay();
+    
+    // Enable transparency slider (guides are active by default)
     const transparencySliderContainer = document.querySelector('#ss-transparencySlider').closest('.ss-slider-container');
     if (transparencySliderContainer) {
-        transparencySliderContainer.classList.add('ss-disabled');
+        transparencySliderContainer.classList.remove('ss-disabled');
     }
     
     saveState();

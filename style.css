@@ -1768,7 +1768,10 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 
 /* Locked image visual indicator */
 .ss-image-element.ss-locked {
-    box-shadow: inset 0 0 0 2px rgba(231,76,60,0.12);
+    box-shadow: inset 0 0 0 2px rgba(231,76,60,0.35);
+}
+.ss-image-element.ss-locked.selected {
+    box-shadow: inset 0 0 0 3px #e74c3c;
 }
 
 /* Polaroid frame styles */
