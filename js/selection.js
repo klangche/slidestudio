@@ -2,7 +2,6 @@
 import { layerState, magnetState, freeMoveState } from './state.js';
 import { saveState } from './history.js';
 import { snapToGuidelines } from './guidance.js';
-import { setZoomLevel } from './zoom.js';
 import { getResizeHandlesForElement } from './ui-helpers.js';
 
 // Simple drag state
@@ -413,33 +412,47 @@ export function toggleGroupSelected() {
 window.toggleGroupSelected = toggleGroupSelected;
 
 // Free Move functionality
-export function toggleFreeMove() {
+function applyFreeMoveUI(active) {
     const freeMoveBtn = document.getElementById('ss-freeMoveBtn');
     const canvasContainer = document.getElementById('ss-canvasContainer');
-    
-    if (!freeMoveBtn || !canvasContainer) return;
-    
-    freeMoveState.active = !freeMoveState.active;
-    freeMoveBtn.classList.toggle('ss-active', freeMoveState.active);
-    
-    if (freeMoveState.active) {
-        canvasContainer.style.cursor = 'grab';
-        canvasContainer.classList.add('ss-free-move-active');
-        canvasContainer.addEventListener('mousedown', startFreeMove);
-        document.addEventListener('mouseup', stopFreeMove);
-        
-        // Zoom to 100% when free move is activated
-        setZoomLevel(1.0);
-    } else {
+    if (freeMoveBtn) freeMoveBtn.classList.toggle('ss-active', active);
+    if (canvasContainer) {
+        canvasContainer.style.cursor = active ? 'grab' : '';
+        canvasContainer.classList.toggle('ss-free-move-active', active);
+    }
+}
+
+export function enableFreeMove() {
+    if (freeMoveState.active) return;
+    const canvasContainer = document.getElementById('ss-canvasContainer');
+    if (!canvasContainer) return;
+    freeMoveState.active = true;
+    canvasContainer.addEventListener('mousedown', startFreeMove);
+    document.addEventListener('mouseup', stopFreeMove);
+    applyFreeMoveUI(true);
+}
+
+export function disableFreeMove() {
+    if (!freeMoveState.active) return;
+    const canvasContainer = document.getElementById('ss-canvasContainer');
+    if (canvasContainer) {
+        canvasContainer.removeEventListener('mousedown', startFreeMove);
         canvasContainer.style.cursor = '';
         canvasContainer.classList.remove('ss-free-move-active');
-        canvasContainer.removeEventListener('mousedown', startFreeMove);
-        document.removeEventListener('mouseup', stopFreeMove);
     }
+    document.removeEventListener('mouseup', stopFreeMove);
+    freeMoveState.active = false;
+    const freeMoveBtn = document.getElementById('ss-freeMoveBtn');
+    if (freeMoveBtn) freeMoveBtn.classList.remove('ss-active');
+}
+
+export function toggleFreeMove() {
+    if (freeMoveState.active) disableFreeMove(); else enableFreeMove();
 }
 
 function startFreeMove(e) {
     if (!freeMoveState.active) return;
+    if (e.button !== 0) return; // left button only; middle button has its own pan
     
     const canvasContainer = document.getElementById('ss-canvasContainer');
     if (!canvasContainer) return;
@@ -477,6 +490,97 @@ function stopFreeMove() {
     
     freeMoveState.isMoving = false;
     document.removeEventListener('mousemove', doFreeMove);
+}
+
+// ============================================================================
+// FREE MOVE SHORTCUTS (space bar + middle mouse button pan)
+// ============================================================================
+
+let spacePanActive = false;
+
+const middlePan = {
+    active: false,
+    startX: 0,
+    startY: 0,
+    startScrollLeft: 0,
+    startScrollTop: 0
+};
+
+function isTypingTarget(target) {
+    return !!(target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable));
+}
+
+function hasSelection() {
+    if (layerState.selectedLayer) return true;
+    if (window.SSImageTransform && typeof window.SSImageTransform.hasSelectedImage === 'function' && window.SSImageTransform.hasSelectedImage()) return true;
+    const textPopup = document.getElementById('ss-textPopup');
+    if (textPopup && textPopup.style.display !== 'none') return true;
+    return false;
+}
+
+export function initializeFreeMoveShortcuts() {
+    const canvasContainer = document.getElementById('ss-canvasContainer');
+
+    // Space (hold) to temporarily enable free move when nothing is selected.
+    document.addEventListener('keydown', function(e) {
+        if (e.code !== 'Space') return;
+        if (isTypingTarget(e.target)) return;
+        if (e.target.tagName === 'BUTTON') return; // let space activate buttons
+        if (!freeMoveState.active && !hasSelection()) {
+            e.preventDefault();
+            enableFreeMove();
+            spacePanActive = true;
+        } else if (!isTypingTarget(e.target)) {
+            e.preventDefault(); // stop page/container scroll while space is held
+        }
+    });
+
+    document.addEventListener('keyup', function(e) {
+        if (e.code !== 'Space') return;
+        if (spacePanActive) {
+            spacePanActive = false;
+            disableFreeMove();
+        }
+    });
+
+    // Middle mouse button (button 1) pans the canvas without activating free move.
+    // Capture phase so it wins over image/text drag handlers.
+    if (canvasContainer) {
+        canvasContainer.addEventListener('mousedown', function(e) {
+            if (e.button !== 1) return;
+            e.preventDefault();
+            e.stopPropagation();
+            middlePan.active = true;
+            middlePan.startX = e.clientX;
+            middlePan.startY = e.clientY;
+            middlePan.startScrollLeft = canvasContainer.scrollLeft;
+            middlePan.startScrollTop = canvasContainer.scrollTop;
+            canvasContainer.style.cursor = 'grabbing';
+            document.addEventListener('mousemove', onMiddlePanMove);
+            document.addEventListener('mouseup', onMiddlePanUp);
+        }, true);
+
+        document.addEventListener('mouseup', onMiddlePanUp);
+    }
+}
+
+function onMiddlePanMove(e) {
+    if (!middlePan.active) return;
+    const canvasContainer = document.getElementById('ss-canvasContainer');
+    if (!canvasContainer) return;
+    canvasContainer.scrollLeft = middlePan.startScrollLeft - (e.clientX - middlePan.startX);
+    canvasContainer.scrollTop = middlePan.startScrollTop - (e.clientY - middlePan.startY);
+}
+
+function onMiddlePanUp() {
+    if (!middlePan.active) return;
+    middlePan.active = false;
+    const canvasContainer = document.getElementById('ss-canvasContainer');
+    if (canvasContainer && !freeMoveState.active) {
+        canvasContainer.style.cursor = '';
+    }
+    document.removeEventListener('mousemove', onMiddlePanMove);
+    document.removeEventListener('mouseup', onMiddlePanUp);
 }
 
 export function initializeGlobalClickHandler() {

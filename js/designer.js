@@ -4,7 +4,7 @@ import { initializeZoomFunctionality, setInitialZoom } from './zoom.js';
 import { updateSectionCount, updateResolutionDisplay, updateButtonStates, addSection, removeSection, initializeMagnetButton } from './sections.js';
 import { initializeColorPicker, initializeUploadFunctionality, initializeTransparencySlider, moveLayerToTop, moveLayerUp, moveLayerDown, moveLayerToBottom, updateImageToolButtons, cleanupImagesOutsideCanvas } from './layers.js';
 import { updateUndoRedoButtons, undo, redo, saveState } from './history.js';
-import { initializeGlobalClickHandler, toggleFreeMove, updateLayerOrderButtons, updateImageToolUIForSelection } from './selection.js';
+import { initializeGlobalClickHandler, toggleFreeMove, updateLayerOrderButtons, updateImageToolUIForSelection, initializeFreeMoveShortcuts } from './selection.js';
 import { toggleGuidance, createEnhancedGuidanceOverlay } from './guidance.js';
 import { initializeKeyboardMovement } from './keyboard.js';
 import { exportCanvasZip, downloadBackup, saveTemplate, listTemplates, loadTemplateByName, loadBackupFromFile, openLoadBackupDialog, openLoadTemplateDialog } from './export.js';
@@ -43,6 +43,7 @@ function initializeDesignerWorkspace() {
     initializeMagnetButton();
     initializeKeyboardMovement();
     initializeGlobalClickHandler();
+    initializeFreeMoveShortcuts();
     
     // So-Me Guides and Snap are enabled by default on page load
     const guidanceBtn = document.getElementById('ss-guidanceBtn');

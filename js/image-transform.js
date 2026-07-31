@@ -583,37 +583,43 @@ import { layerState } from './state.js';
     // SCALE LOGIC
     // ============================================================================
 
+    function worldToLocalAt(pWorld, position, scale, rotation) {
+        const dx = pWorld.x - position.x;
+        const dy = pWorld.y - position.y;
+        const cos = Math.cos(rotation);
+        const sin = Math.sin(rotation);
+        return {
+            x: (dx * cos + dy * sin) / scale,
+            y: (-dx * sin + dy * cos) / scale
+        };
+    }
+
     function handleScale(img, mouseWorld) {
-        const pLocalMouse = worldToLocal(img, mouseWorld);
-        
+        const start = interaction.startImage;
+        if (!start) return;
+
+        // Convert the cursor to local coordinates using the INITIAL transform so
+        // the image tracks the mouse 1:1 (no feedback loop, no lag).
+        const pLocalMouse = worldToLocalAt(mouseWorld, start.position, start.scale, start.rotation);
+
         const d0 = distance(interaction.initialActiveLocal, interaction.anchorLocal);
         const d1 = distance(pLocalMouse, interaction.anchorLocal);
-        
         if (d0 === 0) return;
-        
-        // Calculate target scale with ratio clamping to prevent extreme jumps
-        let scaleRatio = d1 / d0;
-        // Clamp scale ratio to reasonable range per frame to avoid jittering
-        scaleRatio = Math.max(0.01, Math.min(scaleRatio, 100));
-        
-        const targetScale = interaction.initialScale * scaleRatio;
-        
+
+        // Clamp ratio to prevent extreme jumps
+        const scaleRatio = Math.max(0.01, Math.min(d1 / d0, 100));
+        const targetScale = start.scale * scaleRatio;
+
         // Prevent scale from going too small or too large
-        const clampedScale = Math.max(0.05, Math.min(targetScale, 50));
-        
-        // Apply smoothing factor for smoother scaling (interpolation)
-        const smoothingFactor = 0.15;
-        img.scale = img.scale + (clampedScale - img.scale) * smoothingFactor;
-        
-        // Adjust position so anchor stays in same world position
-        const newAnchorWorld = localToWorld(img, interaction.anchorLocal);
-        const delta = {
-            x: interaction.anchorWorld.x - newAnchorWorld.x,
-            y: interaction.anchorWorld.y - newAnchorWorld.y
-        };
-        
-        img.position.x += delta.x;
-        img.position.y += delta.y;
+        img.scale = Math.max(0.05, Math.min(targetScale, 50));
+
+        // Keep the anchor corner fixed in world coordinates
+        const cos = Math.cos(start.rotation);
+        const sin = Math.sin(start.rotation);
+        const ax = interaction.anchorLocal.x * img.scale;
+        const ay = interaction.anchorLocal.y * img.scale;
+        img.position.x = interaction.anchorWorld.x - (cos * ax - sin * ay);
+        img.position.y = interaction.anchorWorld.y - (sin * ax + cos * ay);
     }
 
     // ============================================================================
@@ -1146,6 +1152,20 @@ const layer = layerState && layerState.layers ?
         reader.readAsDataURL(file);
     }
 
+    // Temporarily deselect (removes selection outlines from the image canvas)
+    // so external snapshotting (export) captures only the artwork. Returns a
+    // restore function that reselects and redraws.
+    function prepareSnapshot() {
+        const prev = state.selectedImageId;
+        state.selectedImageId = null;
+        draw();
+        return function restore() {
+            state.selectedImageId = prev;
+            draw();
+            computeHandles();
+        };
+    }
+
     // Export SSImageTransform for integration with other modules
     window.SSImageTransform = {
         setCanvasSteps: setCanvasSteps,
@@ -1160,7 +1180,8 @@ const layer = layerState && layerState.layers ?
         toggleGrayscale: toggleGrayscale,
         replaceImage: replaceImage,
         hasSelectedImage: function() { return !!getSelectedImage(); },
-        getSelectedImage: getSelectedImage
+        getSelectedImage: getSelectedImage,
+        prepareSnapshot: prepareSnapshot
     };
 
     // Initialize on DOM ready

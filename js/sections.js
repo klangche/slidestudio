@@ -114,32 +114,36 @@ export function updateResolutionDisplay() {
 export function updateButtonStates() {
     const addSectionBtn = document.getElementById('ss-addSection');
     const removeSectionBtn = document.getElementById('ss-removeSection');
-    
+    const sections = canvasState.sections;
+    const maxSections = canvasState.maxSections;
+    const minSections = canvasState.minSections;
+
     if (addSectionBtn) {
-        if (canvasState.sections >= canvasState.maxSections) {
+        if (sections >= maxSections) {
             addSectionBtn.classList.add('ss-disabled');
-            addSectionBtn.style.opacity = '0.3';
-            addSectionBtn.style.cursor = 'not-allowed';
-            addSectionBtn.style.color = '#dddddd';
+            addSectionBtn.style.opacity = '';
+            addSectionBtn.style.cursor = '';
         } else {
             addSectionBtn.classList.remove('ss-disabled');
-            addSectionBtn.style.opacity = '1';
+            // Fade progressively from full opacity at the minimum slide count
+            // down toward the disabled look as we approach the maximum.
+            const remaining = maxSections - sections;
+            const range = maxSections - minSections;
+            const ratio = range > 0 ? remaining / range : 0;
+            addSectionBtn.style.opacity = String(0.35 + 0.65 * ratio);
             addSectionBtn.style.cursor = 'pointer';
-            addSectionBtn.style.color = '#333333';
         }
     }
-    
+
     if (removeSectionBtn) {
-        if (canvasState.sections <= canvasState.minSections) {
+        if (sections <= minSections) {
             removeSectionBtn.classList.add('ss-disabled');
-            removeSectionBtn.style.opacity = '0.3';
-            removeSectionBtn.style.cursor = 'not-allowed';
-            removeSectionBtn.style.color = '#dddddd';
+            removeSectionBtn.style.opacity = '';
+            removeSectionBtn.style.cursor = '';
         } else {
             removeSectionBtn.classList.remove('ss-disabled');
-            removeSectionBtn.style.opacity = '1';
+            removeSectionBtn.style.opacity = '';
             removeSectionBtn.style.cursor = 'pointer';
-            removeSectionBtn.style.color = '#333333';
         }
     }
 }

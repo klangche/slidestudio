@@ -1,17 +1,9 @@
 // Export, backup and template utilities.
+// Export renders the whole visible canvas once (background + image canvas snapshot
+// + text boxes in z-order) and then splits that snapshot into the full-size image
+// and the SoMe formats defined by the guides (9:16 Stories, 4:5 Post, 1:1 Square).
 import { canvasState, layerState, historyState } from './state.js';
 import { restoreState } from './history.js';
-
-function loadScript(url) {
-    return new Promise(function(resolve, reject) {
-        if (document.querySelector('script[src="' + url + '"]')) return resolve();
-        const s = document.createElement('script');
-        s.src = url;
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
-    });
-}
 
 function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
@@ -24,173 +16,487 @@ function downloadBlob(blob, filename) {
     URL.revokeObjectURL(url);
 }
 
-function generateSlideCanvasBlob(slideIndex, targetW, targetH) {
-    return new Promise(function(resolve) {
-        const canvas = document.createElement('canvas');
-        canvas.width = targetW;
-        canvas.height = targetH;
-        const ctx = canvas.getContext('2d');
-
-        // Fill background
-        const designerCanvas = document.getElementById('ss-designer-canvas');
-        const bg = (designerCanvas && designerCanvas.style.backgroundColor) ? designerCanvas.style.backgroundColor : '#ffffff';
-        ctx.fillStyle = bg;
-        ctx.fillRect(0,0,canvas.width, canvas.height);
-
-        const slideLeft = slideIndex * 1080;
-        const slideWidth = 1080;
-        const scaleX = targetW / slideWidth;
-        const scaleY = targetH / (targetH ? targetH : targetW);
-        const scale = scaleX; // preserve x-based scaling for consistency
-
-        const layersToDraw = layerState.layers.filter(l => l.element && l.element.style.display !== 'none');
-
-        // Draw images and text simply (no rotation)
-        const drawNext = function(i) {
-            if (i >= layersToDraw.length) {
-                canvas.toBlob(function(blob) { resolve(blob); }, 'image/png');
-                return;
-            }
-            const layer = layersToDraw[i];
-            try {
-                const left = (layer.position && typeof layer.position.left === 'number') ? layer.position.left : (parseInt(layer.element.style.left) || 0);
-                const top = (layer.position && typeof layer.position.top === 'number') ? layer.position.top : (parseInt(layer.element.style.top) || 0);
-                const width = (layer.size && layer.size.width) ? layer.size.width : (layer.element.offsetWidth || parseInt(layer.element.style.width) || 0);
-                const height = (layer.size && layer.size.height) ? layer.size.height : (layer.element.offsetHeight || parseInt(layer.element.style.height) || 0);
-
-                const relLeft = left - slideLeft;
-                const relTop = top;
-
-                // Skip if not visible in this slide
-                if (relLeft + width < 0 || relLeft > slideWidth) {
-                    drawNext(i+1);
-                    return;
-                }
-
-                if (layer.type === 'image') {
-                    const imgEl = layer.imageElement || layer.element.querySelector('img');
-                    if (imgEl && imgEl.src) {
-                        const img = new Image();
-                        img.onload = function() {
-                            ctx.drawImage(img, Math.round(relLeft * scale), Math.round(relTop * scale), Math.round(width * scale), Math.round(height * scale));
-                            drawNext(i+1);
-                        };
-                        img.onerror = function() { drawNext(i+1); };
-                        img.src = imgEl.src;
-                        return;
-                    }
-                } else if (layer.type === 'polaroid') {
-                    // Draw a simple frame then draw inner image(s)
-                    // draw frame as white rect with slight shadow
-                    ctx.save();
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(Math.round(relLeft * scale), Math.round(relTop * scale), Math.round(width * scale), Math.round(height * scale));
-                    ctx.restore();
-                    // Find inner image layer
-                    const inner = layerState.layers.find(l => l.parentPolaroid === layer.id);
-                    if (inner && inner.imageElement && inner.imageElement.src) {
-                        const img = new Image();
-                        img.onload = function() {
-                            // compute inner position relative to polaroid window base (we assume base.windowLeft/windowTop)
-                            const base = layer.base || { windowLeft:45, windowTop:90 };
-                            const winLeft = (base.windowLeft || 45);
-                            const winTop = (base.windowTop || 90);
-                            const innerRelLeft = relLeft + winLeft;
-                            const innerRelTop = relTop + winTop;
-                            ctx.drawImage(img, Math.round(innerRelLeft * scale), Math.round(innerRelTop * scale), Math.round((inner.size.width||img.width) * scale), Math.round((inner.size.height||img.height) * scale));
-                            drawNext(i+1);
-                        };
-                        img.onerror = function() { drawNext(i+1); };
-                        img.src = inner.imageElement.src;
-                        return;
-                    }
-                } else if (layer.type === 'text') {
-                    const text = layer.element.textContent || '';
-                    const fontSize = parseInt(layer.element.style.fontSize) || (layer.fontSize || 24);
-                    ctx.save();
-                    ctx.fillStyle = layer.element.style.color || '#000';
-                    ctx.font = (fontSize * scale) + 'px ' + (layer.element.style.fontFamily || 'Arial');
-                    ctx.textAlign = layer.element.style.textAlign || 'left';
-                    // simple single-line draw at top-left
-                    const x = Math.round(relLeft * scale) + 10;
-                    const y = Math.round(relTop * scale) + Math.round((fontSize * scale));
-                    wrapText(ctx, text, x, y, Math.round(width * scale) - 20, Math.round(fontSize * scale));
-                    ctx.restore();
-                    drawNext(i+1);
-                    return;
-                }
-            } catch (err) {
-                // ignore drawing errors per layer
-            }
-            drawNext(i+1);
-        };
-
-        drawNext(0);
+function canvasToBytes(canvas) {
+    return new Promise(function(resolve, reject) {
+        canvas.toBlob(function(blob) {
+            if (!blob) { reject(new Error('Canvas conversion failed')); return; }
+            blob.arrayBuffer().then(function(buf) { resolve(new Uint8Array(buf)); }, reject);
+        }, 'image/png');
     });
 }
 
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-    const words = text.split(/\s+/);
-    let line = '';
-    for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = ctx.measureText(testLine);
-        const testWidth = metrics.width;
-        if (testWidth > maxWidth && n > 0) {
-            ctx.fillText(line, x, y);
-            line = words[n] + ' ';
-            y += lineHeight;
-        } else {
-            line = testLine;
-        }
-    }
-    ctx.fillText(line, x, y);
+// ============================================================================
+// FULL-CANVAS RENDERING (snapshot of everything visible inside the canvas)
+// ============================================================================
+
+function parseRotateRad(transform) {
+    if (!transform) return 0;
+    const m = /rotate\(\s*([-+\d.]+)deg\s*\)/.exec(transform);
+    return m ? parseFloat(m[1]) * Math.PI / 180 : 0;
 }
 
-export function exportCanvasZip(filename) {
-    return (async function() {
-        filename = filename || ('slide_export_' + Date.now() + '.zip');
-        const jszipUrl = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-        try {
-            await loadScript(jszipUrl);
-        } catch (err) {
-            console.error('Failed to load JSZip:', err);
-            throw err;
-        }
+function renderFullCanvasSync() {
+    const W = Math.max(1, Math.round(canvasState.width));
+    const H = Math.max(1, Math.round(canvasState.height));
 
-        if (typeof JSZip === 'undefined') {
-            throw new Error('JSZip not available');
-        }
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
 
-        const zip = new JSZip();
-        const sizes = [
-            { name: 'Square', w:1080, h:1080 },
-            { name: 'Post', w:1080, h:1350 },
-            { name: 'Stories', w:1080, h:1920 },
-            { name: 'Fullwidth', w: canvasState.width, h: canvasState.height }
-        ];
+    // Background
+    const designerCanvas = document.getElementById('ss-designer-canvas');
+    const bg = (designerCanvas && designerCanvas.style.backgroundColor) ? designerCanvas.style.backgroundColor : '#ffffff';
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
 
-        const sections = Math.max(1, canvasState.sections || 1);
+    // Clip to canvas bounds to mirror the designer's overflow:hidden
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, H);
+    ctx.clip();
 
-        for (const size of sizes) {
-            const folder = zip.folder(size.name);
-            for (let s = 0; s < sections; s++) {
-                if (size.name === 'Fullwidth' && s > 0) break; // only one fullwidth export
-                const slideIndex = (size.name === 'Fullwidth') ? 0 : s;
-                try {
-                    const blob = await generateSlideCanvasBlob(slideIndex, size.w, size.h);
-                    const arrayBuffer = await blob.arrayBuffer();
-                    const fileName = 'slide_' + (s+1) + '.png';
-                    folder.file(fileName, arrayBuffer);
-                } catch (err) {
-                    console.warn('Skipping slide export for', size.name, 'slide', s+1, err);
-                }
+    // Images: snapshot the live image canvas for pixel-exact results
+    const imgCanvas = document.getElementById('ss-image-canvas');
+    if (imgCanvas) {
+        const srcW = Math.min(imgCanvas.width, W);
+        const srcH = Math.min(imgCanvas.height, H);
+        ctx.drawImage(imgCanvas, 0, 0, srcW, srcH);
+    }
+
+    // Text layers in z-index order (text boxes render above the image canvas)
+    const textLayers = layerState.layers
+        .filter(function(l) { return l.type === 'text' && l.element && l.element.style.display !== 'none'; })
+        .sort(function(a, b) { return (a.zIndex || 0) - (b.zIndex || 0); });
+    for (let i = 0; i < textLayers.length; i++) {
+        renderTextBox(ctx, textLayers[i]);
+    }
+
+    ctx.restore();
+
+    return canvas;
+}
+
+async function renderFullCanvas() {
+    let restore = null;
+    if (window.SSImageTransform && typeof window.SSImageTransform.prepareSnapshot === 'function') {
+        restore = window.SSImageTransform.prepareSnapshot();
+    }
+    try {
+        return renderFullCanvasSync();
+    } finally {
+        if (restore) restore();
+    }
+}
+
+// ============================================================================
+// TEXT BOX RENDERING (rich runs: bold/italic/underline/strikethrough/color)
+// ============================================================================
+
+var TAG_STYLES = {
+    'B': { fontWeight: 'bold' },
+    'STRONG': { fontWeight: 'bold' },
+    'I': { fontStyle: 'italic' },
+    'EM': { fontStyle: 'italic' },
+    'U': { textDecoration: 'underline' },
+    'S': { textDecoration: 'line-through' },
+    'STRIKE': { textDecoration: 'line-through' }
+};
+
+function mergeRunStyle(base, overrides) {
+    if (!overrides) return base;
+    return {
+        fontFamily: overrides.fontFamily || base.fontFamily,
+        fontSize: overrides.fontSize || base.fontSize,
+        fontWeight: overrides.fontWeight || base.fontWeight,
+        fontStyle: overrides.fontStyle || base.fontStyle,
+        textDecoration: overrides.textDecoration || base.textDecoration,
+        color: overrides.color || base.color,
+        letterSpacing: (overrides.letterSpacing === undefined || overrides.letterSpacing === null) ? base.letterSpacing : overrides.letterSpacing,
+        textTransform: base.textTransform
+    };
+}
+
+function collectRuns(root, base) {
+    const runs = [];
+    function walk(node, style) {
+        if (node.nodeType === 3) { // TEXT_NODE
+            let text = node.nodeValue;
+            if (text) {
+                if (style.textTransform === 'uppercase') text = text.toUpperCase();
+                runs.push({ text: text, style: style });
             }
+            return;
         }
+        if (node.nodeType !== 1) return; // ELEMENT_NODE
+        if (node.tagName === 'BR') {
+            runs.push({ text: '\n', style: style });
+            return;
+        }
+        let overrides = TAG_STYLES[node.tagName] || null;
+        const inline = node.style;
+        if (inline) {
+            const o = {};
+            if (inline.fontWeight) o.fontWeight = inline.fontWeight;
+            if (inline.fontStyle) o.fontStyle = inline.fontStyle;
+            if (inline.textDecoration) o.textDecoration = inline.textDecoration;
+            if (inline.color) o.color = inline.color;
+            if (inline.fontSize) { const f = parseFloat(inline.fontSize); if (!isNaN(f)) o.fontSize = f; }
+            if (inline.fontFamily) o.fontFamily = inline.fontFamily;
+            overrides = mergeRunStyle(overrides || {}, o);
+        }
+        const next = mergeRunStyle(style, overrides);
+        const children = node.childNodes;
+        for (let i = 0; i < children.length; i++) walk(children[i], next);
+    }
+    const rootChildren = root.childNodes;
+    for (let i = 0; i < rootChildren.length; i++) walk(rootChildren[i], base);
+    return runs;
+}
 
-        const content = await zip.generateAsync({ type: 'blob' });
-        downloadBlob(content, filename);
-    })();
+function splitRunsByLine(runs) {
+    const lines = [];
+    let current = [];
+    const flush = function() { if (current.length) { lines.push(current); current = []; } };
+    for (let r = 0; r < runs.length; r++) {
+        const segments = String(runs[r].text).split('\n');
+        for (let i = 0; i < segments.length; i++) {
+            if (i > 0) flush();
+            if (segments[i]) current.push({ text: segments[i], style: runs[r].style });
+        }
+    }
+    flush();
+    return lines;
+}
+
+function setFont(ctx, style) {
+    const size = Math.max(1, style.fontSize || 24);
+    let font = '';
+    if (style.fontStyle && style.fontStyle !== 'normal') font += style.fontStyle + ' ';
+    if (style.fontWeight && style.fontWeight !== 'normal') font += style.fontWeight + ' ';
+    font += size + 'px ' + (style.fontFamily || 'Arial, sans-serif');
+    ctx.font = font;
+    ctx.fillStyle = style.color || '#000000';
+    if (typeof ctx.letterSpacing === 'string' || 'letterSpacing' in ctx) {
+        try { ctx.letterSpacing = (style.letterSpacing || 0) + 'px'; } catch (e) {}
+    }
+}
+
+function measureToken(ctx, token) {
+    setFont(ctx, token.style);
+    return ctx.measureText(token.text).width;
+}
+
+function wrapRuns(runs, maxWidth, ctx) {
+    const tokens = [];
+    for (let r = 0; r < runs.length; r++) {
+        const parts = String(runs[r].text).split(/(\s+)/);
+        for (let p = 0; p < parts.length; p++) {
+            const part = parts[p];
+            if (part === '') continue;
+            tokens.push({ text: part, style: runs[r].style, space: /^\s+$/.test(part) });
+        }
+    }
+    const lines = [];
+    let current = [];
+    let currentWidth = 0;
+    const flush = function() { if (current.length) { lines.push(current); current = []; currentWidth = 0; } };
+    for (let t = 0; t < tokens.length; t++) {
+        const token = tokens[t];
+        const w = measureToken(ctx, token);
+        if (token.space) {
+            if (current.length === 0) continue; // skip leading whitespace on fresh lines
+            current.push(token);
+            currentWidth += w;
+            continue;
+        }
+        if (currentWidth + w > maxWidth && current.length > 0) {
+            flush();
+        }
+        current.push(token);
+        currentWidth += measureToken(ctx, token);
+    }
+    flush();
+    return lines;
+}
+
+function drawWrappedLine(ctx, tokens, lineX, maxWidth, align, y) {
+    let end = tokens.length;
+    while (end > 0 && tokens[end - 1].space) end--;
+    const visible = tokens.slice(0, end);
+    if (!visible.length) return;
+
+    let totalWidth = 0;
+    for (let i = 0; i < visible.length; i++) totalWidth += measureToken(ctx, visible[i]);
+
+    let effectiveAlign = align;
+    if (align === 'justify' && visible.length === 1) effectiveAlign = 'left';
+
+    let x = lineX;
+    if (effectiveAlign === 'center') x = lineX + (maxWidth - totalWidth) / 2;
+    else if (effectiveAlign === 'right') x = lineX + maxWidth - totalWidth;
+
+    const spaces = effectiveAlign === 'justify' ? visible.filter(function(t) { return t.space; }).length : 0;
+    const extra = spaces > 0 ? (maxWidth - totalWidth) / spaces : 0;
+
+    for (let i = 0; i < visible.length; i++) {
+        const token = visible[i];
+        setFont(ctx, token.style);
+        const w = measureToken(ctx, token);
+        if (token.space) {
+            x += w + extra;
+            continue;
+        }
+        ctx.fillText(token.text, x, y);
+        const deco = token.style.textDecoration || 'none';
+        const lineW = Math.max(1, (token.style.fontSize || 24) / 16);
+        if (deco.indexOf('underline') !== -1) {
+            ctx.strokeStyle = token.style.color || '#000000';
+            ctx.lineWidth = lineW;
+            ctx.beginPath();
+            ctx.moveTo(x, y + 2);
+            ctx.lineTo(x + w, y + 2);
+            ctx.stroke();
+        }
+        if (deco.indexOf('line-through') !== -1) {
+            ctx.strokeStyle = token.style.color || '#000000';
+            ctx.lineWidth = lineW;
+            ctx.beginPath();
+            ctx.moveTo(x, y - (token.style.fontSize || 24) * 0.3);
+            ctx.lineTo(x + w, y - (token.style.fontSize || 24) * 0.3);
+            ctx.stroke();
+        }
+        x += w;
+    }
+}
+
+function renderTextBox(ctx, layer) {
+    const el = layer.element;
+    if (!el || el.style.display === 'none') return;
+    const contentEl = (el.querySelector && el.querySelector('.ss-text-content')) ? el.querySelector('.ss-text-content') : el;
+    const cs = window.getComputedStyle(contentEl);
+    const fontSize = parseFloat(cs.fontSize) || 24;
+
+    const style = {
+        fontFamily: cs.fontFamily || 'Arial, sans-serif',
+        fontSize: fontSize,
+        fontWeight: cs.fontWeight || 'normal',
+        fontStyle: cs.fontStyle || 'normal',
+        textDecoration: cs.textDecoration || 'none',
+        color: cs.color || '#000000',
+        letterSpacing: parseFloat(cs.letterSpacing) || 0,
+        textTransform: cs.textTransform || 'none'
+    };
+    const align = cs.textAlign || 'left';
+    const lineHeight = parseFloat(cs.lineHeight) || Math.round(fontSize * 1.2);
+
+    if (!contentEl.textContent || !contentEl.textContent.trim()) return;
+
+    const boxWidth = el.offsetWidth || (layer.size && layer.size.width) || 0;
+    const boxHeight = el.offsetHeight || (layer.size && layer.size.height) || lineHeight;
+    if (boxWidth <= 0) return;
+
+    let relLeft = parseInt(el.style.left) || (layer.position && layer.position.left) || 0;
+    let relTop = parseInt(el.style.top) || (layer.position && layer.position.top) || 0;
+    const padLeft = el === contentEl ? (parseFloat(cs.paddingLeft) || 0) : (parseFloat(window.getComputedStyle(el).paddingLeft) || 0);
+    const padTop = el === contentEl ? (parseFloat(cs.paddingTop) || 0) : (parseFloat(window.getComputedStyle(el).paddingTop) || 0);
+    relLeft += padLeft;
+    relTop += padTop;
+    let groupRotate = 0;
+    if (layer.parentGroup) {
+        const groupLayer = layerState.layers.find(function(l) { return l.id === layer.parentGroup; });
+        if (groupLayer && groupLayer.element) {
+            relLeft += parseInt(groupLayer.element.style.left) || 0;
+            relTop += parseInt(groupLayer.element.style.top) || 0;
+            groupRotate = parseRotateRad(groupLayer.element.style.transform || '');
+        }
+    }
+    const ownRotate = parseRotateRad(el.style.transform || '');
+
+    const runs = collectRuns(contentEl, style);
+    const logicalLines = splitRunsByLine(runs);
+    const centerX = relLeft + boxWidth / 2;
+    const centerY = relTop + boxHeight / 2;
+
+    ctx.save();
+    if (groupRotate) {
+        ctx.translate(centerX, centerY);
+        ctx.rotate(groupRotate);
+        ctx.translate(-centerX, -centerY);
+    }
+
+    let y = relTop + Math.round(fontSize * 0.8);
+    for (let li = 0; li < logicalLines.length; li++) {
+        const visualLines = wrapRuns(logicalLines[li], boxWidth, ctx);
+        for (let vi = 0; vi < visualLines.length; vi++) {
+            const lastLine = (li === logicalLines.length - 1) && (vi === visualLines.length - 1);
+            ctx.save();
+            if (ownRotate) {
+                ctx.translate(centerX, centerY);
+                ctx.rotate(ownRotate);
+                ctx.translate(-centerX, -centerY);
+            }
+            const effectiveAlign = (lastLine && align === 'justify') ? 'left' : align;
+            drawWrappedLine(ctx, visualLines[vi], relLeft, boxWidth, effectiveAlign, y);
+            ctx.restore();
+            y += lineHeight;
+        }
+    }
+    ctx.restore();
+}
+
+// ============================================================================
+// ZIP WRITER (Stored, no compression, UTF-8 names)
+// ============================================================================
+
+var CRC_TABLE = (function() {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) {
+            c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        }
+        table[n] = c >>> 0;
+    }
+    return table;
+})();
+
+function crc32(bytes) {
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) {
+        crc = CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function dosDateTime(date) {
+    const year = Math.max(1980, date.getFullYear());
+    const time = (((date.getHours() << 11) | (date.getMinutes() << 5) | (date.getSeconds() >> 1)) & 0xFFFF);
+    const dateBits = ((((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()) & 0xFFFF);
+    return { time: time, date: dateBits };
+}
+
+function makeZip(files) {
+    const encoder = new TextEncoder();
+    const now = new Date();
+    const dt = dosDateTime(now);
+
+    const localParts = [];
+    const centralParts = [];
+    let offset = 0;
+
+    for (let f = 0; f < files.length; f++) {
+        const file = files[f];
+        const nameBytes = encoder.encode(file.name);
+        const data = file.data || new Uint8Array(0);
+        const crc = crc32(data);
+
+        const local = new DataView(new ArrayBuffer(30));
+        local.setUint32(0, 0x04034b50, true);
+        local.setUint16(4, 20, true);
+        local.setUint16(6, 0x0800, true);   // UTF-8 flag
+        local.setUint16(8, 0, true);        // stored
+        local.setUint16(10, dt.time, true);
+        local.setUint16(12, dt.date, true);
+        local.setUint32(14, crc, true);
+        local.setUint32(18, data.length, true);
+        local.setUint32(22, data.length, true);
+        local.setUint16(26, nameBytes.length, true);
+        local.setUint16(28, 0, true);
+        localParts.push(new Uint8Array(local.buffer), nameBytes, data);
+
+        const central = new DataView(new ArrayBuffer(46));
+        central.setUint32(0, 0x02014b50, true);
+        central.setUint16(4, 20, true);
+        central.setUint16(6, 20, true);
+        central.setUint16(8, 0x0800, true);
+        central.setUint16(10, 0, true);
+        central.setUint16(12, dt.time, true);
+        central.setUint16(14, dt.date, true);
+        central.setUint32(16, crc, true);
+        central.setUint32(20, data.length, true);
+        central.setUint32(24, data.length, true);
+        central.setUint16(28, nameBytes.length, true);
+        central.setUint16(30, 0, true);
+        central.setUint16(32, 0, true);
+        central.setUint16(34, 0, true);
+        central.setUint16(36, 0, true);
+        central.setUint32(38, 0, true);
+        central.setUint32(42, offset, true);
+        centralParts.push(new Uint8Array(central.buffer), nameBytes);
+
+        offset += 30 + nameBytes.length + data.length;
+    }
+
+    const centralStart = offset;
+    let centralSize = 0;
+    for (let i = 0; i < centralParts.length; i++) centralSize += centralParts[i].length;
+
+    const eocd = new DataView(new ArrayBuffer(22));
+    eocd.setUint32(0, 0x06054b50, true);
+    eocd.setUint16(4, 0, true);
+    eocd.setUint16(6, 0, true);
+    eocd.setUint16(8, files.length, true);
+    eocd.setUint16(10, files.length, true);
+    eocd.setUint32(12, centralSize, true);
+    eocd.setUint32(16, centralStart, true);
+    eocd.setUint16(20, 0, true);
+
+    const all = localParts.concat(centralParts);
+    let total = 22;
+    for (let i = 0; i < all.length; i++) total += all[i].length;
+
+    const out = new Uint8Array(total);
+    let pos = 0;
+    for (let i = 0; i < all.length; i++) {
+        out.set(all[i], pos);
+        pos += all[i].length;
+    }
+    out.set(new Uint8Array(eocd.buffer), pos);
+
+    return new Blob([out], { type: 'application/zip' });
+}
+
+// ============================================================================
+// EXPORT
+// ============================================================================
+
+export async function exportCanvasZip(filename) {
+    filename = filename || ('slide_export_' + Date.now() + '.zip');
+
+    // Render the whole canvas once, then crop from that snapshot so content
+    // overlapping section borders is split exactly as it appears.
+    const full = await renderFullCanvas();
+
+    const formats = [
+        { folder: '9-16 Stories', w: 1080, h: 1920 },
+        { folder: '3-4 Post', w: 1080, h: 1350 },
+        { folder: '1-1 Square', w: 1080, h: 1080 }
+    ];
+    const sections = Math.max(1, canvasState.sections || 1);
+
+    const files = [];
+    files.push({ name: 'fullsize.png', data: await canvasToBytes(full) });
+
+    for (let fmtIndex = 0; fmtIndex < formats.length; fmtIndex++) {
+        const fmt = formats[fmtIndex];
+        files.push({ name: fmt.folder + '/', data: new Uint8Array(0) });
+        for (let s = 0; s < sections; s++) {
+            const crop = document.createElement('canvas');
+            crop.width = fmt.w;
+            crop.height = fmt.h;
+            const cctx = crop.getContext('2d');
+            const sx = s * 1080;
+            const sy = (1920 - fmt.h) / 2; // centered crop within each 1080x1920 section
+            cctx.drawImage(full, sx, sy, 1080, fmt.h, 0, 0, fmt.w, fmt.h);
+            files.push({ name: fmt.folder + '/slide_' + (s + 1) + '.png', data: await canvasToBytes(crop) });
+        }
+    }
+
+    const zip = makeZip(files);
+    downloadBlob(zip, filename);
+    console.log('Exported ZIP with', files.length, 'entries:', filename);
+    return { sections: sections, files: files.length, filename: filename };
 }
 
 // Backup: download JSON of current state (includes image src data URLs when available)
