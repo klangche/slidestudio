@@ -1,4 +1,6 @@
 // Mathematically Correct Image Transform System
+import { layerState } from './state.js';
+
 (function(window){
     if (!window) return;
 
@@ -872,8 +874,8 @@
     window.SSImage.setupImageResizeHandlers = function(element) {
         if (!element) return;
         
-        const layer = window.layerState && window.layerState.layers ? 
-            window.layerState.layers.find(l => l.element === element) : null;
+const layer = layerState && layerState.layers ?
+    layerState.layers.find(l => l.element === element) : null;
         const existing = findImageByDomId(element.id);
         
         if (!existing) createImageFromLayer(element, layer);

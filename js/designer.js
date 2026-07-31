@@ -1,4 +1,6 @@
 // Designer Canvas Implementation - FIXED VERSION
+import { layerState } from './state.js';
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeDesignerWorkspace();
 });
@@ -31,16 +33,6 @@ let magnetState = {
 let zoomState = {
     isOver50Percent: false
 };
-
-// Layer management
-let layerState = {
-    layers: [],
-    selectedLayer: null,
-    nextZIndex: 10,
-    maxLayers: 1000
-};
-// Expose layerState globally so other modules can access it
-window.layerState = layerState;
 
 // Undo/Redo state
 let historyState = {
@@ -1401,6 +1393,9 @@ function saveState() {
     }
 }
 
+// Expose saveState globally so other modules can call it
+window.saveState = saveState;
+
 function undo() {
     if (historyState.undoStack.length < 2) return;
     
@@ -1895,7 +1890,7 @@ function restoreTextLayer(layerData) {
     
     makeElementDraggable(textElement);
     makeElementSelectable(textElement);
-    if (window.SSText && typeof SSText.setupTextResizeHandlers === 'function') SSText.setupTextResizeHandlers(textElement); else setupTextResizeHandlers(textElement);
+    if (window.SSText && typeof SSText.setupTextResizeHandlers === 'function') SSText.setupTextResizeHandlers(textElement); else if (typeof setupTextResizeHandlers === 'function') setupTextResizeHandlers(textElement);
     setupRotationHandler(textElement);
     
     // Update nextZIndex if needed
