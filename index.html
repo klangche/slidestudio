@@ -103,10 +103,17 @@
         .ss-canvas-container {
             flex: 1;
             display: flex;
-            align-items: center;
-            justify-content: center;
             overflow: auto;
             padding: 20px;
+        }
+        
+        /* Sized wrapper around the scaled canvas so the scroll area matches
+           the visible (scaled) canvas size. margin:auto centers it when it
+           fits and still lets scrolling reach every edge when it overflows. */
+        .ss-canvas-scroll {
+            margin: auto;
+            position: relative;
+            flex: 0 0 auto;
         }
         
         .ss-canvas {
@@ -123,9 +130,10 @@
             background-color: #ffffff;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             border: 1px solid var(--ss-border-color);
-            position: relative;
-            transform-origin: center center;
-            transition: transform 0.3s ease;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
         }
 
         /* Zoom value display */

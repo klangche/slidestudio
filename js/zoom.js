@@ -1,5 +1,5 @@
 // Zoom functionality: slider, wheel, pinch gestures and canvas scaling.
-import { canvasState, freeMoveState } from './state.js';
+import { canvasState } from './state.js';
 
 let zoomState = {
     isOver50Percent: false
@@ -66,7 +66,8 @@ function setupSliderInteraction(sliderThumb, sliderFill, slider, initialZoom) {
         let position = (clientX - sliderRect.left) / sliderRect.width;
         position = Math.max(0, Math.min(1, position));
         currentZoom = position;
-        updateZoomVisuals(currentZoom);
+        sliderThumb.style.left = (position * 100) + '%';
+        sliderFill.style.width = (position * 100) + '%';
         updateCanvasZoom();
     }
     
@@ -75,7 +76,8 @@ function setupSliderInteraction(sliderThumb, sliderFill, slider, initialZoom) {
         let position = (e.clientX - sliderRect.left) / sliderRect.width;
         position = Math.max(0, Math.min(1, position));
         currentZoom = position;
-        updateZoomVisuals(currentZoom);
+        sliderThumb.style.left = (position * 100) + '%';
+        sliderFill.style.width = (position * 100) + '%';
         updateCanvasZoom();
     });
     
@@ -88,32 +90,38 @@ function setupSliderInteraction(sliderThumb, sliderFill, slider, initialZoom) {
 }
 
 function setupSliderTicks(slider, currentZoom) {
+    const sliderThumb = document.getElementById('ss-sliderThumb');
+    const sliderFill = document.getElementById('ss-sliderFill');
     const ticks = slider.querySelectorAll('.ss-tick');
     ticks.forEach(function(tick, index) {
         tick.addEventListener('click', function(e) {
             e.stopPropagation();
-            const zoomLevel = index / (ticks.length - 1);
-            updateZoomVisuals(zoomLevel);
+            const position = index / (ticks.length - 1);
+            if (sliderThumb) sliderThumb.style.left = (position * 100) + '%';
+            if (sliderFill) sliderFill.style.width = (position * 100) + '%';
             updateCanvasZoom();
         });
     });
 }
 
-function updateZoomVisuals(zoomLevel) {
+function updateZoomVisuals(scale) {
     const sliderThumb = document.getElementById('ss-sliderThumb');
     const sliderFill = document.getElementById('ss-sliderFill');
     const zoomValue = document.getElementById('ss-zoomValue');
     
     if (!sliderThumb || !sliderFill) return;
     
-    const thumbPosition = zoomLevel * 100;
+    // The slider track maps the 0.05..0.5 scale range; values above 0.5
+    // (reachable via wheel) saturate the thumb at the right end.
+    const minScale = 0.05;
+    const maxScale = 0.5;
+    const sliderPosition = Math.max(0, Math.min(1, (scale - minScale) / (maxScale - minScale)));
+    const thumbPosition = sliderPosition * 100;
     sliderThumb.style.left = thumbPosition + '%';
     sliderFill.style.width = thumbPosition + '%';
     
     if (zoomValue) {
-        const minScale = 0.05;
-        const maxScale = 0.5;
-        const displayValue = Math.round((minScale + (zoomLevel * (maxScale - minScale))) * 100);
+        const displayValue = Math.round(scale * 100);
         zoomValue.textContent = displayValue + '%';
         
         const isOver50 = displayValue > 50;
@@ -132,20 +140,89 @@ function updateZoomVisuals(zoomLevel) {
     }
 }
 
-function updateCanvasZoom() {
+function getCanvasScale() {
     const designerCanvas = document.getElementById('ss-designer-canvas');
-    const sliderThumb = document.getElementById('ss-sliderThumb');
+    if (!designerCanvas) return 1;
+    const m = /scale\(([^)]+)\)/.exec(designerCanvas.style.transform || '');
+    return m ? parseFloat(m[1]) : 1;
+}
+
+// Keep the designer canvas at its layout size and let the wrapper (ss-canvasScroll)
+// define the scrollable area as the *scaled* canvas size, so scrolling and edge
+// clamping always match the visible canvas edges.
+function updateCanvasTransform(scale) {
+    const designerCanvas = document.getElementById('ss-designer-canvas');
+    const scrollWrapper = document.getElementById('ss-canvasScroll');
+    if (!designerCanvas) return;
+    const W = canvasState.width;
+    const H = canvasState.height;
+    designerCanvas.style.width = W + 'px';
+    designerCanvas.style.height = H + 'px';
+    designerCanvas.style.transform = 'scale(' + scale + ')';
+    if (scrollWrapper) {
+        scrollWrapper.style.width = (W * scale) + 'px';
+        scrollWrapper.style.height = (H * scale) + 'px';
+    }
+}
+
+// Anchor point is in viewport coordinates relative to the container
+// (0..rect.width, 0..rect.height). Zoom is always centered vertically:
+// after a scale change the canvas is re-centered on the viewport, so its
+// vertical middle never drifts. The horizontal axis follows the pointer
+// when anchorX is provided, otherwise it is centered too. The browser
+// clamps all scroll positions so canvas edges can never leave the view.
+function applyScale(scale, anchorX) {
+    const canvasContainer = document.getElementById('ss-canvasContainer');
+    const currentScale = getCanvasScale();
+    if (!canvasContainer) {
+        updateCanvasTransform(scale);
+        return;
+    }
     
-    if (!designerCanvas || !sliderThumb) return;
+    const rect = canvasContainer.getBoundingClientRect();
+    const ax = anchorX !== undefined ? anchorX : rect.width / 2;
+    
+    if (currentScale > 0 && currentScale !== scale) {
+        const factor = scale / currentScale;
+        const px = ax + canvasContainer.scrollLeft;
+        updateCanvasTransform(scale);
+        if (anchorX !== undefined) {
+            // Keep the canvas point under the pointer horizontally fixed
+            canvasContainer.scrollLeft = px * factor - ax;
+        } else {
+            centerCanvasHorizontal();
+        }
+    } else {
+        updateCanvasTransform(scale);
+        centerCanvasHorizontal();
+    }
+    
+    centerCanvasVertical();
+}
+
+function centerCanvasHorizontal() {
+    const canvasContainer = document.getElementById('ss-canvasContainer');
+    if (!canvasContainer) return;
+    canvasContainer.scrollLeft = (canvasContainer.scrollWidth - canvasContainer.clientWidth) / 2;
+}
+
+function centerCanvasVertical() {
+    const canvasContainer = document.getElementById('ss-canvasContainer');
+    if (!canvasContainer) return;
+    canvasContainer.scrollTop = (canvasContainer.scrollHeight - canvasContainer.clientHeight) / 2;
+}
+
+function updateCanvasZoom() {
+    const sliderThumb = document.getElementById('ss-sliderThumb');
+    if (!sliderThumb) return;
     
     const thumbPosition = parseFloat(sliderThumb.style.left) / 100;
     const minScale = 0.05;
     const maxScale = 0.5;
     const scale = minScale + (thumbPosition * (maxScale - minScale));
     
-    designerCanvas.style.transform = 'scale(' + scale + ')';
-    designerCanvas.style.width = canvasState.width + 'px';
-    designerCanvas.style.height = canvasState.height + 'px';
+    applyScale(scale);
+    updateZoomVisuals(scale);
 }
 
 export function setInitialZoom() {
@@ -175,14 +252,13 @@ export function setInitialZoom() {
     const scaleY = availableHeight / canvasHeight;
     const initialScale = Math.min(scaleX, scaleY);
     const clampedScale = Math.max(0.05, Math.min(initialScale, 0.5));
-    const minScale = 0.05;
-    const maxScale = 0.5;
-    const sliderPosition = (clampedScale - minScale) / (maxScale - minScale);
     
-    updateZoomVisuals(sliderPosition);
-    designerCanvas.style.transform = 'scale(' + clampedScale + ')';
+    updateZoomVisuals(clampedScale);
+    updateCanvasTransform(clampedScale);
+    canvasContainer.scrollLeft = 0;
+    canvasContainer.scrollTop = 0;
     
-    console.log('Initial zoom set to:', clampedScale, 'slider position:', sliderPosition);
+    console.log('Initial zoom set to:', clampedScale);
 }
 
 function initializeGestureZoom() {
@@ -264,35 +340,25 @@ function getTouchDistance(touches) {
 }
 
 function getCurrentZoomLevel() {
-    const sliderThumb = document.getElementById('ss-sliderThumb');
-    if (!sliderThumb) return 0.5;
-    const thumbPosition = parseFloat(sliderThumb.style.left) / 100;
-    return isNaN(thumbPosition) ? 0.5 : thumbPosition;
+    return getCanvasScale();
 }
 
 export function setZoomLevel(zoomLevel, mouseX, mouseY) {
     const canvasContainer = document.getElementById('ss-canvasContainer');
-    const designerCanvas = document.getElementById('ss-designer-canvas');
-    
-    if (!canvasContainer || !designerCanvas) return;
+    if (!canvasContainer) return;
     
     zoomLevel = Math.max(0.05, Math.min(1, zoomLevel));
     
-    // If we have mouse coordinates and free move is active, zoom to that point
-    if (freeMoveState.active && mouseX !== undefined && mouseY !== undefined) {
-        const rect = canvasContainer.getBoundingClientRect();
-        const scrollX = mouseX - rect.left + canvasContainer.scrollLeft;
-        const scrollY = mouseY - rect.top + canvasContainer.scrollTop;
-        
-        const currentScale = parseFloat(designerCanvas.style.transform.replace('scale(', '').replace(')', '')) || 1;
-        const scaleFactor = zoomLevel / currentScale;
-        
-        canvasContainer.scrollLeft = scrollX * scaleFactor - (mouseX - rect.left);
-        canvasContainer.scrollTop = scrollY * scaleFactor - (mouseY - rect.top);
+    const rect = canvasContainer.getBoundingClientRect();
+    let anchorX;
+    if (mouseX !== undefined && mouseY !== undefined) {
+        // Horizontal zoom anchor follows the pointer
+        anchorX = mouseX - rect.left;
     }
+    // Vertical zoom anchor is always the vertical center of the canvas/viewport
+    applyScale(zoomLevel, anchorX);
     
     updateZoomVisuals(zoomLevel);
-    designerCanvas.style.transform = 'scale(' + zoomLevel + ')';
 }
 
 function adjustZoomLevel(delta) {

@@ -27,7 +27,6 @@ function initializeDesignerWorkspace() {
     
     workspacePlaceholder.style.display = 'none';
     canvasContainer.style.display = 'flex';
-    canvasContainer.style.overflow = 'hidden';
     
     createDesignerCanvas();
     initializeZoomFunctionality();
@@ -75,6 +74,12 @@ function createDesignerCanvas() {
         existingCanvas.remove();
     }
     
+    const scrollWrapper = document.createElement('div');
+    scrollWrapper.id = 'ss-canvasScroll';
+    scrollWrapper.className = 'ss-canvas-scroll';
+    scrollWrapper.style.width = canvasState.width + 'px';
+    scrollWrapper.style.height = canvasState.height + 'px';
+    
     const designerCanvas = document.createElement('div');
     designerCanvas.id = 'ss-designer-canvas';
     designerCanvas.className = 'ss-designer-canvas';
@@ -84,13 +89,15 @@ function createDesignerCanvas() {
     designerCanvas.style.backgroundColor = '#ffffff';
     designerCanvas.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
     designerCanvas.style.border = '1px solid var(--ss-border-color)';
-    designerCanvas.style.position = 'relative';
-    designerCanvas.style.transformOrigin = 'center center';
-    designerCanvas.style.flexShrink = '0';
+    designerCanvas.style.position = 'absolute';
+    designerCanvas.style.top = '0';
+    designerCanvas.style.left = '0';
+    designerCanvas.style.transformOrigin = 'top left';
     designerCanvas.style.zIndex = '1';
     designerCanvas.style.overflow = 'hidden';
     
-    canvasContainer.appendChild(designerCanvas);
+    canvasContainer.appendChild(scrollWrapper);
+    scrollWrapper.appendChild(designerCanvas);
     console.log('Designer canvas created with dimensions:', canvasState.width, 'x', canvasState.height);
     // If other modules were waiting for canvas, notify via event
     document.dispatchEvent(new CustomEvent('ss-designer-canvas-ready'));

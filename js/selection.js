@@ -142,6 +142,7 @@ function handleDragEnd(e) {
 
 export function makeElementDraggable(element) {
     element.addEventListener('pointerdown', function(e) {
+        if (freeMoveState.active) return;
         if (e.target.classList && (e.target.classList.contains('ss-resize-handle') || e.target.classList.contains('ss-rotation-handle') || (e.target.parentElement && e.target.parentElement.classList.contains('ss-resize-handles')))) {
             return;
         }
@@ -189,6 +190,7 @@ export function makeElementDraggable(element) {
 
 export function makeElementSelectable(element) {
     element.addEventListener('click', function(e) {
+        if (freeMoveState.active) return;
         if (e.target.classList && (e.target.classList.contains('ss-resize-handle') || e.target.classList.contains('ss-rotation-handle') || (e.target.parentElement && e.target.parentElement.classList && e.target.parentElement.classList.contains('ss-resize-handles')))) {
             return;
         }
@@ -412,6 +414,8 @@ export function toggleGroupSelected() {
 window.toggleGroupSelected = toggleGroupSelected;
 
 // Free Move functionality
+let freeMoveAutoOffTimer = null;
+
 function applyFreeMoveUI(active) {
     const freeMoveBtn = document.getElementById('ss-freeMoveBtn');
     const canvasContainer = document.getElementById('ss-canvasContainer');
@@ -422,32 +426,50 @@ function applyFreeMoveUI(active) {
     }
 }
 
-export function enableFreeMove() {
+function clearFreeMoveAutoOffTimer() {
+    if (freeMoveAutoOffTimer !== null) {
+        clearTimeout(freeMoveAutoOffTimer);
+        freeMoveAutoOffTimer = null;
+    }
+}
+
+// Free move started from the button auto-deactivates after 5 seconds unless
+// the canvas is actually panned (the first pan cancels the timer). Space-based
+// free move has no timer; it ends when the key is released.
+function scheduleFreeMoveAutoOff() {
+    clearFreeMoveAutoOffTimer();
+    freeMoveAutoOffTimer = setTimeout(function() {
+        freeMoveAutoOffTimer = null;
+        if (freeMoveState.active) disableFreeMove();
+    }, 5000);
+}
+
+export function enableFreeMove(source) {
     if (freeMoveState.active) return;
     const canvasContainer = document.getElementById('ss-canvasContainer');
     if (!canvasContainer) return;
     freeMoveState.active = true;
-    canvasContainer.addEventListener('mousedown', startFreeMove);
-    document.addEventListener('mouseup', stopFreeMove);
     applyFreeMoveUI(true);
+    if (source !== 'space') scheduleFreeMoveAutoOff();
 }
 
 export function disableFreeMove() {
+    clearFreeMoveAutoOffTimer();
     if (!freeMoveState.active) return;
+    freeMoveState.active = false;
+    freeMoveState.isMoving = false;
+    document.removeEventListener('mousemove', doFreeMove);
     const canvasContainer = document.getElementById('ss-canvasContainer');
     if (canvasContainer) {
-        canvasContainer.removeEventListener('mousedown', startFreeMove);
         canvasContainer.style.cursor = '';
         canvasContainer.classList.remove('ss-free-move-active');
     }
-    document.removeEventListener('mouseup', stopFreeMove);
-    freeMoveState.active = false;
     const freeMoveBtn = document.getElementById('ss-freeMoveBtn');
     if (freeMoveBtn) freeMoveBtn.classList.remove('ss-active');
 }
 
 export function toggleFreeMove() {
-    if (freeMoveState.active) disableFreeMove(); else enableFreeMove();
+    if (freeMoveState.active) disableFreeMove(); else enableFreeMove('button');
 }
 
 function startFreeMove(e) {
@@ -470,6 +492,9 @@ function startFreeMove(e) {
 function doFreeMove(e) {
     if (!freeMoveState.active || !freeMoveState.isMoving) return;
     
+    // The canvas was actually moved, so keep free move on
+    clearFreeMoveAutoOffTimer();
+    
     const canvasContainer = document.getElementById('ss-canvasContainer');
     if (!canvasContainer) return;
     
@@ -481,15 +506,13 @@ function doFreeMove(e) {
 }
 
 function stopFreeMove() {
-    if (!freeMoveState.active) return;
-    
-    const canvasContainer = document.getElementById('ss-canvasContainer');
-    if (canvasContainer) {
-        canvasContainer.style.cursor = 'grab';
-    }
-    
+    if (!freeMoveState.isMoving) return;
     freeMoveState.isMoving = false;
     document.removeEventListener('mousemove', doFreeMove);
+    const canvasContainer = document.getElementById('ss-canvasContainer');
+    if (canvasContainer && freeMoveState.active) {
+        canvasContainer.style.cursor = 'grab';
+    }
 }
 
 // ============================================================================
@@ -528,7 +551,7 @@ export function initializeFreeMoveShortcuts() {
         if (e.target.tagName === 'BUTTON') return; // let space activate buttons
         if (!freeMoveState.active && !hasSelection()) {
             e.preventDefault();
-            enableFreeMove();
+            enableFreeMove('space');
             spacePanActive = true;
         } else if (!isTypingTarget(e.target)) {
             e.preventDefault(); // stop page/container scroll while space is held
@@ -561,6 +584,37 @@ export function initializeFreeMoveShortcuts() {
         }, true);
 
         document.addEventListener('mouseup', onMiddlePanUp);
+
+        // Capture-phase gate: while free move is on, swallow every pointer/mouse/
+        // touch/click event aimed at the canvas so no object can be dragged,
+        // resized, selected or edited. Panning is handled in the mousedown gate
+        // (the compatibility mousedown still fires because pointerdown is only
+        // stopped, not prevented, for mouse pointers).
+        ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function(type) {
+            canvasContainer.addEventListener(type, function(e) {
+                if (!freeMoveState.active) return;
+                if (type !== 'touchstart' && e.button !== 0) return;
+                e.stopPropagation();
+                if (type === 'pointerdown') {
+                    if (e.pointerType === 'touch') e.preventDefault();
+                    return; // let the following mousedown start the pan
+                }
+                if (type === 'touchstart') {
+                    e.preventDefault();
+                    return;
+                }
+                if (type === 'click') {
+                    e.preventDefault();
+                    return;
+                }
+                e.preventDefault();
+                startFreeMove(e);
+            }, true);
+        });
+
+        document.addEventListener('mouseup', function(e) {
+            if (freeMoveState.active) stopFreeMove();
+        });
     }
 }
 

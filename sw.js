@@ -1,4 +1,4 @@
-const CACHE_NAME = 'slidestudio-v2.3';
+const CACHE_NAME = 'slidestudio-v2.6';
 const urlsToCache = [
   '/',
   '/index.html',
