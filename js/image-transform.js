@@ -235,10 +235,10 @@ import { snapBox, snapReset } from './guidance.js';
             ctx.shadowBlur = 0;
             ctx.filter = 'none';
 
-            // Locked images get a red border hugging the inside edge of the
-            // image. Thickness is counter-scaled by the image scale and the
-            // CSS zoom so it is always 15px on screen, regardless of zoom.
-            if (img.locked) {
+            // Locked selected images get a red border hugging the inside edge of
+            // the image. Thickness is counter-scaled by the image scale and the
+            // CSS zoom so it is always 10.5px on screen, regardless of zoom.
+            if (img.locked && state.selectedImageId === img.id) {
                 const designerCanvas = document.getElementById('ss-designer-canvas');
                 let zoom = 1;
                 if (designerCanvas && designerCanvas.style.transform && designerCanvas.style.transform.includes('scale(')) {
@@ -248,9 +248,9 @@ import { snapBox, snapReset } from './guidance.js';
                         if (!isNaN(parsed) && parsed > 0) zoom = parsed;
                     }
                 }
-                const lockWidth = 15 / (img.scale * zoom);
+                const lockWidth = 10.5 / (img.scale * zoom);
                 const r = img.visibleRect;
-                ctx.strokeStyle = state.selectedImageId === img.id ? 'rgba(231, 76, 60, 0.85)' : 'rgba(231, 76, 60, 0.45)';
+                ctx.strokeStyle = 'rgba(231, 76, 60, 0.85)';
                 ctx.lineWidth = lockWidth;
                 ctx.strokeRect(r.x + lockWidth / 2, r.y + lockWidth / 2, r.width - lockWidth, r.height - lockWidth);
             }
