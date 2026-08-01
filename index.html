@@ -103,10 +103,17 @@
         .ss-canvas-container {
             flex: 1;
             display: flex;
-            align-items: center;
-            justify-content: center;
             overflow: auto;
             padding: 20px;
+        }
+        
+        /* Sized wrapper around the scaled canvas so the scroll area matches
+           the visible (scaled) canvas size. margin:auto centers it when it
+           fits and still lets scrolling reach every edge when it overflows. */
+        .ss-canvas-scroll {
+            margin: auto;
+            position: relative;
+            flex: 0 0 auto;
         }
         
         .ss-canvas {
@@ -123,9 +130,10 @@
             background-color: #ffffff;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             border: 1px solid var(--ss-border-color);
-            position: relative;
-            transform-origin: center center;
-            transition: transform 0.3s ease;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
         }
 
         /* Zoom value display */
@@ -474,12 +482,8 @@
                             <!-- Guidance Controls moved to Slide Management -->
                             <div class="ss-guidance-controls-buttons">
                                 <button class="ss-guidance-button" id="ss-guidanceBtn">SoMe Guides</button>
-                                <button class="ss-magnet-button" id="ss-magnetBtn" title="Snap to edges">
-                                    <svg class="ss-magnet-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <line x1="12" y1="8" x2="12" y2="16"/>
-                                        <line x1="8" y1="12" x2="16" y2="12"/>
-                                    </svg>
+                                <button class="ss-magnet-button" id="ss-magnetBtn" title="Snap">
+                                    snap!
                                 </button>
                             </div>
                             
@@ -647,7 +651,7 @@
                 <!-- Export button (moved from header) -->
                 <div class="ss-sidebar-section">
                     <div class="ss-sidebar-export" style="display:flex; justify-content:center; padding:8px 12px;">
-                        <button class="ss-export-button" id="ss-exportBtn" disabled>
+                        <button class="ss-export-button" id="ss-exportBtn">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                 <polyline points="7 10 12 15 17 10"/>
@@ -885,12 +889,7 @@
                 </div>
             </div>
 
-    <script src="slidestudio.js"></script>
-    <script src="designer.js"></script>
-    <script src="text-editor.js"></script>
-
-    <script src="image-transform.js"></script>
-    <script src="backupexport.js"></script>
+    <script type="module" src="js/main.js"></script>
     <script>
 // Register Service Worker
 if ('serviceWorker' in navigator) {

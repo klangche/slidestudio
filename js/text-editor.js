@@ -1,3 +1,5 @@
+import { layerState } from './state.js';
+
 (function(){
     let popup, overlay, modalContent, closeBtn, canvas, viewport;
     let lastActiveElement = null;
@@ -435,16 +437,16 @@
                 textBox.style.width = newWidth + 'px';
                 textBox.style.height = newHeight + 'px';
                 // Update layerState if present
-                if (window.layerState && Array.isArray(window.layerState.layers)) {
-                    const layerIndex = window.layerState.layers.findIndex(l => l.element === textBox);
+                if (layerState && Array.isArray(layerState.layers)) {
+                    const layerIndex = layerState.layers.findIndex(l => l.element === textBox);
                     if (layerIndex !== -1) {
-                        const layer = window.layerState.layers[layerIndex];
+                        const layer = layerState.layers[layerIndex];
                         layer.textContent = htmlContent;
                         layer.size = layer.size || {};
                         layer.size.width = newWidth;
                         layer.size.height = newHeight;
                         layer.fontSize = parseInt(computedStyle.fontSize) || layer.fontSize;
-                        window.layerState.layers[layerIndex] = layer;
+                        layerState.layers[layerIndex] = layer;
                     }
                 }
             } catch (err) {
@@ -1410,16 +1412,16 @@
         });
         
         // Add to layer state if available
-        if (typeof window.layerState !== 'undefined' && window.layerState) {
+        if (typeof layerState !== 'undefined' && layerState) {
             const layerId = 'text-' + Date.now();
             textBox.id = layerId;
             
             // Use z-index higher than image canvas (which is at 100)
             // Start text boxes at 200 to be above images
-            if (!window.layerState.nextZIndex || window.layerState.nextZIndex < 200) {
-                window.layerState.nextZIndex = 200;
+            if (!layerState.nextZIndex || layerState.nextZIndex < 200) {
+                layerState.nextZIndex = 200;
             }
-            const nextZIndex = window.layerState.nextZIndex++;
+            const nextZIndex = layerState.nextZIndex++;
             textBox.style.zIndex = String(nextZIndex);
             
             console.log('Creating text box:', layerId, 'with z-index:', nextZIndex);
@@ -1448,8 +1450,8 @@
                 }
             };
             
-            window.layerState.layers.push(layer);
-            console.log('Layer added to state. Total layers:', window.layerState.layers.length);
+            layerState.layers.push(layer);
+            console.log('Layer added to state. Total layers:', layerState.layers.length);
             
             // Make it draggable and selectable using global functions
             if (typeof window.makeElementDraggable === 'function') {
@@ -1549,14 +1551,14 @@
         textBox.style.height = newHeight + 'px';
         
         // Update layer state
-        if (typeof window.layerState !== 'undefined' && window.layerState) {
-            const layerIndex = window.layerState.layers.findIndex(l => l.element === textBox);
+        if (typeof layerState !== 'undefined' && layerState) {
+            const layerIndex = layerState.layers.findIndex(l => l.element === textBox);
             if (layerIndex !== -1) {
-                window.layerState.layers[layerIndex].textContent = htmlContent;
-                window.layerState.layers[layerIndex].size.width = newWidth;
-                window.layerState.layers[layerIndex].size.height = newHeight;
-                window.layerState.layers[layerIndex].fontSize = parseInt(computedStyle.fontSize) || 64;
-                window.layerState.layers[layerIndex].style = {
+                layerState.layers[layerIndex].textContent = htmlContent;
+                layerState.layers[layerIndex].size.width = newWidth;
+                layerState.layers[layerIndex].size.height = newHeight;
+                layerState.layers[layerIndex].fontSize = parseInt(computedStyle.fontSize) || 64;
+                layerState.layers[layerIndex].style = {
                     fontFamily: computedStyle.fontFamily,
                     color: computedStyle.color,
                     fontWeight: computedStyle.fontWeight,

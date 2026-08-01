@@ -1,7 +1,8 @@
 .ss-slide-animating-note { /* placeholder to anchor patch */ }
 
-/* Smooth slide add/remove animations for canvas */
-#ss-canvasContainer .ss-designer-canvas {
+/* Smooth slide add/remove animations for canvas (only during the animation so
+   zooming does not lag behind scroll anchoring) */
+#ss-canvasContainer.ss-slide-animating .ss-designer-canvas {
     transition: width 300ms ease, transform 300ms ease, opacity 300ms ease;
 }
 
@@ -1768,7 +1769,10 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 
 /* Locked image visual indicator */
 .ss-image-element.ss-locked {
-    box-shadow: inset 0 0 0 2px rgba(231,76,60,0.12);
+    box-shadow: inset 0 0 0 2px rgba(231,76,60,0.35);
+}
+.ss-image-element.ss-locked.selected {
+    box-shadow: inset 0 0 0 3px #e74c3c;
 }
 
 /* Polaroid frame styles */
@@ -2009,6 +2013,13 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 
 .ss-free-move-active:active {
     cursor: grabbing;
+}
+
+/* While free move is on, objects on the canvas must not be draggable,
+   selectable or resizable. All pointer events fall through to the
+   container so it can pan instead. */
+.ss-free-move-active .ss-designer-canvas {
+    pointer-events: none;
 }
 
 /* Media query adjustments */
