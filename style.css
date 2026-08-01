@@ -1767,12 +1767,22 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     overflow: visible !important; /* Changed from hidden to visible */
 }
 
-/* Locked image visual indicator */
-.ss-image-element.ss-locked {
-    box-shadow: inset 0 0 0 2px rgba(231,76,60,0.35);
+/* Locked image visual indicator: a constant screen-thickness red ring hugging
+   the inside edge. --ss-zoom (set on #ss-designer-canvas) counter-scales the
+   thickness so every locked object shows the same 15px ring at any zoom. */
+.ss-image-element.ss-locked::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 calc(15px / var(--ss-zoom, 1)) rgba(231, 76, 60, 0.45);
+    z-index: 2;
 }
-.ss-image-element.ss-locked.selected {
-    box-shadow: inset 0 0 0 3px #e74c3c;
+.ss-image-element.ss-locked.selected::after {
+    box-shadow: inset 0 0 0 calc(15px / var(--ss-zoom, 1)) rgba(231, 76, 60, 0.85);
 }
 
 /* Polaroid frame styles */

@@ -53,6 +53,9 @@ export function saveState() {
         if (layer.type === 'text') {
             layerCopy.textContent = layer.element.textContent || 'Text';
             layerCopy.fontSize = parseFloat(layer.element.style.fontSize) || layer.fontSize || 24;
+            layerCopy.transform = layer.element.style.transform;
+            const rotMatch = /rotate\(([-.\d]+)deg\)/.exec(layer.element.style.transform || '');
+            if (rotMatch) layerCopy.rotation = parseFloat(rotMatch[1]);
             layerCopy.style = {
                 fontFamily: layer.element.style.fontFamily || 'Arial',
                 fontSize: layer.element.style.fontSize || '24px',

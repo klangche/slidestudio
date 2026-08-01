@@ -1,7 +1,7 @@
 // Selection, dragging, multi-select, grouping and free-move behavior.
 import { layerState, magnetState, freeMoveState } from './state.js';
 import { saveState } from './history.js';
-import { snapToGuidelines } from './guidance.js';
+import { snapElementAt, snapReset } from './guidance.js';
 import { getResizeHandlesForElement } from './ui-helpers.js';
 
 // Simple drag state
@@ -40,9 +40,7 @@ function handleDragMove(e) {
     let newX = dragState.elementStartX + (deltaX / canvasScale);
     let newY = dragState.elementStartY + (deltaY / canvasScale);
     if (magnetState.active) {
-        const elementWidth = dragState.dragElement.offsetWidth;
-        const elementHeight = dragState.dragElement.offsetHeight;
-        const snapped = snapToGuidelines(newX, newY, elementWidth, elementHeight);
+        const snapped = snapElementAt(newX, newY, dragState.dragElement);
         newX = snapped.x;
         newY = snapped.y;
     }
@@ -111,9 +109,7 @@ function handleDragEnd(e) {
         const element = dragState.dragElement;
         const currentX = parseInt(element.style.left) || 0;
         const currentY = parseInt(element.style.top) || 0;
-        const elementWidth = element.offsetWidth;
-        const elementHeight = element.offsetHeight;
-        const snapped = snapToGuidelines(currentX, currentY, elementWidth, elementHeight);
+        const snapped = snapElementAt(currentX, currentY, element);
         element.style.left = snapped.x + 'px';
         element.style.top = snapped.y + 'px';
         const layerIndex = layerState.layers.findIndex(function(layer) { return layer.element === element; });
@@ -130,6 +126,7 @@ function handleDragEnd(e) {
     }
     dragState.isDragging = false;
     dragState.dragElement = null;
+    snapReset();
     // Remove both pointer and mouse listeners (fallback)
     document.removeEventListener('pointermove', handleDragMove);
     document.removeEventListener('pointerup', handleDragEnd);
@@ -172,6 +169,7 @@ export function makeElementDraggable(element) {
         dragState.startY = e.clientY;
         dragState.elementStartX = parseInt(actualDragElement.style.left) || 0;
         dragState.elementStartY = parseInt(actualDragElement.style.top) || 0;
+        snapReset();
 
         element.style.cursor = 'grabbing';
         element.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';

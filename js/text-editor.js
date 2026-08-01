@@ -1467,6 +1467,16 @@ import { layerState } from './state.js';
                 console.error('makeElementSelectable not found');
             }
             
+            // Give text boxes the same on-canvas handles as images: resize and rotate
+            if (window.SSText && typeof window.SSText.setupTextResizeHandlers === 'function') {
+                window.SSText.setupTextResizeHandlers(textBox);
+            } else if (typeof window.setupTextResizeHandlers === 'function') {
+                window.setupTextResizeHandlers(textBox);
+            }
+            if (typeof window.setupRotationHandler === 'function') {
+                window.setupRotationHandler(textBox);
+            }
+            
             // Verify element is clickable
             setTimeout(() => {
                 const computed = window.getComputedStyle(textBox);

@@ -1,6 +1,6 @@
 // Arrow-key movement of the selected layer.
 import { layerState, canvasState, magnetState } from './state.js';
-import { snapToGuidelines } from './guidance.js';
+import { snapElementAt, snapReset } from './guidance.js';
 import { saveState } from './history.js';
 
 // Keyboard movement state
@@ -48,15 +48,16 @@ function moveSelectedLayerWithKeyboard(key) {
     const elementRect = element.getBoundingClientRect();
     const minX = 0;
     const minY = 0;
-    const maxX = canvasState.width - elementRect.width;
-    const maxY = canvasState.height - elementRect.height;
+    const maxX = canvasState.width - element.offsetWidth;
+    const maxY = canvasState.height - element.offsetHeight;
     
     newLeft = Math.max(minX, Math.min(maxX, newLeft));
     newTop = Math.max(minY, Math.min(maxY, newTop));
     
     // Always apply magnet snapping when active
     if (magnetState.active) {
-        const snapped = snapToGuidelines(newLeft, newTop, elementRect.width, elementRect.height);
+        snapReset();
+        const snapped = snapElementAt(newLeft, newTop, element);
         newLeft = snapped.x;
         newTop = snapped.y;
     }
