@@ -1,5 +1,6 @@
 // Mathematically Correct Image Transform System
-import { layerState } from './state.js';
+import { layerState, magnetState } from './state.js';
+import { snapBox, snapReset } from './guidance.js';
 
 (function(window){
     if (!window) return;
@@ -69,6 +70,23 @@ import { layerState } from './state.js';
         const dx = p2.x - p1.x;
         const dy = p2.y - p1.y;
         return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // World-space axis-aligned bounding box of an image's visible (cropped) stage.
+    function getImageAABB(img) {
+        if (!img || !img.visibleRect) return { left: 0, top: 0, width: 0, height: 0 };
+        const r = img.visibleRect;
+        const pts = [
+            localToWorld(img, { x: r.x, y: r.y }),
+            localToWorld(img, { x: r.x + r.width, y: r.y }),
+            localToWorld(img, { x: r.x, y: r.y + r.height }),
+            localToWorld(img, { x: r.x + r.width, y: r.y + r.height })
+        ];
+        const left = Math.min(pts[0].x, pts[1].x, pts[2].x, pts[3].x);
+        const top = Math.min(pts[0].y, pts[1].y, pts[2].y, pts[3].y);
+        const right = Math.max(pts[0].x, pts[1].x, pts[2].x, pts[3].x);
+        const bottom = Math.max(pts[0].y, pts[1].y, pts[2].y, pts[3].y);
+        return { left: left, top: top, width: right - left, height: bottom - top };
     }
 
     // ============================================================================
@@ -195,21 +213,21 @@ import { layerState } from './state.js';
                 ctx.filter = 'grayscale(100%)';
             }
             
-            // Handle flips by translating and scaling appropriately
+            // Draw only the visible (cropped) region of the bitmap. Flips mirror
+            // around the visible region itself so the crop is preserved and the
+            // hidden part of the bitmap never shows up.
+            const vr = img.visibleRect;
             if (img.flipX || img.flipY) {
                 ctx.save();
-                if (img.flipX) {
-                    ctx.translate(img.originalWidth, 0);
-                    ctx.scale(-1, 1);
-                }
-                if (img.flipY) {
-                    ctx.translate(0, img.originalHeight);
-                    ctx.scale(1, -1);
-                }
-                ctx.drawImage(img.bitmap, 0, 0, img.originalWidth, img.originalHeight);
+                const cx = vr.x + vr.width / 2;
+                const cy = vr.y + vr.height / 2;
+                ctx.translate(cx, cy);
+                ctx.scale(img.flipX ? -1 : 1, img.flipY ? -1 : 1);
+                ctx.translate(-cx, -cy);
+                ctx.drawImage(img.bitmap, vr.x, vr.y, vr.width, vr.height, vr.x, vr.y, vr.width, vr.height);
                 ctx.restore();
             } else {
-                ctx.drawImage(img.bitmap, 0, 0, img.originalWidth, img.originalHeight);
+                ctx.drawImage(img.bitmap, vr.x, vr.y, vr.width, vr.height, vr.x, vr.y, vr.width, vr.height);
             }
             
             // Reset effects
@@ -217,11 +235,24 @@ import { layerState } from './state.js';
             ctx.shadowBlur = 0;
             ctx.filter = 'none';
 
-            // Locked selected images get a red border on the inside of the image
+            // Locked selected images get a red border hugging the inside edge of
+            // the image. Thickness is counter-scaled by the image scale and the
+            // CSS zoom so it is always 10.5px on screen, regardless of zoom.
             if (img.locked && state.selectedImageId === img.id) {
-                ctx.strokeStyle = '#e74c3c';
-                ctx.lineWidth = 6 / img.scale;
-                ctx.strokeRect(img.visibleRect.x, img.visibleRect.y, img.visibleRect.width, img.visibleRect.height);
+                const designerCanvas = document.getElementById('ss-designer-canvas');
+                let zoom = 1;
+                if (designerCanvas && designerCanvas.style.transform && designerCanvas.style.transform.includes('scale(')) {
+                    const m = designerCanvas.style.transform.match(/scale\(([^)]+)\)/);
+                    if (m) {
+                        const parsed = parseFloat(m[1]);
+                        if (!isNaN(parsed) && parsed > 0) zoom = parsed;
+                    }
+                }
+                const lockWidth = 10.5 / (img.scale * zoom);
+                const r = img.visibleRect;
+                ctx.strokeStyle = 'rgba(231, 76, 60, 0.85)';
+                ctx.lineWidth = lockWidth;
+                ctx.strokeRect(r.x + lockWidth / 2, r.y + lockWidth / 2, r.width - lockWidth, r.height - lockWidth);
             }
 
             ctx.restore();
@@ -523,6 +554,7 @@ import { layerState } from './state.js';
     function onMouseUp(e) {
         interaction.active = false;
         interaction.mode = null;
+        snapReset();
         
         const canvas = ensureCanvas();
         if (canvas) canvas.style.cursor = 'default';
@@ -541,6 +573,14 @@ import { layerState } from './state.js';
         
         img.position.x = interaction.startImage.position.x + dx;
         img.position.y = interaction.startImage.position.y + dy;
+        
+        // Magnet snapping (rotation-aware bounding box)
+        if (magnetState.active) {
+            const aabb = getImageAABB(img);
+            const snapped = snapBox(aabb, null, img.id);
+            img.position.x += snapped.left - aabb.left;
+            img.position.y += snapped.top - aabb.top;
+        }
     }
 
     // ============================================================================
@@ -734,6 +774,7 @@ import { layerState } from './state.js';
                         scale: img.scale,
                         rotation: img.rotation
                     };
+                    snapReset();
                     
                     document.addEventListener('mousemove', onMouseMove);
                     document.addEventListener('mouseup', onMouseUp);
@@ -869,6 +910,12 @@ import { layerState } from './state.js';
             })),
             selectedImageId: state.selectedImageId
         };
+    };
+
+    window.ImageTransform.getSnapRegions = function(excludeImgId) {
+        return state.images
+            .filter(img => img.visible !== false && img.id !== excludeImgId)
+            .map(img => getImageAABB(img));
     };
 
     window.ImageTransform.importFromElement = function(element, layer) { 
@@ -1181,7 +1228,12 @@ const layer = layerState && layerState.layers ?
         replaceImage: replaceImage,
         hasSelectedImage: function() { return !!getSelectedImage(); },
         getSelectedImage: getSelectedImage,
-        prepareSnapshot: prepareSnapshot
+        prepareSnapshot: prepareSnapshot,
+        getSnapRegions: function(excludeImgId) {
+            return state.images
+                .filter(img => img.visible !== false && img.id !== excludeImgId)
+                .map(img => getImageAABB(img));
+        }
     };
 
     // Initialize on DOM ready

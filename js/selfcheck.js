@@ -24,7 +24,7 @@ const REQUIRED_BRIDGES = [
     ['toggleGroupSelected', 'function'],
     ['Designer', 'object'],
     ['SSImageTransform', 'object'],
-    ['SSTextEditor', 'object']
+    ['SSTextEditor2', 'object']
 ];
 
 function runModuleSelfcheck() {

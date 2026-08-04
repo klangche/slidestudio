@@ -11,6 +11,7 @@ import './export.js';
 import './designer.js';
 import './slidestudio.js';
 import './backupexport.js';
-import './text-editor.js';
+import './text-editor2.js';
+import './text2-transform.js';
 import './image-transform.js';
 import './selfcheck.js';

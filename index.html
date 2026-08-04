@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -728,166 +728,169 @@
         </div>
     </div>
 
-        <!-- Text Editor Modal -->
-    <div class="ss-text-popup" id="ss-textPopup" aria-hidden="true" role="dialog" aria-label="Text editor" aria-modal="true" style="display:none;">
-        <div class="ss-text-popup-overlay" id="ss-textPopupOverlay" aria-hidden="true"></div>
-        <div class="ss-text-popup-content" role="document" tabindex="-1" aria-labelledby="ss-textPopupLabel">
-            <div class="ss-text-popup-header">
-                <h3 id="ss-textPopupLabel">Add Text</h3>
-                <div class="ss-text-color-controls">
-                    <input type="color" id="ss-textColorPicker" value="#121212">
-                    <input type="text" id="ss-textColorHex" placeholder="#121212" maxlength="7" value="#121212">
-                </div>
-                <div class="ss-header-size-control">
+    <!-- Text 2 Editor Modal (new, independent from the old Add Text editor).
+         Text added here behaves like an image: drag, corner-resize, rotate,
+         double-click to reopen this editor. -->
+    <div class="ss-text2-popup" id="ss-text2Popup" aria-hidden="true" role="dialog" aria-label="Text editor 2" aria-modal="true" style="display:none;">
+        <div class="ss-text2-popup-overlay" id="ss-text2Overlay"></div>
+        <div class="ss-text2-popup-content" role="document" tabindex="-1">
+            <div class="ss-text2-header">
+                <h3 id="ss-text2Title">Add Text</h3>
+                <button id="ss-text2Close" class="ss-text2-close" aria-label="Close text editor" type="button">×</button>
+            </div>
+            <div class="ss-text2-body">
 
-                    <div class="ss-text-font-size-input">
-                        <input type="number" id="ss-textFontSizeInput" min="8" max="200" step="1" inputmode="numeric">
-                    </div>
+                <!-- Slide navigation: with several slides you can jump between
+                     the text boxes on each slide without closing the editor. -->
+                <div class="ss-text2-slidenav" id="ss-text2SlideNav" style="display:none;">
+                    <button type="button" class="ss-text2-slidenav-btn" id="ss-text2SlidePrev" title="Previous text" aria-label="Previous text">◀</button>
+                    <span class="ss-text2-slidenav-label" id="ss-text2SlideLabel">Slide 1</span>
+                    <button type="button" class="ss-text2-slidenav-btn" id="ss-text2SlideNext" title="Next text" aria-label="Next text">▶</button>
                 </div>
-                <button class="ss-text-edit-button" id="ss-textEditBtn" type="button" aria-pressed="false">
-                    <span aria-hidden="true">
-                        <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m10.5785 19 4.2979-10.92966c.0369-.09379.1674-.09379.2042 0L19.3785 19m-8.8 0H9.47851m1.09999 0h1.65m7.15 0h-1.65m1.65 0h1.1m-7.7-3.9846h4.4M3 16l1.56685-3.9846m0 0 2.73102-6.94506c.03688-.09379.16738-.09379.20426 0l2.50367 6.94506H4.56685Z"/>
-                        </svg>
-                    </span>
-                    <span>Format</span>
-                </button>
-                <div class="ss-text-popup-controls">
-                    <button id="ss-textMatchSlideBtn" class="ss-text-popup-match-btn" type="button" aria-pressed="false" title="Match slide background">
-                        <svg id="text-editor-theme-toggle" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <circle id="canvas-circle" cx="50" cy="50" r="16.875" fill="#ecf0f1" />
-                            <circle id="theme-ring" cx="50" cy="50" r="45" fill="none" stroke-width="8" />
-                        </svg>
-                    </button>
-                    <button class="ss-add-to-page-btn" type="button" aria-label="Add text to slide">
-                        <span class="ss-add-to-page-icon" aria-hidden="true">
-                            <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4"/>
-                            </svg>
-                        </span>
-                        <span class="ss-add-to-page-label">Add</span>
-                    </button>
-                    <button id="ss-textPopupClose" class="ss-text-popup-close" aria-label="Close text editor">×</button>
+
+                <!-- One editable live preview: you type straight into the poster
+                     layout, so the writing area always looks exactly like the
+                     final text - no separate text box, no separate preview. -->
+                <div class="ss-text2-editable-preview" id="ss-text2EditablePreview">
+                    <div class="ss-text2-editable-anchor" id="ss-text2EditableAnchor" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Text - live preview"></div>
                 </div>
-            </div>
-            <div class="ss-text-popup-body">
-                <div class="ss-text-editor-viewport" id="ss-textEditorViewport">
-                    <div id="ss-textEditorCanvas" contenteditable="true"></div>
-                </div>
-            </div>
-            <div class="ss-text-popup-footer" aria-hidden="true">
-                <div class="ss-text-font-panel" id="ss-textFontPanel" aria-hidden="true">
-                    <div class="ss-text-font-actions">
-                        <div class="ss-text-font-action-row">
-                            <div class="ss-text-font-dropdown" id="ss-textFontDropdown">
-                                <button class="ss-text-font-button" id="ss-textFontBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
-                                    <span>Trebuchet MS</span>
-                                    <svg viewBox="0 0 10 6" aria-hidden="true">
-                                        <path d="M1 1.3 5 4.5 9 1.3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" />
-                                    </svg>
-                                </button>
-                                <div class="ss-text-font-dropdown-list" id="ss-textFontDropdownList" role="listbox" aria-label="Choose font" aria-hidden="true"></div>
+
+                <div class="ss-text2-toolbar" id="ss-text2Toolbar">
+
+                    <!-- Font chooser on its own row + weight -->
+                    <div class="ss-text2-row ss-text2-row--font">
+                        <div class="ss-text2-font-wrap">
+                            <button type="button" class="ss-text2-font-btn" id="ss-text2FontBtn" aria-haspopup="listbox" aria-expanded="false" title="Font">
+                                <span id="ss-text2FontLabel">Trebuchet MS</span>
+                                <svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1.3 5 4.5 9 1.3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                            </button>
+                            <div class="ss-text2-font-dropdown" id="ss-text2FontDropdown" aria-hidden="true">
+                                <input type="text" id="ss-text2FontSearch" placeholder="Search or type any Google Font..." autocomplete="off">
+                                <div class="ss-text2-font-recent" id="ss-text2FontRecent"></div>
+                                <div class="ss-text2-font-list" id="ss-text2FontList"></div>
                             </div>
-                            <button type="button" id="ss-textAddGoogleBtn" class="ss-text-font-secondary ss-text-tool-action ss-text-fixed-button" aria-label="Add fonts">Add fonts</button>
                         </div>
-                        <div class="ss-text-font-action-row">
-                            <button type="button" class="ss-text-button" id="ss-textAlignLeftBtn" aria-label="Left align" data-align="left">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M4 6h16M4 11h12M4 16h16" stroke-linecap="round" />
-                                </svg>
-                            </button>
-                            <button type="button" class="ss-text-button" id="ss-textAlignCenterBtn" aria-label="Center align" data-align="center">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M6 6h12M4 11h16M6 16h12" stroke-linecap="round" />
-                                </svg>
-                            </button>
-                            <button type="button" class="ss-text-button" id="ss-textAlignRightBtn" aria-label="Right align" data-align="right">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M4 6h16M8 11h12M4 16h16" stroke-linecap="round" />
-                                </svg>
-                            </button>
-                            <button type="button" class="ss-text-button ss-text-button--adaptive" id="ss-textAlignJustifyBtn" aria-label="Adaptive alignment" data-align="justify">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M4 5h16" stroke-linecap="round" />
-                                    <path d="M3 9h18" stroke-linecap="round" />
-                                    <path d="M4 13h16" stroke-linecap="round" />
-                                    <path d="M3 17h18" stroke-linecap="round" />
-                                    <path d="M4 21h16" stroke-linecap="round" />
-                                </svg>
-                            </button>
-                            <button type="button" class="ss-text-button ss-text-button--caps ss-text-fixed-button" id="ss-textAllCapsBtn" aria-pressed="false" aria-label="Toggle all caps">
-                                <span aria-hidden="true">
-                                    <svg width="32px" height="32px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                                        <polygon points="1 8 1 10 7 10 7 24 9 24 9 10 15 10 15 8 1 8"/>
-                                        <polygon points="17 8 17 10 23 10 23 24 25 24 25 10 31 10 31 8 17 8"/>
-                                    </svg>
-                                </span>
-                                <span>Caps</span>
-                            </button>
-                        </div>
-                        <div class="ss-text-font-action-row">
-                            <button type="button" class="ss-text-button" id="ss-textBoldBtn" aria-label="Bold" data-format="bold">
-                                <svg viewBox="0 0 20 20" aria-hidden="true">
-                                    <text x="3" y="15" font-size="14" font-weight="700">B</text>
-                                </svg>
-                            </button>
-                            <button type="button" class="ss-text-button" id="ss-textItalicBtn" aria-label="Italic" data-format="italic">
-                                <svg viewBox="0 0 20 20" aria-hidden="true">
-                                    <text x="2" y="15" font-size="14" font-style="italic">I</text>
-                                </svg>
-                            </button>
-                            <button type="button" class="ss-text-button" id="ss-textUnderlineBtn" aria-label="Underline" data-format="underline">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M6 7c0 3.5 1.5 5 4 5s4-1.5 4-5h-1" />
-                                    <path d="M5 17h14" stroke-linecap="round" />
-                                </svg>
-                            </button>
-                            <button type="button" class="ss-text-button" id="ss-textStrikethroughBtn" aria-label="Strikethrough" data-format="strikethrough">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M6 7c0 3.5 1.5 5 4 5s4-1.5 4-5h-1" />
-                                    <path d="M6 13h12" stroke-linecap="round" />
-                                </svg>
-                            </button>
-                            <button type="button" class="ss-text-button ss-text-fixed-button" id="ss-textClearCustomBtn" aria-pressed="false" aria-label="Clear customizations">
-                                <span aria-hidden="true">
-                                    <svg fill="#000000" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M13,14.4142136 L13,20 L15,20 L15,22 L9,22 L9,20 L11,20 L11,12.4142136 L4.57580249,5.99001605 L3,5.95292783 L3,4.41421356 L1.29289322,2.70710678 L2.70710678,1.29289322 L22.7071068,21.2928932 L21.2928932,22.7071068 L13,14.4142136 Z M13,8.78578649 L11,6.78578649 L11,4 L8.21421351,4 L6.21421351,2 L21,2 L21,6 L19,5.95292783 L19,4 L13,4 L13,8.78578649 Z"/>
-                                    </svg>
-                                </span>
-                                <span>Clear</span>
-                            </button>
-                        </div>
+                        <select class="ss-text2-weight" id="ss-text2Weight" title="Font weight" aria-label="Font weight">
+                            <option value="100">Thin</option>
+                            <option value="200">Extra Light</option>
+                            <option value="300">Light</option>
+                            <option value="400" selected>Regular</option>
+                            <option value="500">Medium</option>
+                            <option value="600">SemiBold</option>
+                            <option value="700">Bold</option>
+                            <option value="800">Extra Bold</option>
+                            <option value="900">Black</option>
+                        </select>
                     </div>
-                    <div class="ss-font-upload-toast" id="ss-fontUploadFeedback" role="status" aria-live="polite">
-                        <span class="ss-font-upload-toast__message" aria-live="polite"></span>
-                        <button type="button" class="ss-font-upload-toast__close" aria-label="Close notification">×</button>
+
+                    <!-- Style tools (text is always center-aligned) -->
+                    <div class="ss-text2-row ss-text2-row--tools">
+                        <button type="button" class="ss-text2-tool ss-text2-poster" id="ss-text2EqualWidth" title="Poster: scale every row so all rows have the same total width (font size drives the first row)">
+                            Poster
+                        </button>
+
+                        <span class="ss-text2-divider"></span>
+
+                        <button type="button" class="ss-text2-tool" data-style="caps" title="ALL CAPS"><span class="ss-text2-cap">Aa</span></button>
+                        <button type="button" class="ss-text2-tool" data-style="strike" title="Strikethrough"><s>S</s></button>
+                        <button type="button" class="ss-text2-tool" data-style="underline" title="Underline"><u>U</u></button>
+                        <button type="button" class="ss-text2-tool" data-style="italic" title="Italic"><i>I</i></button>
+                    </div>
+
+                    <!-- Color tools in one row -->
+                    <div class="ss-text2-row ss-text2-row--color">
+                        <button type="button" class="ss-text2-tool" id="ss-text2Pipette" title="Pick a color from the screen">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17 5 21l4-1 8-8-3-3-8 8z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/><path d="M13 7l4-4 4 4-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>
+                        </button>
+                        <button type="button" class="ss-text2-tool ss-text2-color-btn" id="ss-text2ColorBtn" title="Change text color" aria-label="Change text color">
+                            <span class="ss-text2-color-dot" id="ss-text2ColorDot"></span>
+                        </button>
+                        <input type="text" id="ss-text2ColorHex" value="#121212" maxlength="7" spellcheck="false" title="Color hex" aria-label="Text color hex">
                     </div>
                 </div>
+
+                <!-- Color selector: opens when the color button is clicked.
+                     A compact Canvas palette section (dominant colors of each
+                     slide with their complementary colors) is pinned at the
+                     top; under it the selector carousel cycles Spectrum, Grid
+                     and Sliders - none of them scroll, each fits the
+                     fixed-height area so it is always fully visible. -->
+                <div class="ss-text2-color-popup" id="ss-text2ColorPopup" aria-hidden="true">
+
+                    <!-- Canvas palette: left/right arrows + "Canvas" + an
+                         "All" button for the whole canvas + one number per
+                         slide, then the dominant colors of the selected
+                         slide as a row of swatches (5 default, + adds up to
+                         11, - removes down to 3) with the complementary
+                         colors in a touching row directly under them. The
+                         row keeps a constant total width, so swatches get
+                         thinner as more colors are added. -->
+                    <div class="ss-text2-canvas-section">
+                        <div class="ss-text2-canvas-nav">
+                            <button type="button" class="ss-text2-palette-nav" id="ss-text2CanvasPrev" title="Previous" aria-label="Previous">◀</button>
+                            <span class="ss-text2-canvas-name">Canvas</span>
+                            <div class="ss-text2-canvas-pages" id="ss-text2CanvasPages"></div>
+                            <button type="button" class="ss-text2-palette-nav" id="ss-text2CanvasNext" title="Next" aria-label="Next">▶</button>
+                        </div>
+                        <div class="ss-text2-canvas-body">
+                            <div class="ss-text2-canvas-palette">
+                                <div class="ss-text2-palette-label">Dominant Colors</div>
+                                <div class="ss-text2-canvas-palette-row">
+                                    <div class="ss-text2-canvas-palette-stack">
+                                        <div class="ss-text2-palette-col" id="ss-text2PaletteMain"></div>
+                                        <div class="ss-text2-palette-col" id="ss-text2PaletteSub"></div>
+                                    </div>
+                                    <div class="ss-text2-palette-step">
+                                        <button type="button" class="ss-text2-palette-step-btn" id="ss-text2PalettePlus" title="Add a color (up to 11)" aria-label="Add a color">+</button>
+                                        <button type="button" class="ss-text2-palette-step-btn" id="ss-text2PaletteMinus" title="Remove a color (down to 3)" aria-label="Remove a color">−</button>
+                                    </div>
+                                </div>
+                                <div class="ss-text2-palette-label ss-text2-palette-label--muted">complementary</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ss-text2-palette-header">
+                        <button type="button" class="ss-text2-palette-nav" id="ss-text2CarPrev" title="Previous color selector" aria-label="Previous color selector">◀</button>
+                        <div class="ss-text2-palette-title" id="ss-text2CarTitle">Spectrum</div>
+                        <button type="button" class="ss-text2-palette-nav" id="ss-text2CarNext" title="Next color selector" aria-label="Next color selector">▶</button>
+                    </div>
+                    <div class="ss-text2-color-pages" id="ss-text2ColorPages">
+
+                        <!-- Spectrum: saturation/lightness square + hue bar -->
+                        <div class="ss-text2-color-page ss-text2-color-page--spectrum" data-page="spectrum">
+                            <div class="ss-text2-spectrum-sv" id="ss-text2SpectrumSv">
+                                <div class="ss-text2-spectrum-marker" id="ss-text2SpectrumSvMarker"></div>
+                            </div>
+                            <div class="ss-text2-spectrum-hue" id="ss-text2SpectrumHue">
+                                <div class="ss-text2-spectrum-marker ss-text2-spectrum-hue-marker" id="ss-text2SpectrumHueMarker"></div>
+                            </div>
+                        </div>
+
+                        <!-- 2C - Grid: hue x lightness grid + grayscale ramp -->
+                        <div class="ss-text2-color-page ss-text2-color-page--grid" data-page="grid">
+                            <div class="ss-text2-color-swatches" id="ss-text2ColorSwatches"></div>
+                        </div>
+
+                        <!-- 2D - Sliders: RGB sliders + live preview -->
+                        <div class="ss-text2-color-page ss-text2-color-page--sliders" data-page="sliders">
+                            <div class="ss-text2-sliders" id="ss-text2Sliders"></div>
+                            <div class="ss-text2-slider-preview">
+                                <button type="button" class="ss-text2-comp-swatch ss-text2-slider-swatch" id="ss-text2SliderPreview"></button>
+                                <span class="ss-text2-slider-hex" id="ss-text2SliderHex">#121212</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+            <div class="ss-text2-footer">
+                <button type="button" class="ss-text2-btn ss-text2-btn--ghost" id="ss-text2Cancel">Cancel</button>
+                <button type="button" class="ss-text2-btn ss-text2-btn--primary" id="ss-text2Apply">Add to Slide</button>
             </div>
         </div>
     </div>
-
-            <div class="ss-google-font-popup" id="ss-googleFontPopup" aria-hidden="true">
-                <div class="ss-google-font-popup__overlay" id="ss-googleFontOverlay"></div>
-                <div class="ss-google-font-popup__content" role="dialog" aria-modal="true" aria-labelledby="ss-googleFontPopupTitle">
-                    <header class="ss-google-font-popup__header">
-                        <h3 id="ss-googleFontPopupTitle">Add Google Fonts</h3>
-                        <div class="ss-google-font-popup__action-row">
-                            <button type="button" class="ss-google-font-popup__google-link" id="ss-googleFontsLink" aria-label="Open Google Fonts">G</button>
-                            <button type="button" class="ss-google-font-popup__close" id="ss-googleFontPopupClose" aria-label="Close Google Fonts dialog">×</button>
-                        </div>
-                    </header>
-                    <div class="ss-google-font-popup__body">
-                        <p class="ss-google-font-popup__instructions">Paste the Google Fonts <code>&lt;link&gt;</code> or <code>@import</code> snippet below to load instantly.</p>
-                        <textarea id="ss-googleFontInput" class="ss-google-font-popup__textarea" placeholder="Paste Google Fonts snippet here"></textarea>
-                        <div class="ss-google-font-popup__upload-row">
-                            <button type="button" id="ss-googleFontUploadBtn" class="ss-text-font-secondary">Upload Font</button>
-                            <span class="ss-google-font-popup__hint">Supports .ttf, .otf, .woff, .woff2</span>
-                        </div>
-                        <input type="file" id="ss-fontUploadInput" accept=".ttf,.otf,.woff,.woff2" multiple hidden>
-                    </div>
-                </div>
-            </div>
 
     <script type="module" src="js/main.js"></script>
     <script>
@@ -942,6 +945,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
     installButton.style.display = 'block';
 });
 </script>
+
+
 
 </body>
 </html>

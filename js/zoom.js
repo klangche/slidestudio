@@ -159,6 +159,7 @@ function updateCanvasTransform(scale) {
     designerCanvas.style.width = W + 'px';
     designerCanvas.style.height = H + 'px';
     designerCanvas.style.transform = 'scale(' + scale + ')';
+    designerCanvas.style.setProperty('--ss-zoom', scale);
     if (scrollWrapper) {
         scrollWrapper.style.width = (W * scale) + 'px';
         scrollWrapper.style.height = (H * scale) + 'px';

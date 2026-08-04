@@ -51,18 +51,36 @@ export function saveState() {
         }
         
         if (layer.type === 'text') {
-            layerCopy.textContent = layer.element.textContent || 'Text';
-            layerCopy.fontSize = parseFloat(layer.element.style.fontSize) || layer.fontSize || 24;
+            const contentEl = (layer.element.querySelector && layer.element.querySelector('.ss-text-content')) || layer.element;
+            layerCopy.textContent = contentEl.textContent || 'Text';
+            layerCopy.fontSize = parseFloat(contentEl.style.fontSize) || parseFloat(layer.element.style.fontSize) || layer.fontSize || 24;
+            layerCopy.transform = layer.element.style.transform;
+            const rotMatch = /rotate\(([-.\d]+)deg\)/.exec(layer.element.style.transform || '');
+            if (rotMatch) layerCopy.rotation = parseFloat(rotMatch[1]);
             layerCopy.style = {
-                fontFamily: layer.element.style.fontFamily || 'Arial',
-                fontSize: layer.element.style.fontSize || '24px',
-                color: layer.element.style.color || '#000000',
-                fontWeight: layer.element.style.fontWeight || 'normal',
-                fontStyle: layer.element.style.fontStyle || 'normal',
-                textDecoration: layer.element.style.textDecoration || 'none',
-                textAlign: layer.element.style.textAlign || 'left',
-                backgroundColor: layer.element.style.backgroundColor || 'transparent'
+                fontFamily: contentEl.style.fontFamily || layer.element.style.fontFamily || 'Arial',
+                fontSize: contentEl.style.fontSize || layer.element.style.fontSize || '24px',
+                color: contentEl.style.color || layer.element.style.color || '#000000',
+                fontWeight: contentEl.style.fontWeight || layer.element.style.fontWeight || 'normal',
+                fontStyle: contentEl.style.fontStyle || layer.element.style.fontStyle || 'normal',
+                textDecoration: contentEl.style.textDecoration || layer.element.style.textDecoration || 'none',
+                textAlign: contentEl.style.textAlign || layer.element.style.textAlign || 'left',
+                backgroundColor: contentEl.style.backgroundColor || layer.element.style.backgroundColor || 'transparent',
+                letterSpacing: contentEl.style.letterSpacing || layer.element.style.letterSpacing || '0px',
+                textTransform: contentEl.style.textTransform || layer.element.style.textTransform || 'none',
+                lineHeight: contentEl.style.lineHeight || layer.element.style.lineHeight || '1.2'
             };
+            if (layer.isText2) {
+                layerCopy.isText2 = true;
+                layerCopy.text2Lines = layer.element.dataset.text2Lines || '';
+                layerCopy.text2Equal = layer.element.dataset.text2Equal === '1';
+                layerCopy.text2Scale = layer.element.dataset.text2Scale || '';
+                layerCopy.text2Crop = layer.element.dataset.text2Crop || '';
+                layerCopy.text2Rot = layer.element.dataset.text2Rot || '';
+                layerCopy.text2BaseW = parseFloat(layer.element.dataset.text2BaseW) || undefined;
+                layerCopy.text2BaseH = parseFloat(layer.element.dataset.text2BaseH) || undefined;
+                layerCopy.text2Font = layer.element.dataset.text2Font || '';
+            }
             layerCopy.size = {
                 width: layer.element.offsetWidth || layer.size?.width || 100,
                 height: layer.element.offsetHeight || layer.size?.height || 40
@@ -330,13 +348,79 @@ function createImagePlaceholder(layerData) {
     setupRotationHandler(placeholder);
 }
 
+function parseText2FontName(family) {
+    if (!family) return 'Trebuchet MS';
+    const first = String(family).split(',')[0].trim().replace(/['"]/g, '');
+    return first || 'Trebuchet MS';
+}
+
+function parseText2Scale(scaleStr) {
+    if (!scaleStr) return null;
+    let s = null;
+    const raw = String(scaleStr).trim();
+    if (raw.indexOf('|') !== -1) {
+        // Backwards-compatible: old "sx|sy" format, use the x component.
+        s = parseFloat(raw.split('|')[0]);
+    } else {
+        s = parseFloat(raw);
+    }
+    if (!isFinite(s) || s <= 0) return null;
+    return { x: s, y: s };
+}
+
+function parseText2Crop(cropStr, baseW, baseH) {
+    if (!cropStr) return null;
+    const m = /^([-\d.]+)\|([-\d.]+)\|([-\d.]+)\|([-\d.]+)$/.exec(String(cropStr).trim());
+    if (!m) return null;
+    const x = parseFloat(m[1]);
+    const y = parseFloat(m[2]);
+    const w = parseFloat(m[3]);
+    const h = parseFloat(m[4]);
+    if (!isFinite(x) || !isFinite(y) || !isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) return null;
+    const bw = (isFinite(baseW) && baseW > 0) ? baseW : (x + w);
+    const bh = (isFinite(baseH) && baseH > 0) ? baseH : (y + h);
+    return {
+        x: Math.max(0, Math.min(x, bw - 20)),
+        y: Math.max(0, Math.min(y, bh - 20)),
+        w: Math.min(w, bw - Math.max(0, Math.min(x, bw - 20))),
+        h: Math.min(h, bh - Math.max(0, Math.min(y, bh - 20)))
+    };
+}
+
+function parseText2Lines(linesStr, textContent) {
+    let parsed = [];
+    if (linesStr) {
+        try {
+            const arr = JSON.parse(linesStr);
+            if (Array.isArray(arr)) parsed = arr;
+        } catch (e) {}
+    }
+    if (!parsed.length) {
+        parsed = String(textContent || '').split('\n').map(function (t) { return { text: t }; });
+    }
+    return parsed.map(function (l, i) {
+        const item = (l && typeof l === 'object') ? l : {};
+        return {
+            text: (item.text !== undefined && item.text !== null) ? String(item.text) : (parsed[i] && parsed[i].text) || '',
+            fontSize: (item.fontSize !== undefined && item.fontSize !== null && item.fontSize !== '') ? parseFloat(item.fontSize) : null,
+            color: item.color || null,
+            bold: (item.bold !== undefined && item.bold !== null) ? !!item.bold : null,
+            italic: (item.italic !== undefined && item.italic !== null) ? !!item.italic : null,
+            underline: (item.underline !== undefined && item.underline !== null) ? !!item.underline : null,
+            strike: (item.strike !== undefined && item.strike !== null) ? !!item.strike : null,
+            caps: (item.caps !== undefined && item.caps !== null) ? !!item.caps : null,
+            align: item.align || null
+        };
+    });
+}
+
 function restoreTextLayer(layerData) {
+    const isText2 = !!layerData.isText2;
     const textElement = document.createElement('div');
-    textElement.className = 'ss-text-element';
+    textElement.className = isText2 ? 'ss-text-element ss-text-box ss-text2-element' : 'ss-text-element';
     textElement.id = layerData.id;
-    textElement.contentEditable = true;
-    
-    textElement.textContent = layerData.textContent || 'Text';
+    if (!isText2) textElement.contentEditable = true;
+
     textElement.style.position = 'absolute';
     textElement.style.left = layerData.position.left + 'px';
     textElement.style.top = layerData.position.top + 'px';
@@ -349,18 +433,81 @@ function restoreTextLayer(layerData) {
     textElement.style.textDecoration = layerData.style.textDecoration || 'none';
     textElement.style.textAlign = layerData.style.textAlign || 'left';
     textElement.style.backgroundColor = layerData.style.backgroundColor || 'transparent';
-    textElement.style.padding = '10px';
+    textElement.style.padding = isText2 ? '0' : '10px';
     textElement.style.cursor = 'grab';
     textElement.style.width = layerData.size.width + 'px';
     textElement.style.height = layerData.size.height + 'px';
     textElement.style.outline = 'none';
     textElement.style.overflow = 'visible';
-    textElement.style.transformOrigin = 'center center';
+    textElement.style.transformOrigin = isText2 ? '0 0' : 'center center';
     textElement.style.transform = layerData.transform || '';
     textElement.style.whiteSpace = 'pre-wrap'; // Multi-line support
     textElement.style.wordWrap = 'break-word'; // Word breaking
-    textElement.style.lineHeight = '1.2'; // Better multi-line spacing
-    
+    textElement.style.lineHeight = layerData.style.lineHeight || '1.2'; // Better multi-line spacing
+    textElement.style.letterSpacing = layerData.style.letterSpacing || '0px';
+    textElement.style.textTransform = layerData.style.textTransform || 'none';
+    textElement.style.userSelect = isText2 ? 'none' : '';
+    textElement.style.pointerEvents = isText2 ? 'auto' : '';
+
+    if (isText2) {
+        // Rebuild via the shared text2 renderer so per-line styles, equal-width
+        // scaling and the box scale/crop survive undo/redo exactly.
+        const size = layerData.size || { width: 200, height: 60 };
+        const data = {
+            text: layerData.textContent || 'Text',
+            lines: parseText2Lines(layerData.text2Lines, layerData.textContent),
+            base: {
+                fontFamily: layerData.style.fontFamily || 'Arial',
+                fontSize: layerData.fontSize || 24,
+                color: layerData.style.color || '#000000',
+                fontWeight: layerData.style.fontWeight || 'normal',
+                fontStyle: layerData.style.fontStyle || 'normal',
+                textDecoration: layerData.style.textDecoration || 'none',
+                textTransform: layerData.style.textTransform || 'none',
+                textAlign: layerData.style.textAlign || 'left',
+                letterSpacing: parseFloat(layerData.style.letterSpacing) || 0,
+                lineHeight: parseFloat(layerData.style.lineHeight) || 1.2
+            },
+            font: layerData.text2Font || parseText2FontName(layerData.style.fontFamily),
+            equalWidth: !!layerData.text2Equal
+        };
+        const state = { boxW: size.width, boxH: size.height };
+        const scale = parseText2Scale(layerData.text2Scale);
+        if (scale) { state.scale = scale.x; }
+        const crop = parseText2Crop(layerData.text2Crop, layerData.text2BaseW, layerData.text2BaseH);
+        if (crop) state.crop = crop;
+        if (layerData.text2BaseW) state.baseW = layerData.text2BaseW;
+        if (layerData.text2BaseH) state.baseH = layerData.text2BaseH;
+        if (window.SSTextEditor2 && typeof window.SSTextEditor2.renderContentToElement === 'function') {
+            window.SSTextEditor2.renderContentToElement(textElement, data, state);
+        } else {
+            // Fallback without the text2 module: plain single-block text.
+            const fallbackContent = document.createElement('div');
+            fallbackContent.className = 'ss-text-content';
+            fallbackContent.textContent = layerData.textContent || 'Text';
+            fallbackContent.style.fontFamily = textElement.style.fontFamily;
+            fallbackContent.style.fontSize = textElement.style.fontSize;
+            fallbackContent.style.color = textElement.style.color;
+            fallbackContent.style.fontWeight = textElement.style.fontWeight;
+            fallbackContent.style.fontStyle = textElement.style.fontStyle;
+            fallbackContent.style.textDecoration = textElement.style.textDecoration;
+            fallbackContent.style.textAlign = textElement.style.textAlign;
+            fallbackContent.style.letterSpacing = textElement.style.letterSpacing;
+            fallbackContent.style.textTransform = textElement.style.textTransform;
+            fallbackContent.style.lineHeight = textElement.style.lineHeight;
+            fallbackContent.style.whiteSpace = 'pre-wrap';
+            fallbackContent.style.wordBreak = 'break-word';
+            fallbackContent.style.overflow = 'visible';
+            fallbackContent.style.boxSizing = 'border-box';
+            fallbackContent.style.padding = '0';
+            fallbackContent.style.margin = '0';
+            fallbackContent.style.backgroundColor = 'transparent';
+            textElement.appendChild(fallbackContent);
+        }
+    } else {
+        textElement.textContent = layerData.textContent || 'Text';
+    }
+
     // Handle visibility and disabled state
     if (!layerData.visible) {
         textElement.style.display = 'none';
@@ -368,19 +515,21 @@ function restoreTextLayer(layerData) {
     if (layerData.disabled) {
         textElement.style.pointerEvents = 'none';
     }
-    
-    const resizeHandles = createResizeHandles();
-    textElement.appendChild(resizeHandles);
-    
+
+    if (!isText2) {
+        textElement.appendChild(createResizeHandles());
+    }
+
     const designerCanvas = document.getElementById('ss-designer-canvas');
     if (designerCanvas) {
         designerCanvas.appendChild(textElement);
     }
-    
+
     const layer = {
         id: layerData.id,
         element: textElement,
         type: 'text',
+        isText2: isText2,
         zIndex: layerData.zIndex,
         position: layerData.position,
         fontSize: layerData.fontSize,
@@ -389,25 +538,38 @@ function restoreTextLayer(layerData) {
         visible: layerData.visible,
         disabled: layerData.disabled
     };
-    
+
     layerState.layers.push(layer);
-    
+
     if (typeof window.makeElementDraggable === 'function') window.makeElementDraggable(textElement);
     if (typeof window.makeElementSelectable === 'function') window.makeElementSelectable(textElement);
-    if (window.SSText && typeof SSText.setupTextResizeHandlers === 'function') SSText.setupTextResizeHandlers(textElement); else if (typeof setupTextResizeHandlers === 'function') setupTextResizeHandlers(textElement);
-    setupRotationHandler(textElement);
-    
+    if (isText2) {
+        // text2 boxes use the ImageTransform handles (image-identical behavior).
+        if (window.SSTextEditor2 && typeof window.SSTextEditor2.registerWithImageTransform === 'function') {
+            window.SSTextEditor2.registerWithImageTransform(textElement);
+        }
+    } else {
+        if (window.SSText && typeof SSText.setupTextResizeHandlers === 'function') {
+            SSText.setupTextResizeHandlers(textElement);
+        } else if (typeof setupTextResizeHandlers === 'function') {
+            setupTextResizeHandlers(textElement);
+        }
+        setupRotationHandler(textElement);
+    }
+
     // Update nextZIndex if needed
     if (layerData.zIndex >= layerState.nextZIndex) {
         layerState.nextZIndex = layerData.zIndex + 1;
     }
-    
-    // Add input listener for text changes
+
+    if (isText2) return;
+
+    // Add input listener for text changes (inline editing is text2's job)
     textElement.addEventListener('input', function() {
         adjustTextElementSize(textElement);
         saveState();
     });
-    
+
     // Initial size adjustment
     setTimeout(() => adjustTextElementSize(textElement), 10);
 }

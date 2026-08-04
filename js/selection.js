@@ -1,7 +1,7 @@
 // Selection, dragging, multi-select, grouping and free-move behavior.
 import { layerState, magnetState, freeMoveState } from './state.js';
 import { saveState } from './history.js';
-import { snapToGuidelines } from './guidance.js';
+import { snapElementAt, snapReset } from './guidance.js';
 import { getResizeHandlesForElement } from './ui-helpers.js';
 
 // Simple drag state
@@ -40,9 +40,7 @@ function handleDragMove(e) {
     let newX = dragState.elementStartX + (deltaX / canvasScale);
     let newY = dragState.elementStartY + (deltaY / canvasScale);
     if (magnetState.active) {
-        const elementWidth = dragState.dragElement.offsetWidth;
-        const elementHeight = dragState.dragElement.offsetHeight;
-        const snapped = snapToGuidelines(newX, newY, elementWidth, elementHeight);
+        const snapped = snapElementAt(newX, newY, dragState.dragElement);
         newX = snapped.x;
         newY = snapped.y;
     }
@@ -111,9 +109,7 @@ function handleDragEnd(e) {
         const element = dragState.dragElement;
         const currentX = parseInt(element.style.left) || 0;
         const currentY = parseInt(element.style.top) || 0;
-        const elementWidth = element.offsetWidth;
-        const elementHeight = element.offsetHeight;
-        const snapped = snapToGuidelines(currentX, currentY, elementWidth, elementHeight);
+        const snapped = snapElementAt(currentX, currentY, element);
         element.style.left = snapped.x + 'px';
         element.style.top = snapped.y + 'px';
         const layerIndex = layerState.layers.findIndex(function(layer) { return layer.element === element; });
@@ -130,6 +126,7 @@ function handleDragEnd(e) {
     }
     dragState.isDragging = false;
     dragState.dragElement = null;
+    snapReset();
     // Remove both pointer and mouse listeners (fallback)
     document.removeEventListener('pointermove', handleDragMove);
     document.removeEventListener('pointerup', handleDragEnd);
@@ -143,6 +140,10 @@ function handleDragEnd(e) {
 export function makeElementDraggable(element) {
     element.addEventListener('pointerdown', function(e) {
         if (freeMoveState.active) return;
+        // Locked text2 boxes can be selected but not dragged.
+        if (element.classList && element.classList.contains('ss-text2-element') && element.dataset && element.dataset.text2Locked === '1') {
+            return;
+        }
         if (e.target.classList && (e.target.classList.contains('ss-resize-handle') || e.target.classList.contains('ss-rotation-handle') || (e.target.parentElement && e.target.parentElement.classList.contains('ss-resize-handles')))) {
             return;
         }
@@ -172,6 +173,7 @@ export function makeElementDraggable(element) {
         dragState.startY = e.clientY;
         dragState.elementStartX = parseInt(actualDragElement.style.left) || 0;
         dragState.elementStartY = parseInt(actualDragElement.style.top) || 0;
+        snapReset();
 
         element.style.cursor = 'grabbing';
         element.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
@@ -208,7 +210,7 @@ export function makeElementSelectable(element) {
             return;
         }
 
-        if (element.classList.contains('ss-text-element')) {
+        if (element.classList.contains('ss-text-element') && !element.classList.contains('ss-text2-element')) {
             const textContent = element.querySelector('.ss-text-content');
             if (textContent && element.classList.contains('selected')) {
                 textContent.focus();
@@ -239,10 +241,20 @@ export function selectLayer(element) {
     const resizeHandles = getResizeHandlesForElement(element);
     if (resizeHandles) resizeHandles.style.display = 'block';
     layerState.selectedLayer = element;
+    if (window.SSTextEditor2 && typeof window.SSTextEditor2.updateAddTextButton === 'function') window.SSTextEditor2.updateAddTextButton();
     element.style.left = currentLeft + 'px';
     element.style.top = currentTop + 'px';
     if (typeof updateFontSizeInputForSelectedText === 'function') setTimeout(updateFontSizeInputForSelectedText, 10);
     updateLayerOrderButtons();
+    // text2 boxes use the standalone text2-transform system (image-identical
+    // handles). Selecting anything else hides the text2 handles.
+    if (element.classList && element.classList.contains('ss-text2-element')) {
+        if (window.SSText2Transform && typeof window.SSText2Transform.select === 'function') {
+            window.SSText2Transform.select(element);
+        }
+    } else if (window.SSText2Transform && typeof window.SSText2Transform.deselectAll === 'function') {
+        window.SSText2Transform.deselectAll();
+    }
     if (typeof window.updateImageToolUIForSelection === 'function') window.updateImageToolUIForSelection(); else try { updateImageToolUIForSelection(); } catch (e) {}
 }
 window.selectLayer = selectLayer;
@@ -250,16 +262,30 @@ window.selectLayer = selectLayer;
 export function updateImageToolUIForSelection() {
     const btnIds = ['ss-flipHorizontalBtn','ss-flipVerticalBtn','ss-duplicateImageBtn','ss-deleteImageBtn','ss-replaceImageBtn','ss-lockImageBtn','ss-dropShadowBtn','ss-grayscaleBtn'];
     const isImageSelected = (window.SSImageTransform && window.SSImageTransform.hasSelectedImage && window.SSImageTransform.hasSelectedImage()) || (!!layerState.selectedLayer && layerState.selectedLayer.classList.contains('ss-image-element'));
+    const sel = layerState.selectedLayer;
+    const isText2Selected = !!(sel && sel.classList && sel.classList.contains('ss-text2-element'));
+    const isText2Locked = isText2Selected && sel.dataset && sel.dataset.text2Locked === '1';
+    const text2Allowed = ['ss-duplicateImageBtn', 'ss-deleteImageBtn', 'ss-lockImageBtn'];
     btnIds.forEach(function(id){
         const btn = document.getElementById(id);
-        if (btn) btn.disabled = !isImageSelected;
+        if (btn) {
+            const enabled = isImageSelected ||
+                (isText2Selected && id === 'ss-lockImageBtn') ||
+                (isText2Selected && !isText2Locked && text2Allowed.indexOf(id) !== -1);
+            btn.disabled = !enabled;
+        }
     });
     
     // Update lock button visual state based on current lock status
     const lockBtn = document.getElementById('ss-lockImageBtn');
-    if (lockBtn && window.SSImageTransform && window.SSImageTransform.getSelectedImage) {
-        const selectedImg = window.SSImageTransform.getSelectedImage();
-        if (selectedImg && selectedImg.locked) {
+    if (lockBtn) {
+        let locked = false;
+        if (window.SSImageTransform && window.SSImageTransform.getSelectedImage) {
+            const selectedImg = window.SSImageTransform.getSelectedImage();
+            if (selectedImg && selectedImg.locked) locked = true;
+        }
+        if (isText2Selected && isText2Locked) locked = true;
+        if (locked) {
             lockBtn.style.color = '#e74c3c';
             lockBtn.style.opacity = '1';
         } else {
@@ -536,7 +562,7 @@ function isTypingTarget(target) {
 function hasSelection() {
     if (layerState.selectedLayer) return true;
     if (window.SSImageTransform && typeof window.SSImageTransform.hasSelectedImage === 'function' && window.SSImageTransform.hasSelectedImage()) return true;
-    const textPopup = document.getElementById('ss-textPopup');
+    const textPopup = document.getElementById('ss-text2Popup');
     if (textPopup && textPopup.style.display !== 'none') return true;
     return false;
 }
@@ -646,7 +672,11 @@ export function initializeGlobalClickHandler() {
         
         const isClickOnCanvas = designerCanvas.contains(e.target);
         const isClickOnSidebar = sidebar.contains(e.target);
-        const isClickOnCanvasBackground = e.target === designerCanvas;
+        // The image canvas covers the whole slide area. Clicking it (empty
+        // space or a canvas-drawn image) must clear the DOM-based layer
+        // selection (text2 boxes etc.). Image selection itself is owned by
+        // ImageTransform and is NOT cleared here.
+        const isClickOnCanvasBackground = e.target === designerCanvas || e.target.id === 'ss-image-canvas';
         
         if (!isClickOnCanvas && !isClickOnSidebar) {
             deselectAllLayers();
@@ -657,6 +687,10 @@ export function initializeGlobalClickHandler() {
 }
 
 export function deselectAllLayers() {
+    // Clear the standalone text2 transform selection (handles/outline).
+    if (window.SSText2Transform && typeof window.SSText2Transform.deselectAll === 'function') {
+        window.SSText2Transform.deselectAll();
+    }
     document.querySelectorAll('.ss-image-element, .ss-text-element').forEach(function(el) {
         el.classList.remove('selected');
         const resizeHandles = getResizeHandlesForElement(el);
@@ -667,6 +701,7 @@ export function deselectAllLayers() {
     // Also clear multi-select mode when global deselect happens
     try { clearMultiSelectMode(); } catch (err) {}
     layerState.selectedLayer = null;
+    if (window.SSTextEditor2 && typeof window.SSTextEditor2.updateAddTextButton === 'function') window.SSTextEditor2.updateAddTextButton();
     updateLayerOrderButtons();
 }
 

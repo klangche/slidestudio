@@ -291,224 +291,288 @@ export function updateGuidanceOverlay() {
     createEnhancedGuidanceOverlay();
 }
 
-// ENHANCED: Complete magnet snapping to ALL guides including light blue center lines
-export function snapToGuidelines(x, y, width, height) {
-    if (!magnetState.active) return { x: x, y: y };
-    
-    const snapThreshold = 10;
-    let snappedX = x;
-    let snappedY = y;
-    
-    const centerX = x + width / 2;
-    const centerY = y + height / 2;
-    
-    // Snap to canvas edges
-    if (Math.abs(x) < snapThreshold) snappedX = 0;
-    if (Math.abs(y) < snapThreshold) snappedY = 0;
-    if (Math.abs(x + width - canvasState.width) < snapThreshold) snappedX = canvasState.width - width;
-    if (Math.abs(y + height - canvasState.height) < snapThreshold) snappedY = canvasState.height - height;
-    
-    // Snap to canvas center (light blue center lines)
-    const canvasCenterX = canvasState.width / 2;
-    const canvasCenterY = canvasState.height / 2;
-    
-    if (Math.abs(centerX - canvasCenterX) < snapThreshold) {
-        snappedX = canvasCenterX - width / 2;
-    }
-    
-    if (Math.abs(centerY - canvasCenterY) < snapThreshold) {
-        snappedY = canvasCenterY - height / 2;
-    }
-    
-    // Snap to light blue horizontal center line (edges and center)
-    if (Math.abs(y - canvasCenterY) < snapThreshold) snappedY = canvasCenterY; // Top edge to horizontal center
-    if (Math.abs(y + height - canvasCenterY) < snapThreshold) snappedY = canvasCenterY - height; // Bottom edge to horizontal center
-    if (Math.abs(centerY - canvasCenterY) < snapThreshold) snappedY = canvasCenterY - height / 2; // Center to horizontal center
-    
-    // Snap to slide centers (for multi-section canvases) - light blue vertical center lines
-    for (let section = 0; section < canvasState.sections; section++) {
-        const sectionCenterX = (section * 1080) + 540; // 1080 / 2
-        
-        // Snap to light blue vertical center lines (edges and center)
-        if (Math.abs(x - sectionCenterX) < snapThreshold) snappedX = sectionCenterX; // Left edge to vertical center
-        if (Math.abs(x + width - sectionCenterX) < snapThreshold) snappedX = sectionCenterX - width; // Right edge to vertical center
-        if (Math.abs(centerX - sectionCenterX) < snapThreshold) snappedX = sectionCenterX - width / 2; // Center to vertical center
-        
-        // SoMe Guide dimensions
-        const sectionStartX = section * 1080;
-        const sectionEndX = sectionStartX + 1080;
-        
-        const squareTopY = (1920 - 1080) / 2;        // 420
-        const squareBottomY = squareTopY + 1080;      // 1500
-        const squareCenterY = squareTopY + 540;       // 960
-        const squareLeftX = sectionStartX;            // section left
-        const squareRightX = sectionEndX;             // section right
-        const squareCenterX = sectionStartX + 540;    // section center
-        
-        const postTopY = (1920 - 1350) / 2;          // 285
-        const postBottomY = postTopY + 1350;          // 1635
-        const postCenterY = postTopY + 675;           // 960
-        const postLeftX = sectionStartX;              // section left
-        const postRightX = sectionEndX;               // section right
-        const postCenterX = sectionStartX + 540;      // section center
-        
-        // 1:1 SQUARE GUIDE SNAPPING
-        
-        // Snap to square guide edges (top, bottom, left, right)
-        if (Math.abs(y - squareTopY) < snapThreshold) snappedY = squareTopY;
-        if (Math.abs(y + height - squareBottomY) < snapThreshold) snappedY = squareBottomY - height;
-        if (Math.abs(x - squareLeftX) < snapThreshold) snappedX = squareLeftX;
-        if (Math.abs(x + width - squareRightX) < snapThreshold) snappedX = squareRightX - width;
-        
-        // Snap to square guide centers (vertical and horizontal)
-        if (Math.abs(centerX - squareCenterX) < snapThreshold) snappedX = squareCenterX - width / 2;
-        if (Math.abs(centerY - squareCenterY) < snapThreshold) snappedY = squareCenterY - height / 2;
-        
-        // Snap to square guide corners (all four corners)
-        if (Math.abs(x - squareLeftX) < snapThreshold && Math.abs(y - squareTopY) < snapThreshold) {
-            snappedX = squareLeftX;
-            snappedY = squareTopY;
-        }
-        if (Math.abs(x + width - squareRightX) < snapThreshold && Math.abs(y - squareTopY) < snapThreshold) {
-            snappedX = squareRightX - width;
-            snappedY = squareTopY;
-        }
-        if (Math.abs(x - squareLeftX) < snapThreshold && Math.abs(y + height - squareBottomY) < snapThreshold) {
-            snappedX = squareLeftX;
-            snappedY = squareBottomY - height;
-        }
-        if (Math.abs(x + width - squareRightX) < snapThreshold && Math.abs(y + height - squareBottomY) < snapThreshold) {
-            snappedX = squareRightX - width;
-            snappedY = squareBottomY - height;
-        }
-        
-        // Snap element centers to square guide edges
-        if (Math.abs(centerX - squareLeftX) < snapThreshold) snappedX = squareLeftX - width / 2;
-        if (Math.abs(centerX - squareRightX) < snapThreshold) snappedX = squareRightX - width / 2;
-        if (Math.abs(centerY - squareTopY) < snapThreshold) snappedY = squareTopY - height / 2;
-        if (Math.abs(centerY - squareBottomY) < snapThreshold) snappedY = squareBottomY - height / 2;
-        
-        // ENHANCED: Snap to bottom side of upper square guide and top side of lower square guide
-        // This means object bottom to square top, and object top to square bottom
-        if (Math.abs(y + height - squareTopY) < snapThreshold) snappedY = squareTopY - height; // Object bottom to top of square guide
-        if (Math.abs(y - squareBottomY) < snapThreshold) snappedY = squareBottomY; // Object top to bottom of square guide
-        
-        // 4:5 POST GUIDE SNAPPING
-        
-        // Snap to post guide edges (top, bottom, left, right)
-        if (Math.abs(y - postTopY) < snapThreshold) snappedY = postTopY;
-        if (Math.abs(y + height - postBottomY) < snapThreshold) snappedY = postBottomY - height;
-        if (Math.abs(x - postLeftX) < snapThreshold) snappedX = postLeftX;
-        if (Math.abs(x + width - postRightX) < snapThreshold) snappedX = postRightX - width;
-        
-        // Snap to post guide centers (vertical and horizontal)
-        if (Math.abs(centerX - postCenterX) < snapThreshold) snappedX = postCenterX - width / 2;
-        if (Math.abs(centerY - postCenterY) < snapThreshold) snappedY = postCenterY - height / 2;
-        
-        // Snap to post guide corners (all four corners)
-        if (Math.abs(x - postLeftX) < snapThreshold && Math.abs(y - postTopY) < snapThreshold) {
-            snappedX = postLeftX;
-            snappedY = postTopY;
-        }
-        if (Math.abs(x + width - postRightX) < snapThreshold && Math.abs(y - postTopY) < snapThreshold) {
-            snappedX = postRightX - width;
-            snappedY = postTopY;
-        }
-        if (Math.abs(x - postLeftX) < snapThreshold && Math.abs(y + height - postBottomY) < snapThreshold) {
-            snappedX = postLeftX;
-            snappedY = postBottomY - height;
-        }
-        if (Math.abs(x + width - postRightX) < snapThreshold && Math.abs(y + height - postBottomY) < snapThreshold) {
-            snappedX = postRightX - width;
-            snappedY = postBottomY - height;
-        }
-        
-        // Snap element centers to post guide edges
-        if (Math.abs(centerX - postLeftX) < snapThreshold) snappedX = postLeftX - width / 2;
-        if (Math.abs(centerX - postRightX) < snapThreshold) snappedX = postRightX - width / 2;
-        if (Math.abs(centerY - postTopY) < snapThreshold) snappedY = postTopY - height / 2;
-        if (Math.abs(centerY - postBottomY) < snapThreshold) snappedY = postBottomY - height / 2;
-        
-        // ENHANCED: Snap to bottom side of upper post guide and top side of lower post guide
-        if (Math.abs(y + height - postTopY) < snapThreshold) snappedY = postTopY - height; // Object bottom to top of post guide
-        if (Math.abs(y - postBottomY) < snapThreshold) snappedY = postBottomY; // Object top to bottom of post guide
-        
-        // 9:16 STORIES GUIDE SNAPPING (entire slide)
-        // Note: Stories guide uses the entire slide, so we already snap to its edges above
-        // But we can add specific center snapping for stories
-        
-        const storiesCenterY = 960; // 1920 / 2
-        
-        if (Math.abs(centerY - storiesCenterY) < snapThreshold) {
-            snappedY = storiesCenterY - height / 2;
-        }
-        
-        // ENHANCED: Snap to stories guide edges (top and bottom of entire slide)
-        if (Math.abs(y + height - 0) < snapThreshold) snappedY = 0 - height; // Object bottom to top of stories guide
-        if (Math.abs(y - 1920) < snapThreshold) snappedY = 1920; // Object top to bottom of stories guide
-    }
-    
-    // ENHANCED: Snap to other elements (images and text) - ALL edges, centers, and corners
-    const otherElements = layerState.layers.filter(layer => 
-        layer.element !== layerState.selectedLayer && 
-        layer.element.style.display !== 'none'
-    );
-    
-    otherElements.forEach(otherLayer => {
-        const otherElement = otherLayer.element;
-        const otherX = parseInt(otherElement.style.left) || 0;
-        const otherY = parseInt(otherElement.style.top) || 0;
-        const otherWidth = otherElement.offsetWidth;
-        const otherHeight = otherElement.offsetHeight;
-        const otherCenterX = otherX + otherWidth / 2;
-        const otherCenterY = otherY + otherHeight / 2;
-        
-        // Snap to other element's edges (left, right, top, bottom)
-        if (Math.abs(x - otherX) < snapThreshold) snappedX = otherX; // Left edge
-        if (Math.abs(x + width - (otherX + otherWidth)) < snapThreshold) snappedX = otherX + otherWidth - width; // Right edge
-        if (Math.abs(y - otherY) < snapThreshold) snappedY = otherY; // Top edge
-        if (Math.abs(y + height - (otherY + otherHeight)) < snapThreshold) snappedY = otherY + otherHeight - height; // Bottom edge
-        
-        // Snap to other element's center
-        if (Math.abs(centerX - otherCenterX) < snapThreshold) snappedX = otherCenterX - width / 2;
-        if (Math.abs(centerY - otherCenterY) < snapThreshold) snappedY = otherCenterY - height / 2;
-        
-        // Snap to other element's corners (all four corners)
-        if (Math.abs(x - otherX) < snapThreshold && Math.abs(y - otherY) < snapThreshold) {
-            snappedX = otherX;
-            snappedY = otherY;
-        }
-        if (Math.abs(x + width - (otherX + otherWidth)) < snapThreshold && Math.abs(y - otherY) < snapThreshold) {
-            snappedX = otherX + otherWidth - width;
-            snappedY = otherY;
-        }
-        if (Math.abs(x - otherX) < snapThreshold && Math.abs(y + height - (otherY + otherHeight)) < snapThreshold) {
-            snappedX = otherX;
-            snappedY = otherY + otherHeight - height;
-        }
-        if (Math.abs(x + width - (otherX + otherWidth)) < snapThreshold && Math.abs(y + height - (otherY + otherHeight)) < snapThreshold) {
-            snappedX = otherX + otherWidth - width;
-            snappedY = otherY + otherHeight - height;
-        }
-        
-        // Snap element centers to other element's edges
-        if (Math.abs(centerX - otherX) < snapThreshold) snappedX = otherX - width / 2;
-        if (Math.abs(centerX - (otherX + otherWidth)) < snapThreshold) snappedX = otherX + otherWidth - width / 2;
-        if (Math.abs(centerY - otherY) < snapThreshold) snappedY = otherY - height / 2;
-        if (Math.abs(centerY - (otherY + otherHeight)) < snapThreshold) snappedY = otherY + otherHeight - height / 2;
-        
-        // Snap element corners to other element's centers
-        if (Math.abs(x - otherCenterX) < snapThreshold) snappedX = otherCenterX;
-        if (Math.abs(x + width - otherCenterX) < snapThreshold) snappedX = otherCenterX - width;
-        if (Math.abs(y - otherCenterY) < snapThreshold) snappedY = otherCenterY;
-        if (Math.abs(y + height - otherCenterY) < snapThreshold) snappedY = otherCenterY - height;
-        
-        // ENHANCED: Snap to bottom side of upper element and top side of lower element
-        if (Math.abs(y + height - otherY) < snapThreshold) snappedY = otherY - height; // Object bottom to top of other element
-        if (Math.abs(y - (otherY + otherHeight)) < snapThreshold) snappedY = otherY + otherHeight; // Object top to bottom of other element
+// ============================================================================
+// MAGNET SNAPPING ENGINE
+// ============================================================================
+// Snaps an element to canvas edges, visible guide lines (only when SoMe Guides
+// are turned on) and to every other object's sides/corners/center. Works with
+// rotated objects by operating on their axis-aligned bounding box.
+
+const SNAP_THRESHOLD = 8;
+const SNAP_RELEASE_THRESHOLD = 12;
+
+// Glue state for the current drag gesture: which target line each axis is
+// currently snapped to and through which anchor. Once snapped, the element stays
+// glued to that line until it is dragged beyond the release threshold, which
+// prevents the box from oscillating between different anchors/lines.
+const magnetSession = { x: null, y: null };
+
+export function snapReset() {
+    magnetSession.x = null;
+    magnetSession.y = null;
+}
+window.snapReset = snapReset;
+
+// Bounding box of a box rotated around its own center (radians).
+function computeRotatedAABB(x, y, width, height, rotation) {
+    if (!rotation) return { left: x, top: y, width: width, height: height };
+    const cx = x + width / 2;
+    const cy = y + height / 2;
+    const cos = Math.cos(rotation);
+    const sin = Math.sin(rotation);
+    const hw = width / 2;
+    const hh = height / 2;
+    const dxs = [
+        -hw * cos + hh * sin,
+         hw * cos + hh * sin,
+         hw * cos - hh * sin,
+        -hw * cos - hh * sin
+    ];
+    const dys = [
+        -hw * sin - hh * cos,
+         hw * sin - hh * cos,
+         hw * sin + hh * cos,
+        -hw * sin + hh * cos
+    ];
+    const minX = cx + Math.min.apply(null, dxs);
+    const maxX = cx + Math.max.apply(null, dxs);
+    const minY = cy + Math.min.apply(null, dys);
+    const maxY = cy + Math.max.apply(null, dys);
+    return { left: minX, top: minY, width: maxX - minX, height: maxY - minY };
+}
+
+// AABB of a DOM element in canvas coordinates (undoes the designer zoom scale).
+function getCanvasSpaceRect(el) {
+    const designerCanvas = document.getElementById('ss-designer-canvas');
+    const canvasRect = designerCanvas ? designerCanvas.getBoundingClientRect() : { left: 0, top: 0, width: 1, height: 1 };
+    const er = el.getBoundingClientRect();
+    const scaleX = (designerCanvas && designerCanvas.offsetWidth > 0) ? canvasRect.width / designerCanvas.offsetWidth : 1;
+    const scaleY = (designerCanvas && designerCanvas.offsetHeight > 0) ? canvasRect.height / designerCanvas.offsetHeight : 1;
+    return {
+        left: (er.left - canvasRect.left) / scaleX,
+        top: (er.top - canvasRect.top) / scaleY,
+        width: er.width / scaleX,
+        height: er.height / scaleY
+    };
+}
+
+// Axis-aligned bounding boxes of every other snappable object on the canvas.
+function collectOtherBoxes(excludeEl, excludeImgId) {
+    const boxes = [];
+    layerState.layers.forEach(function(layer) {
+        const el = layer.element;
+        if (!el || el === excludeEl) return;
+        if (el.style.display === 'none') return;
+        const rect = getCanvasSpaceRect(el);
+        if (rect.width > 0 && rect.height > 0) boxes.push(rect);
     });
-    
-    return { x: snappedX, y: snappedY };
+    if (window.SSImageTransform && typeof window.SSImageTransform.getSnapRegions === 'function') {
+        const regions = window.SSImageTransform.getSnapRegions(excludeImgId);
+        if (regions && regions.length) {
+            regions.forEach(function(r) { boxes.push(r); });
+        }
+    }
+    return boxes;
+}
+
+// All vertical/horizontal snap target lines currently available.
+function collectSnapLines(excludeEl, excludeImgId) {
+    const vLines = [];
+    const hLines = [];
+    const addLine = function(arr, val) {
+        const v = Math.round(val * 1000) / 1000;
+        if (arr.indexOf(v) === -1) arr.push(v);
+    };
+
+    // Canvas edges are always snapped to
+    addLine(vLines, 0);
+    addLine(vLines, canvasState.width);
+    addLine(hLines, 0);
+    addLine(hLines, canvasState.height);
+
+    // Slide separators are canvas sides too, so they always snap
+    for (let section = 1; section < canvasState.sections; section++) {
+        addLine(vLines, section * 1080);
+    }
+
+    // Guide lines only snap while SoMe Guides are turned on
+    if (guidanceState.active) {
+        addLine(hLines, canvasState.height / 2);
+        for (let section = 0; section < canvasState.sections; section++) {
+            const sectionStartX = section * 1080;
+
+            addLine(vLines, sectionStartX + 540); // vertical center line
+
+            // 1:1 Square guide (top/bottom)
+            const squareTopY = (1920 - 1080) / 2;
+            const squareBottomY = squareTopY + 1080;
+            addLine(hLines, squareTopY);
+            addLine(hLines, squareBottomY);
+
+            // 4:5 Post guide (top/bottom)
+            const postTopY = (1920 - 1350) / 2;
+            const postBottomY = postTopY + 1350;
+            addLine(hLines, postTopY);
+            addLine(hLines, postBottomY);
+        }
+    }
+
+    // Snap to other objects (sides, corners and center)
+    collectOtherBoxes(excludeEl, excludeImgId).forEach(function(other) {
+        addLine(vLines, other.left);
+        addLine(vLines, other.left + other.width);
+        addLine(hLines, other.top);
+        addLine(hLines, other.top + other.height);
+        addLine(vLines, other.left + other.width / 2);
+        addLine(hLines, other.top + other.height / 2);
+    });
+
+    return { vLines: vLines, hLines: hLines };
+}
+
+// Best candidate for aligning one of three anchors (left/center/right) of a box
+// with any of the given target lines, within the snap threshold.
+function findXSnap(left, center, right, lines) {
+    let best = null;
+    const anchors = [
+        { anchor: 'left', value: left },
+        { anchor: 'center', value: center },
+        { anchor: 'right', value: right }
+    ];
+    for (let a = 0; a < anchors.length; a++) {
+        const anchor = anchors[a];
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const d = Math.abs(line - anchor.value);
+            if (d < SNAP_THRESHOLD && (!best || d < best.dist)) {
+                best = { line: line, anchor: anchor.anchor, delta: line - anchor.value, dist: d };
+            }
+        }
+    }
+    return best;
+}
+
+function findYSnap(top, center, bottom, lines) {
+    let best = null;
+    const anchors = [
+        { anchor: 'top', value: top },
+        { anchor: 'center', value: center },
+        { anchor: 'bottom', value: bottom }
+    ];
+    for (let a = 0; a < anchors.length; a++) {
+        const anchor = anchors[a];
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const d = Math.abs(line - anchor.value);
+            if (d < SNAP_THRESHOLD && (!best || d < best.dist)) {
+                best = { line: line, anchor: anchor.anchor, delta: line - anchor.value, dist: d };
+            }
+        }
+    }
+    return best;
+}
+
+// Snap an axis-aligned bounding box to the closest target lines, with hysteresis.
+function snapAABB(aabb, excludeEl, excludeImgId) {
+    const lines = collectSnapLines(excludeEl, excludeImgId);
+    let deltaX = 0;
+    let deltaY = 0;
+
+    // ---- X axis ----
+    const leftX = aabb.left;
+    const centerX = aabb.left + aabb.width / 2;
+    const rightX = aabb.left + aabb.width;
+    const xAnchorPos = function(s) {
+        if (s.anchor === 'center') return centerX;
+        if (s.anchor === 'right') return rightX;
+        return leftX;
+    };
+    if (magnetSession.x) {
+        const s = magnetSession.x;
+        if (Math.abs(xAnchorPos(s) - s.line) < SNAP_RELEASE_THRESHOLD) {
+            deltaX = s.line - xAnchorPos(s); // stay glued to the same line
+        } else {
+            const cand = findXSnap(leftX, centerX, rightX, lines.vLines);
+            if (cand) {
+                magnetSession.x = { line: cand.line, anchor: cand.anchor };
+                deltaX = cand.delta;
+            } else {
+                magnetSession.x = null;
+            }
+        }
+    } else {
+        const cand = findXSnap(leftX, centerX, rightX, lines.vLines);
+        if (cand) {
+            magnetSession.x = { line: cand.line, anchor: cand.anchor };
+            deltaX = cand.delta;
+        }
+    }
+
+    // ---- Y axis ----
+    const topY = aabb.top;
+    const centerY = aabb.top + aabb.height / 2;
+    const bottomY = aabb.top + aabb.height;
+    const yAnchorPos = function(s) {
+        if (s.anchor === 'center') return centerY;
+        if (s.anchor === 'bottom') return bottomY;
+        return topY;
+    };
+    if (magnetSession.y) {
+        const s = magnetSession.y;
+        if (Math.abs(yAnchorPos(s) - s.line) < SNAP_RELEASE_THRESHOLD) {
+            deltaY = s.line - yAnchorPos(s); // stay glued to the same line
+        } else {
+            const cand = findYSnap(topY, centerY, bottomY, lines.hLines);
+            if (cand) {
+                magnetSession.y = { line: cand.line, anchor: cand.anchor };
+                deltaY = cand.delta;
+            } else {
+                magnetSession.y = null;
+            }
+        }
+    } else {
+        const cand = findYSnap(topY, centerY, bottomY, lines.hLines);
+        if (cand) {
+            magnetSession.y = { line: cand.line, anchor: cand.anchor };
+            deltaY = cand.delta;
+        }
+    }
+
+    return {
+        left: aabb.left + deltaX,
+        top: aabb.top + deltaY,
+        width: aabb.width,
+        height: aabb.height
+    };
+}
+
+// Legacy wrapper: snap an unrotated (or rotated) box, returns adjusted origin.
+export function snapToGuidelines(x, y, width, height, rotation) {
+    if (!magnetState.active) return { x: x, y: y };
+    snapReset();
+    const aabb = computeRotatedAABB(x, y, width, height, rotation || 0);
+    const snapped = snapAABB(aabb, null, null);
+    return { x: x + (snapped.left - aabb.left), y: y + (snapped.top - aabb.top) };
+}
+
+// Snap a DOM element whose target position is (x, y). Rotation-aware via AABB.
+export function snapElementAt(x, y, el) {
+    if (!magnetState.active || !el) return { x: x, y: y };
+    const currentLeft = parseInt(el.style.left) || 0;
+    const currentTop = parseInt(el.style.top) || 0;
+    const base = getCanvasSpaceRect(el);
+    const targetBox = {
+        left: base.left + (x - currentLeft),
+        top: base.top + (y - currentTop),
+        width: base.width,
+        height: base.height
+    };
+    const snapped = snapAABB(targetBox, el, null);
+    return { x: x + (snapped.left - targetBox.left), y: y + (snapped.top - targetBox.top) };
 }
 
 window.snapToGuidelines = snapToGuidelines;
+window.snapElementAt = snapElementAt;
+window.snapBox = snapAABB;
+
+export { snapAABB as snapBox };

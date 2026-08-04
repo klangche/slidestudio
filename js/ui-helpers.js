@@ -56,6 +56,13 @@ export function setupRotationHandler(element) {
         function onUp() {
             document.removeEventListener('pointermove', onMove);
             document.removeEventListener('pointerup', onUp);
+            try {
+                const layerIndex = layerState.layers.findIndex(function(l) { return l.element === element; });
+                if (layerIndex !== -1) {
+                    layerState.layers[layerIndex].rotation = parseRotation(element.style.transform);
+                }
+            } catch (err) {}
+            if (typeof window.saveState === 'function') window.saveState();
         }
         document.addEventListener('pointermove', onMove);
         document.addEventListener('pointerup', onUp);
@@ -66,6 +73,87 @@ export function adjustTextElementSize(element) {
     if (!element) return;
     element.style.height = 'auto';
     element.style.height = element.scrollHeight + 'px';
+}
+
+function getTextFontSize(el) {
+    const content = el.querySelector && el.querySelector('.ss-text-content');
+    const target = content || el;
+    return parseFloat(window.getComputedStyle(target).fontSize) || 12;
+}
+
+function setTextFontSize(el, size) {
+    const content = el.querySelector && el.querySelector('.ss-text-content');
+    (content || el).style.fontSize = size + 'px';
+}
+
+// Wires the corner resize handles of a text element so it behaves like an image:
+// dragging a corner resizes the box and scales the font proportionally.
+export function setupTextResizeHandlers(element) {
+    if (!element) return;
+    let handles = getResizeHandlesForElement(element);
+    if (!handles) {
+        handles = createResizeHandles();
+        element.appendChild(handles);
+    }
+
+    const corners = handles.querySelectorAll('.ss-resize-handle');
+    Array.prototype.forEach.call(corners, function(handle) {
+        handle.addEventListener('pointerdown', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            startTextResize(element, handle, e);
+        });
+    });
+}
+
+function startTextResize(element, handle, e) {
+    const rect = element.getBoundingClientRect();
+    const startWidth = rect.width || element.offsetWidth || 100;
+    const startHeight = rect.height || element.offsetHeight || 40;
+    const startFontSize = getTextFontSize(element);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const corner = (handle.style.cursor || 'se-resize').split('-')[0];
+
+    function onMove(ev) {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        let newW = startWidth;
+        let newH = startHeight;
+        if (corner.indexOf('w') !== -1) newW = startWidth - dx;
+        if (corner.indexOf('e') !== -1) newW = startWidth + dx;
+        if (corner.indexOf('n') !== -1) newH = startHeight - dy;
+        if (corner.indexOf('s') !== -1) newH = startHeight + dy;
+        newW = Math.max(40, Math.round(newW));
+        newH = Math.max(24, Math.round(newH));
+
+        // Scale the font with the box width so proportions stay intact
+        const newFontSize = Math.max(6, Math.round((startFontSize * newW / startWidth) * 10) / 10);
+        setTextFontSize(element, newFontSize);
+
+        element.style.width = newW + 'px';
+        element.style.height = 'auto';
+        element.style.height = element.scrollHeight + 'px';
+    }
+
+    function onUp() {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        try {
+            const layerIndex = layerState.layers.findIndex(function(l) { return l.element === element; });
+            if (layerIndex !== -1) {
+                layerState.layers[layerIndex].size = {
+                    width: element.offsetWidth,
+                    height: element.offsetHeight
+                };
+                layerState.layers[layerIndex].fontSize = getTextFontSize(element);
+            }
+        } catch (err) {}
+        if (typeof window.saveState === 'function') window.saveState();
+    }
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
 }
 
 export function addTextElement() {
@@ -127,3 +215,6 @@ window.getResizeHandlesForElement = getResizeHandlesForElement;
 window.setupRotationHandler = setupRotationHandler;
 window.adjustTextElementSize = adjustTextElementSize;
 window.addTextElement = addTextElement;
+window.setupTextResizeHandlers = setupTextResizeHandlers;
+window.SSText = window.SSText || {};
+window.SSText.setupTextResizeHandlers = setupTextResizeHandlers;

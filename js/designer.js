@@ -174,27 +174,46 @@ function initializeDesignerEventListeners() {
     const dropShadowBtn = document.getElementById('ss-dropShadowBtn');
     const grayscaleBtn = document.getElementById('ss-grayscaleBtn');
     
+    // All sidebar tools act only on the actively selected object. When a text2
+    // box is selected the shared tools (delete/duplicate/lock) route to the
+    // standalone text2-transform module instead of image-transform.
+    function activeText2Selected() {
+        const sel = layerState.selectedLayer;
+        return !!(sel && sel.classList && sel.classList.contains('ss-text2-element'));
+    }
+    
     if (deleteImageBtn) deleteImageBtn.addEventListener('click', function() {
+        if (activeText2Selected()) {
+            if (window.SSText2Transform && window.SSText2Transform.deleteSelected) window.SSText2Transform.deleteSelected();
+            return;
+        }
         if (window.SSImageTransform && window.SSImageTransform.deleteImage) {
             window.SSImageTransform.deleteImage();
         }
     });
     if (duplicateImageBtn) duplicateImageBtn.addEventListener('click', function() {
+        if (activeText2Selected()) {
+            if (window.SSText2Transform && window.SSText2Transform.duplicateSelected) window.SSText2Transform.duplicateSelected();
+            return;
+        }
         if (window.SSImageTransform && window.SSImageTransform.duplicateImage) {
             window.SSImageTransform.duplicateImage();
         }
     });
     if (flipHorizontalBtn) flipHorizontalBtn.addEventListener('click', function() {
+        if (activeText2Selected()) return;
         if (window.SSImageTransform && window.SSImageTransform.flipHorizontal) {
             window.SSImageTransform.flipHorizontal();
         }
     });
     if (flipVerticalBtn) flipVerticalBtn.addEventListener('click', function() {
+        if (activeText2Selected()) return;
         if (window.SSImageTransform && window.SSImageTransform.flipVertical) {
             window.SSImageTransform.flipVertical();
         }
     });
     if (replaceImageBtn) replaceImageBtn.addEventListener('click', function() {
+        if (activeText2Selected()) return;
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = 'image/*';
@@ -210,6 +229,10 @@ function initializeDesignerEventListeners() {
         fileInput.click();
     });
     if (lockImageBtn) lockImageBtn.addEventListener('click', function() {
+        if (activeText2Selected()) {
+            if (window.SSText2Transform && window.SSText2Transform.toggleLock) window.SSText2Transform.toggleLock();
+            return;
+        }
         if (window.SSImageTransform && window.SSImageTransform.toggleLock) {
             window.SSImageTransform.toggleLock();
             updateImageToolUIForSelection();
