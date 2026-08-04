@@ -270,9 +270,148 @@ function drawWrappedLine(ctx, tokens, lineX, maxWidth, align, y) {
     }
 }
 
+function parseTextBox2Crop(el, cw, ch) {
+    const raw = el.dataset.text2Crop;
+    if (raw) {
+        const m = /^([-\d.]+)\|([-\d.]+)\|([-\d.]+)\|([-\d.]+)$/.exec(String(raw).trim());
+        if (m) {
+            const x = parseFloat(m[1]);
+            const y = parseFloat(m[2]);
+            const w = parseFloat(m[3]);
+            const h = parseFloat(m[4]);
+            if (isFinite(x) && isFinite(y) && isFinite(w) && isFinite(h) && w > 0 && h > 0) {
+                return { x: x, y: y, w: w, h: h };
+            }
+        }
+    }
+    return { x: 0, y: 0, w: cw, h: ch };
+}
+
+function renderTextBox2(ctx, layer) {
+    const el = layer.element;
+    if (!el || el.style.display === 'none') return;
+    const contentEl = el.querySelector && el.querySelector('.ss-text-content');
+    if (!contentEl) return;
+    const lineEls = contentEl.querySelectorAll && contentEl.querySelectorAll('.ss-text2-line');
+    if (!lineEls || !lineEls.length) return;
+
+    const boxWidth = el.offsetWidth || (layer.size && layer.size.width) || 0;
+    const boxHeight = el.offsetHeight || (layer.size && layer.size.height) || 0;
+    if (boxWidth <= 0 || boxHeight <= 0) return;
+
+    let relLeft = parseInt(el.style.left) || (layer.position && layer.position.left) || 0;
+    let relTop = parseInt(el.style.top) || (layer.position && layer.position.top) || 0;
+    const padLeft = parseFloat(window.getComputedStyle(el).paddingLeft) || 0;
+    const padTop = parseFloat(window.getComputedStyle(el).paddingTop) || 0;
+    relLeft += padLeft;
+    relTop += padTop;
+    let groupRotate = 0;
+    if (layer.parentGroup) {
+        const groupLayer = layerState.layers.find(function(l) { return l.id === layer.parentGroup; });
+        if (groupLayer && groupLayer.element) {
+            relLeft += parseInt(groupLayer.element.style.left) || 0;
+            relTop += parseInt(groupLayer.element.style.top) || 0;
+            groupRotate = parseRotateRad(groupLayer.element.style.transform || '');
+        }
+    }
+    const ownRotate = parseRotateRad(el.style.transform || '');
+
+    const scaleMatch = /scale\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)/.exec(contentEl.style.transform || '');
+    const sx = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+    const sy = scaleMatch ? parseFloat(scaleMatch[2]) : 1;
+    const contentW = parseFloat(contentEl.style.width) || boxWidth;
+    const contentH = parseFloat(contentEl.style.height) || boxHeight;
+    if (contentW <= 0 || contentH <= 0) return;
+
+    // Render the unscaled content to an offscreen canvas (identity transform, so
+    // measurement and wrapping stay consistent), then draw it scaled to the box
+    // while clipped. This mirrors the on-canvas scale-to-fill / crop behavior.
+    const off = document.createElement('canvas');
+    off.width = Math.max(1, Math.round(contentW));
+    off.height = Math.max(1, Math.round(contentH));
+    const octx = off.getContext('2d');
+
+    let cursor = 0;
+    for (let li = 0; li < lineEls.length; li++) {
+        const lineEl = lineEls[li];
+        const cs = window.getComputedStyle(lineEl);
+        const style = {
+            fontFamily: cs.fontFamily || 'Arial, sans-serif',
+            fontSize: parseFloat(cs.fontSize) || 24,
+            fontWeight: cs.fontWeight || 'normal',
+            fontStyle: cs.fontStyle || 'normal',
+            textDecoration: cs.textDecoration || 'none',
+            color: cs.color || '#000000',
+            letterSpacing: parseFloat(cs.letterSpacing) || 0,
+            textTransform: cs.textTransform || 'none'
+        };
+        const align = cs.textAlign || 'left';
+        const fontSize = style.fontSize;
+        // Computed line-height comes back as a pixel length (e.g. "76.8px" for
+        // a unitless 1.2), so convert it back to a unitless ratio here.
+        const computedLH = parseFloat(cs.lineHeight);
+        const lineHeight = computedLH > 0 ? computedLH / fontSize : 1.2;
+        if (!lineEl.textContent || !lineEl.textContent.trim()) {
+            cursor += lineHeight * fontSize;
+            continue;
+        }
+        const runs = collectRuns(lineEl, style);
+        // Poster rows must stay on a single line so every row is exactly as
+        // wide as the others (font-scaled or letter-spaced); wrapping would
+        // break the equal-width poster look.
+        const visualLines = el.dataset.text2Equal === '1'
+            ? [runs]
+            : wrapRuns(runs, contentW, octx);
+        if (!visualLines.length) {
+            cursor += lineHeight * fontSize;
+            continue;
+        }
+        let baseline = cursor + Math.round(fontSize * 0.8);
+        for (let vi = 0; vi < visualLines.length; vi++) {
+            const lastLine = vi === visualLines.length - 1;
+            const effAlign = (lastLine && align === 'justify') ? 'left' : align;
+            drawWrappedLine(octx, visualLines[vi], 0, contentW, effAlign, baseline);
+            baseline += lineHeight * fontSize;
+        }
+        cursor += lineHeight * fontSize * visualLines.length;
+    }
+
+    // Visible (cropped) region in content/natural coordinates.
+    const vr = parseTextBox2Crop(el, contentW, contentH);
+
+    // text2 boxes use a top-left transform origin, so the visible content
+    // top-left lands at relLeft/relTop offset by the rotated crop offset.
+    const cosO = Math.cos(ownRotate);
+    const sinO = Math.sin(ownRotate);
+    const visLeft = relLeft + (vr.x * sx * cosO - vr.y * sy * sinO);
+    const visTop = relTop + (vr.x * sx * sinO + vr.y * sy * cosO);
+    const centerX = relLeft + boxWidth / 2;
+    const centerY = relTop + boxHeight / 2;
+    ctx.save();
+    if (groupRotate) {
+        ctx.translate(centerX, centerY);
+        ctx.rotate(groupRotate);
+        ctx.translate(-centerX, -centerY);
+    }
+    if (ownRotate) {
+        ctx.translate(visLeft, visTop);
+        ctx.rotate(ownRotate);
+        ctx.translate(-visLeft, -visTop);
+    }
+    ctx.beginPath();
+    ctx.rect(visLeft, visTop, boxWidth, boxHeight);
+    ctx.clip();
+    ctx.drawImage(off, vr.x, vr.y, vr.w, vr.h, visLeft, visTop, boxWidth, boxHeight);
+    ctx.restore();
+}
+
 function renderTextBox(ctx, layer) {
     const el = layer.element;
     if (!el || el.style.display === 'none') return;
+    if (layer.isText2 || (el.classList && el.classList.contains('ss-text2-element'))) {
+        renderTextBox2(ctx, layer);
+        return;
+    }
     const contentEl = (el.querySelector && el.querySelector('.ss-text-content')) ? el.querySelector('.ss-text-content') : el;
     const cs = window.getComputedStyle(contentEl);
     const fontSize = parseFloat(cs.fontSize) || 24;

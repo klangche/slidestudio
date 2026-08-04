@@ -3,7 +3,7 @@ import { layerState, canvasState, guidanceState } from './state.js';
 import { saveState } from './history.js';
 import { updateSlideSeparatorColors, updateGuidanceTransparency } from './guidance.js';
 import { makeElementDraggable, makeElementSelectable, selectLayer, updateLayerOrderButtons } from './selection.js';
-import { setupRotationHandler, getResizeHandlesForElement, addTextElement } from './ui-helpers.js';
+import { setupRotationHandler, getResizeHandlesForElement } from './ui-helpers.js';
 
 // ENHANCED: Delete function that hides instead of removes
 export function deleteSelectedLayer() {
@@ -281,11 +281,26 @@ export function updateImageToolButtons() {
     const hasSelectedImage = !!selectedImage;
     const isLocked = selectedImage && selectedImage.locked;
     
+    // text2 boxes are image-like: delete/duplicate/lock work on the active box,
+    // the image-only tools (flips, replace, frames, shadow, ...) stay disabled.
+    const sel = layerState.selectedLayer;
+    const isText2Selected = !!(sel && sel.classList && sel.classList.contains('ss-text2-element'));
+    const isText2Locked = isText2Selected && sel.dataset && sel.dataset.text2Locked === '1';
+    const text2Allowed = ['ss-duplicateImageBtn', 'ss-deleteImageBtn', 'ss-lockImageBtn'];
+    
     imageToolButtons.forEach(function(btnId) {
         const btn = document.getElementById(btnId);
         if (btn) {
             // Remove any background styling
             btn.style.background = 'none';
+            
+            if (isText2Selected) {
+                const enabled = btnId === 'ss-lockImageBtn' || (text2Allowed.indexOf(btnId) !== -1 && !isText2Locked);
+                btn.disabled = !enabled;
+                btn.style.opacity = enabled ? '1' : '0.3';
+                btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+                return;
+            }
             
             // Lock button is always available when image is selected
             if (btnId === 'ss-lockImageBtn' && hasSelectedImage) {
@@ -399,7 +414,6 @@ export function updateCanvasColor(hexColor) {
 
 export function initializeUploadFunctionality() {
     const uploadImagesBtn = document.getElementById('ss-uploadImagesBtn');
-    const addTextBtn = document.getElementById('ss-addTextBtn');
     
     if (uploadImagesBtn) {
         uploadImagesBtn.addEventListener('click', function() {
@@ -443,23 +457,6 @@ export function initializeUploadFunctionality() {
             console.log('initializeUploadFunctionality: open file dialog (triggered)');
             document.body.appendChild(fileInput);
             fileInput.click();
-        });
-    }
-    
-    if (addTextBtn) {
-        addTextBtn.addEventListener('click', function() {
-            if (layerState.layers.length >= layerState.maxLayers) {
-                alert('Maximum number of layers reached (' + layerState.maxLayers + '). Please remove some elements before adding more.');
-                return;
-            }
-            // Prefer the text editor modal if present
-            if (window.SSTextEditor && typeof window.SSTextEditor.open === 'function') {
-                window.SSTextEditor.open();
-            } else {
-                // Fallback: directly add a text element
-                saveState();
-                if (typeof addTextElement === 'function') addTextElement();
-            }
         });
     }
 }
