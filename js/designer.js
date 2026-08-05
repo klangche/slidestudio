@@ -2,12 +2,13 @@
 import { canvasState, guidanceState, magnetState, layerState, historyState } from './state.js';
 import { initializeZoomFunctionality, setInitialZoom } from './zoom.js';
 import { updateSectionCount, updateResolutionDisplay, updateButtonStates, addSection, removeSection, initializeMagnetButton } from './sections.js';
-import { initializeColorPicker, initializeUploadFunctionality, initializeTransparencySlider, moveLayerToTop, moveLayerUp, moveLayerDown, moveLayerToBottom, updateImageToolButtons, cleanupImagesOutsideCanvas } from './layers.js';
+import { initializeUploadFunctionality, initializeTransparencySlider, moveLayerToTop, moveLayerUp, moveLayerDown, moveLayerToBottom, updateImageToolButtons, cleanupImagesOutsideCanvas } from './layers.js';
 import { updateUndoRedoButtons, undo, redo, saveState } from './history.js';
 import { initializeGlobalClickHandler, toggleFreeMove, updateLayerOrderButtons, updateImageToolUIForSelection, initializeFreeMoveShortcuts } from './selection.js';
 import { toggleGuidance, createEnhancedGuidanceOverlay } from './guidance.js';
 import { initializeKeyboardMovement } from './keyboard.js';
 import { exportCanvasZip, downloadBackup, saveTemplate, listTemplates, loadTemplateByName, loadBackupFromFile, openLoadBackupDialog, openLoadTemplateDialog } from './export.js';
+import { initializeBackgroundColorPicker } from './background-color.js';
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeDesignerWorkspace();
@@ -35,7 +36,7 @@ function initializeDesignerWorkspace() {
     updateSectionCount();
     updateResolutionDisplay();
     updateButtonStates();
-    initializeColorPicker();
+    initializeBackgroundColorPicker();
     initializeUploadFunctionality();
     updateUndoRedoButtons();
     initializeTransparencySlider();

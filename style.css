@@ -1590,38 +1590,62 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     background: rgba(52, 152, 219, 0.1);
 }
 
-.ss-slide-color-controls {
+/* Background color panel (replaces the old native color input). Reuses the
+   generic ss-text2-* structural classes for the canvas palette and the
+   Spectrum/Grid/Sliders carousel so both pickers look identical, but lives in
+   its own module with its own ids. */
+.ss-bg-color-panel {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    margin-top: 6px;
+    gap: 7px;
     width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+    margin-top: 6px;
 }
 
-.ss-color-picker-container {
+/* The Color Management section lives directly in the Slide Management
+   toolbox like the rest of its controls (no nested box). The panel uses the
+   generic collapsible header/content pattern for its own compact toggle. */
+.ss-bg-color-panel.ss-collapsed .ss-bg-color-content {
+    height: 0;
+    opacity: 0;
+}
+.ss-bg-color-panel.ss-collapsed .ss-collapsible-header::after {
+    content: "+";
+}
+
+/* The canvas palette shares the text-editor's fixed 308px stack which is
+   too wide for the sidebar, so let it stretch to fill the panel instead. */
+.ss-bg-color-panel .ss-text2-canvas-body {
+    justify-content: stretch;
+}
+.ss-bg-color-panel .ss-text2-canvas-palette {
+    width: 100%;
+}
+.ss-bg-color-panel .ss-text2-canvas-palette-row {
+    width: 100%;
+}
+.ss-bg-color-panel .ss-text2-canvas-palette-stack {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+}
+
+.ss-bg-tool-row {
     display: flex;
-    gap: 6px;
     align-items: center;
     justify-content: center;
-    width: 100%;
+    gap: 8px;
+    flex: 0 0 auto;
 }
 
-#ss-slideColorPicker {
-    width: 36px;
-    height: 28px;
+#ss-bgColorHex {
+    width: 72px;
+    padding: 4px 3px;
     border: 1px solid var(--ss-border-color);
-    border-radius: 4px;
-    cursor: pointer;
-    background: var(--ss-control-box-bg);
-}
-
-#ss-slideColorHex {
-    width: 65px;
-    padding: 5px 3px;
-    border: 1px solid var(--ss-border-color);
-    border-radius: 4px;
-    font-size: 11px;
+    border-radius: 6px;
+    font-size: 12px;
     font-family: monospace;
     text-align: center;
     background: var(--ss-control-box-bg);
@@ -2601,38 +2625,6 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 }
 .ss-text2-cap { font-size: 11px; font-weight: 700; }
 .ss-text2-opp { font-size: 16px; }
-.ss-text2-color-btn {
-    position: relative;
-    flex: 0 0 auto;
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    max-width: 32px;
-    max-height: 32px;
-    padding: 0;
-    border: 1px solid rgba(0,0,0,0.2);
-    border-radius: 50%;
-    background: var(--ss-bg-color);
-    cursor: pointer;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-.ss-text2-color-btn.ss-text2-active {
-    border-color: rgba(52,152,219,0.6);
-    box-shadow: 0 0 0 2px rgba(52,152,219,0.25);
-}
-.ss-text2-color-dot {
-    display: block;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #121212;
-    border: 2px solid rgba(255,255,255,0.85);
-    box-sizing: border-box;
-}
 .ss-text2-poster {
     width: auto;
     min-width: 46px;
@@ -2659,7 +2651,7 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     text-align: center;
 }
 
-/* --- Color selector: opened by the color button. A pushdown (in normal
+/* --- Color selector: always visible in the editor (a pushdown in normal
    flow). The Canvas palette section (dominant colors + complementary
    colors) is pinned at the top; under it a fixed-height carousel cycles
    Spectrum, Grid and Sliders - none of them scroll, each fits the area so
@@ -2667,7 +2659,7 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 .ss-text2-color-popup {
     position: static;
     z-index: 12020;
-    display: none;
+    display: flex;
     flex-direction: column;
     gap: 7px;
     width: 100%;
@@ -2680,12 +2672,9 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     border-radius: 10px;
     box-shadow: none;
 }
-.ss-text2-color-popup.ss-text2-open {
-    display: flex;
-}
 .ss-text2-color-pages {
     position: relative;
-    height: 236px;
+    height: 150px;
     overflow: hidden;
     flex: 0 0 auto;
 }
@@ -2732,49 +2721,6 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     color: var(--ss-text-color);
     opacity: 0.8;
 }
-.ss-text2-canvas-pages {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.ss-text2-canvas-page {
-    flex: 0 0 auto;
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    min-height: 22px;
-    max-width: 22px;
-    max-height: 22px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid var(--ss-border-color);
-    border-radius: 6px;
-    background: var(--ss-control-box-bg);
-    color: var(--ss-text-color);
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1;
-    transition: all 0.15s ease;
-}
-.ss-text2-canvas-page:hover {
-    background: rgba(52,152,219,0.12);
-    border-color: rgba(52,152,219,0.5);
-}
-.ss-text2-canvas-page.ss-text2-active {
-    background: rgba(52,152,219,0.18);
-    border-color: rgba(52,152,219,0.5);
-    color: #3498db;
-}
-.ss-text2-canvas-page.ss-text2-canvas-page--all {
-    width: auto;
-    min-width: 30px;
-    max-width: none;
-    padding: 0 6px;
-    font-size: 10px;
-}
 .ss-text2-canvas-body {
     display: flex;
     justify-content: center;
@@ -2785,17 +2731,6 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     align-items: flex-start;
     gap: 0;
     flex: 0 0 auto;
-}
-.ss-text2-canvas-palette .ss-text2-palette-label {
-    align-self: stretch;
-    text-align: center;
-    box-sizing: border-box;
-}
-.ss-text2-canvas-palette .ss-text2-palette-label:first-child {
-    margin-bottom: 4px;
-}
-.ss-text2-canvas-palette .ss-text2-palette-label:last-child {
-    margin-top: 4px;
 }
 .ss-text2-canvas-palette-row {
     display: flex;
@@ -2875,11 +2810,6 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     opacity: 0.35;
     cursor: default;
 }
-.ss-text2-palette-label.ss-text2-palette-label--muted {
-    text-transform: none;
-    font-weight: 500;
-    letter-spacing: 0.03em;
-}
 
 /* Big swatch used by the sliders preview (also reused by the old comp
    page, which no longer exists). */
@@ -2939,16 +2869,22 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 
 /* --- Grid page: hue x lightness rows + grayscale ramp --- */
 .ss-text2-color-page--grid {
-    justify-content: center;
+    justify-content: stretch;
 }
 .ss-text2-color-page--grid .ss-text2-color-swatches {
     display: flex;
     flex-direction: column;
     gap: 0;
     width: 100%;
+    height: 100%;
+}
+.ss-text2-color-page--grid .ss-text2-color-row {
+    flex: 1 1 0;
+    min-height: 0;
 }
 .ss-text2-color-page--grid .ss-text2-color-row .ss-text2-swatch--color {
-    height: 20px;
+    height: 100%;
+    min-height: 0;
 }
 
 /* --- Sliders page: RGB sliders + preview --- */
@@ -2960,7 +2896,7 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     flex-direction: column;
     gap: 6px;
     flex: 1 1 auto;
-    justify-content: center;
+    justify-content: space-evenly;
 }
 .ss-text2-slider-row {
     display: flex;
@@ -3042,13 +2978,6 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     letter-spacing: 0.05em;
     color: var(--ss-text-color);
     opacity: 0.8;
-}
-.ss-text2-palette-label {
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    opacity: 0.55;
 }
 .ss-text2-swatch {
     flex: 0 0 auto;

@@ -6,10 +6,10 @@
 //   - "Poster" formatting: every row ends up exactly as wide as the widest row
 //     (multi-word rows scale their font size, a single word without spaces gets
 //     letter spacing between the letters - nothing is ever hidden or cut)
-//   - smart color: eyedropper pipette, a round color swatch that opens the
-//     native picker, and a complementary-color button that opens a palette of
-//     the 5 dominant canvas colors with their 5 complements (greyscale ramp
-//     when the canvas is only black & white)
+//   - smart color: eyedropper pipette, hex input, and an always-visible
+//     color panel with a palette of the 5 dominant canvas colors and their
+//     5 complements (greyscale ramp when the canvas is only black & white)
+//     plus Spectrum, Grid and Sliders selectors that all stay in step
 //   - recents-first font list (last used fonts are pinned to the top)
 //   - all text tools live in one compact toolbar row
 //   - a live preview panel under the writing box that always shows the exact
@@ -18,6 +18,11 @@
 // Everything here uses ss-text2-* ids/classes so the popup never collides
 // with the rest of the app.
 import { layerState, canvasState } from './state.js';
+import {
+    MIN_PALETTE_SIZE, MAX_PALETTE_SIZE,
+    normalizeHex, hexToRgb, rgbToHex, rgbToHsl, hslToRgb, hslToHex,
+    hsvToHex, complementOf, sampleCanvasColors
+} from './color-utils.js';
 
 (function () {
     'use strict';
@@ -30,10 +35,10 @@ import { layerState, canvasState } from './state.js';
     let slideNav, slidePrev, slideNext, slideLabel;
     let fontBtn, fontLabel, fontDropdown, fontSearch, fontList, fontRecent;
     let weightSelect;
-    let colorPickerBtn, colorDot, colorHex;
+    let colorHex;
     let pipetteBtn, equalWidthBtn;
-    let colorPopup, colorPages, carPrev, carNext, carTitle;
-    let paletteMain, paletteSub, palettePlus, paletteMinus, canvasPrev, canvasNext, canvasPages;
+    let colorPages, carPrev, carNext, carTitle;
+    let paletteMain, paletteSub, palettePlus, paletteMinus, canvasPrev, canvasNext, canvasName;
     let spectrumSv, spectrumSvMarker, spectrumHue, spectrumHueMarker;
     let colorSwatches, sliders, sliderPreview, sliderHex;
     let cancelBtn, applyBtn;
@@ -43,7 +48,6 @@ import { layerState, canvasState } from './state.js';
     let editingSlideIndex = 0;
     let lastActiveElement = null;
     let fontDropdownOpen = false;
-    let colorPanelOpen = false;
     let carouselIndex = 0;
     let canvasSlideIndex = 0;
     let paletteSize = 5;
@@ -73,11 +77,6 @@ import { layerState, canvasState } from './state.js';
     const MAX_RECENT = 8;
     // Poster rows are packed tight: nearly touching, so more rows fit.
     const POSTER_LINE_HEIGHT = 0.82;
-
-    const DEFAULT_PALETTE = ['#ffffff', '#121212', '#e74c3c', '#2ecc71', '#3498db'];
-
-    const MIN_PALETTE_SIZE = 3;
-    const MAX_PALETTE_SIZE = 11;
 
     const editor = {
         text: '',
@@ -140,12 +139,9 @@ import { layerState, canvasState } from './state.js';
         fontList = document.getElementById('ss-text2FontList');
         fontRecent = document.getElementById('ss-text2FontRecent');
         weightSelect = document.getElementById('ss-text2Weight');
-        colorPickerBtn = document.getElementById('ss-text2ColorBtn');
-        colorDot = document.getElementById('ss-text2ColorDot');
         colorHex = document.getElementById('ss-text2ColorHex');
         pipetteBtn = document.getElementById('ss-text2Pipette');
         equalWidthBtn = document.getElementById('ss-text2EqualWidth');
-        colorPopup = document.getElementById('ss-text2ColorPopup');
         colorPages = document.getElementById('ss-text2ColorPages');
         carPrev = document.getElementById('ss-text2CarPrev');
         carNext = document.getElementById('ss-text2CarNext');
@@ -156,7 +152,7 @@ import { layerState, canvasState } from './state.js';
         paletteMinus = document.getElementById('ss-text2PaletteMinus');
         canvasPrev = document.getElementById('ss-text2CanvasPrev');
         canvasNext = document.getElementById('ss-text2CanvasNext');
-        canvasPages = document.getElementById('ss-text2CanvasPages');
+        canvasName = document.getElementById('ss-text2CanvasName');
         spectrumSv = document.getElementById('ss-text2SpectrumSv');
         spectrumSvMarker = document.getElementById('ss-text2SpectrumSvMarker');
         spectrumHue = document.getElementById('ss-text2SpectrumHue');
@@ -225,21 +221,17 @@ import { layerState, canvasState } from './state.js';
             });
         }
 
-        if (colorPickerBtn) {
-            colorPickerBtn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                toggleColorPanel();
+        if (colorHex) {
+            colorHex.addEventListener('input', function () {
+                let hex = colorHex.value.trim();
+                if (!hex.startsWith('#')) hex = '#' + hex;
+                if (/^#[0-9a-fA-F]{6}$/.test(hex)) applyBase({ color: normalizeHex(hex) });
+            });
+            colorHex.addEventListener('blur', function () {
+                const hex = normalizeHex(colorHex.value.trim());
+                applyBase({ color: hex });
             });
         }
-        colorHex.addEventListener('input', function () {
-            let hex = colorHex.value.trim();
-            if (!hex.startsWith('#')) hex = '#' + hex;
-            if (/^#[0-9a-fA-F]{6}$/.test(hex)) applyBase({ color: normalizeHex(hex) });
-        });
-        colorHex.addEventListener('blur', function () {
-            const hex = normalizeHex(colorHex.value.trim());
-            applyBase({ color: hex });
-        });
 
         if (pipetteBtn) pipetteBtn.addEventListener('click', pickScreenColor);
         if (carPrev) carPrev.addEventListener('click', function (e) {
@@ -316,11 +308,6 @@ import { layerState, canvasState } from './state.js';
             if (fontDropdownOpen) {
                 if (!fontDropdown.contains(e.target) && !fontBtn.contains(e.target)) {
                     closeFontDropdown();
-                }
-            }
-            if (colorPanelOpen) {
-                if (!colorPopup.contains(e.target) && !colorPickerBtn.contains(e.target)) {
-                    closeColorPanel();
                 }
             }
         });
@@ -628,6 +615,7 @@ import { layerState, canvasState } from './state.js';
         if (overrides.caps !== undefined) editor.textTransform = overrides.caps ? 'uppercase' : 'none';
         editor.textAlign = 'center';
         renderContentAndPreview();
+        refreshColorSelectors();
     }
 
     function toggleStyle(style) {
@@ -676,8 +664,6 @@ import { layerState, canvasState } from './state.js';
     function syncColorControls(color) {
         const c = normalizeHex(color || editor.color);
         if (colorHex && colorHex.value.toLowerCase() !== c) colorHex.value = c;
-        if (colorDot) colorDot.style.background = c;
-        if (colorPickerBtn) colorPickerBtn.style.background = c;
     }
 
     // ------------------------------------------------------------------
@@ -1143,188 +1129,10 @@ import { layerState, canvasState } from './state.js';
 
     // ------------------------------------------------------------------
     // Smart color: pipette, canvas palette, complementary colors
+    // (the color math and canvas sampling live in js/color-utils.js - the
+    // canvas palette aggregates dominant colors across every slide, so a
+    // color on any slide shows up in the overall "Canvas" palette)
     // ------------------------------------------------------------------
-    function hexToRgb(hex) {
-        const h = normalizeHex(hex);
-        return [parseInt(h.substr(1, 2), 16), parseInt(h.substr(3, 2), 16), parseInt(h.substr(5, 2), 16)];
-    }
-
-    function rgbToHex(r, g, b) {
-        return '#' + [r, g, b].map(function (v) {
-            return Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
-        }).join('');
-    }
-
-    function rgbToHsl(r, g, b) {
-        r /= 255; g /= 255; b /= 255;
-        const max = Math.max(r, g, b), min = Math.min(r, g, b);
-        let h = 0, s = 0;
-        const l = (max + min) / 2;
-        if (max !== min) {
-            const d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            if (max === r) h = ((g - b) / d + (g < b ? 6 : 0));
-            else if (max === g) h = ((b - r) / d + 2);
-            else h = ((r - g) / d + 4);
-            h /= 6;
-        }
-        return [h * 360, s, l];
-    }
-
-    function hslToRgb(h, s, l) {
-        h = ((h % 360) + 360) % 360 / 360;
-        if (s === 0) {
-            const v = Math.round(l * 255);
-            return [v, v, v];
-        }
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        const f = function (t) {
-            if (t < 0) t += 1;
-            if (t > 1) t -= 1;
-            if (t < 1 / 6) return p + (q - p) * 6 * t;
-            if (t < 1 / 2) return q;
-            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-            return p;
-        };
-        return [Math.round(f(h + 1 / 3) * 255), Math.round(f(h) * 255), Math.round(f(h - 1 / 3) * 255)];
-    }
-
-    // Achromatic colors (white, black, grays) rotate to themselves, which would
-    // stack white over white. For those, the complement is the inverted
-    // lightness: white gets black under it, black gets white, gray gets its
-    // mirror gray - the pair is always visible.
-    function complementOf(hex) {
-        const rgb = hexToRgb(hex);
-        const hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
-        if (hsl[1] < 0.08) {
-            const v = Math.round((1 - hsl[2]) * 255);
-            return rgbToHex(v, v, v);
-        }
-        const comp = hslToRgb(hsl[0] + 180, hsl[1], hsl[2]);
-        return rgbToHex(comp[0], comp[1], comp[2]);
-    }
-
-    function colorDistHex(a, b) {
-        const ca = hexToRgb(a), cb = hexToRgb(b);
-        return Math.sqrt(Math.pow(ca[0] - cb[0], 2) + Math.pow(ca[1] - cb[1], 2) + Math.pow(ca[2] - cb[2], 2));
-    }
-
-    // slideIndex: -1 = whole canvas, otherwise a 0-based slide number.
-    // k = how many dominant colors to return (clamped to 3..11).
-    function sampleCanvasColors(slideIndex, k) {
-        try {
-            const W = Math.max(1, Math.round(canvasState.width));
-            const H = Math.max(1, Math.round(canvasState.height));
-            const sections = Math.max(1, canvasState.sections || 1);
-            const slideW = W / sections;
-            const sx = slideIndex >= 0 ? Math.min(slideIndex, sections - 1) * slideW : 0;
-            const drawW = slideIndex >= 0 ? slideW : W;
-
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.max(1, Math.round(drawW));
-            canvas.height = H;
-            const ctx = canvas.getContext('2d');
-            const designerCanvas = document.getElementById('ss-designer-canvas');
-            ctx.fillStyle = (designerCanvas && designerCanvas.style.backgroundColor) || '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            const imgCanvas = document.getElementById('ss-image-canvas');
-            if (imgCanvas) ctx.drawImage(imgCanvas, sx, 0, drawW, H, 0, 0, canvas.width, canvas.height);
-
-            const SW = 48;
-            const SH = Math.max(1, Math.round(SW * H / Math.max(1, drawW)));
-            const small = document.createElement('canvas');
-            small.width = SW;
-            small.height = SH;
-            const sctx = small.getContext('2d');
-            sctx.drawImage(canvas, 0, 0, SW, SH);
-            const data = sctx.getImageData(0, 0, SW, SH).data;
-            const samples = [];
-            for (let i = 0; i < data.length; i += 4) {
-                if (data[i + 3] > 40) samples.push([data[i], data[i + 1], data[i + 2]]);
-            }
-            return kmeansTopK(samples, k);
-        } catch (e) {
-            return padPalette(DEFAULT_PALETTE.slice(), k);
-        }
-    }
-
-    function kmeansTopK(samples, k) {
-        const want = Math.min(MAX_PALETTE_SIZE, Math.max(MIN_PALETTE_SIZE, k || MIN_PALETTE_SIZE));
-        if (!samples.length) return padPalette([], want);
-        const K = Math.min(want, samples.length);
-        const centroids = [];
-        for (let c = 0; c < K; c++) {
-            centroids.push(samples[Math.floor(c * (samples.length - 1) / Math.max(1, K - 1))].slice());
-        }
-        const assign = new Array(samples.length).fill(0);
-        for (let iter = 0; iter < 8; iter++) {
-            for (let i = 0; i < samples.length; i++) {
-                let best = 0, bd = Infinity;
-                for (let c = 0; c < K; c++) {
-                    const d = Math.pow(samples[i][0] - centroids[c][0], 2) + Math.pow(samples[i][1] - centroids[c][1], 2) + Math.pow(samples[i][2] - centroids[c][2], 2);
-                    if (d < bd) { bd = d; best = c; }
-                }
-                assign[i] = best;
-            }
-            const sums = [];
-            const counts = new Array(K).fill(0);
-            for (let c = 0; c < K; c++) sums.push([0, 0, 0]);
-            for (let i = 0; i < samples.length; i++) {
-                sums[assign[i]][0] += samples[i][0];
-                sums[assign[i]][1] += samples[i][1];
-                sums[assign[i]][2] += samples[i][2];
-                counts[assign[i]]++;
-            }
-            for (let c = 0; c < K; c++) {
-                if (counts[c]) {
-                    centroids[c] = [sums[c][0] / counts[c], sums[c][1] / counts[c], sums[c][2] / counts[c]];
-                }
-            }
-        }
-        const finalCounts = new Array(K).fill(0);
-        for (let i = 0; i < assign.length; i++) finalCounts[assign[i]]++;
-        const order = [];
-        for (let c = 0; c < K; c++) order.push(c);
-        order.sort(function (a, b) { return finalCounts[b] - finalCounts[a]; });
-
-        const result = [];
-        order.forEach(function (c) {
-            const col = rgbToHex(centroids[c][0], centroids[c][1], centroids[c][2]);
-            if (result.some(function (p) { return colorDistHex(p, col) < 45; })) return;
-            result.push(col);
-        });
-        return result.length ? padPalette(result, want) : padPalette(DEFAULT_PALETTE.slice(), want);
-    }
-
-    // Make sure the palette is always exactly `k` swatches, using ONLY the
-    // colors that are actually in the canvas. When a canvas does not contain
-    // enough distinct colors, the true colors are cycled to fill the row - no
-    // artificial colors are ever invented. Achromatic colors (white, black and
-    // grays) are snapped to neutral grayscale, so an all-white canvas yields
-    // an all-white palette and an all-black canvas an all-black palette.
-    function padPalette(result, k) {
-        const want = Math.min(MAX_PALETTE_SIZE, Math.max(MIN_PALETTE_SIZE, k || MIN_PALETTE_SIZE));
-        if (!result.length) {
-            const fallback = [];
-            for (let i = 0; i < want; i++) fallback.push(DEFAULT_PALETTE[i % DEFAULT_PALETTE.length]);
-            return fallback;
-        }
-        const unique = [];
-        result.forEach(function (p) {
-            const rgb = hexToRgb(p);
-            let c = p;
-            const diff = Math.max(rgb[0], rgb[1], rgb[2]) - Math.min(rgb[0], rgb[1], rgb[2]);
-            if (diff < 16) {
-                const v = Math.round((rgb[0] + rgb[1] + rgb[2]) / 3);
-                c = rgbToHex(v, v, v);
-            }
-            if (!unique.some(function (u) { return colorDistHex(u, c) < 45; })) unique.push(c);
-        });
-        const padded = [];
-        for (let i = 0; i < want; i++) padded.push(unique[i % unique.length]);
-        return padded;
-    }
 
     function buildPaletteColors(slideIndex, k) {
         const colors = sampleCanvasColors(typeof slideIndex === 'number' ? slideIndex : -1, k);
@@ -1336,6 +1144,7 @@ import { layerState, canvasState } from './state.js';
         editor.color = normalizeHex(c);
         syncColorControls(editor.color);
         renderContentAndPreview();
+        refreshColorSelectors();
     }
 
     function revertSwatchColor() {
@@ -1343,6 +1152,7 @@ import { layerState, canvasState } from './state.js';
         editor.color = committedColor;
         syncColorControls(editor.color);
         renderContentAndPreview();
+        refreshColorSelectors();
     }
 
     function attachSwatch(sw, c) {
@@ -1406,50 +1216,37 @@ import { layerState, canvasState } from './state.js';
         else renderSlidersPage();
     }
 
+    // Keep the active selector in step with the color: Spectrum markers and
+    // Slider values re-sync when a color is picked elsewhere (complementary
+    // swatch, dominant swatch, hex input...). The Grid has no selection
+    // indicator, so it needs no re-render here.
+    function refreshColorSelectors() {
+        if (!popup || popup.style.display === 'none') return;
+        const page = CAROUSEL_PAGES[carouselIndex];
+        if (page === 'spectrum') renderSpectrumPage();
+        else if (page === 'sliders') renderSlidersPage();
+    }
+
     // ------------------------------------------------------------------
     // Canvas palette section: dominant colors of a slide (a row of square
     // swatches, 5 default, + grows to 11, - shrinks to 3) with the
     // complementary colors in a row directly under them. The nav row has
-    // left/right arrows plus "Canvas", an "All" button for the whole canvas
-    // and one numbered button per slide.
+    // left/right arrows and a label that reads "Canvas" (whole canvas) or
+    // "Slide N" once a slide is selected.
     // ------------------------------------------------------------------
     function renderCanvasSection() {
-        if (!canvasPages) return;
+        if (!canvasName) return;
         const sections = Math.max(1, canvasState.sections || 1);
         canvasSlideIndex = Math.max(-1, Math.min(canvasSlideIndex, sections - 1));
 
-        canvasPages.innerHTML = '';
-
-        const allBtn = document.createElement('button');
-        allBtn.type = 'button';
-        allBtn.className = 'ss-text2-canvas-page ss-text2-canvas-page--all';
-        allBtn.textContent = 'All';
-        allBtn.title = 'Overall - whole canvas';
-        allBtn.setAttribute('aria-label', 'Overall - whole canvas');
-        if (canvasSlideIndex === -1) allBtn.classList.add('ss-text2-active');
-        allBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            canvasSlideIndex = -1;
-            renderCanvasSection();
-        });
-        canvasPages.appendChild(allBtn);
-
-        for (let i = 0; i < sections; i++) {
-            (function (idx) {
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'ss-text2-canvas-page';
-                b.textContent = String(idx + 1);
-                b.title = 'Slide ' + (idx + 1);
-                b.setAttribute('aria-label', 'Slide ' + (idx + 1));
-                if (idx === canvasSlideIndex) b.classList.add('ss-text2-active');
-                b.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    canvasSlideIndex = idx;
-                    renderCanvasSection();
-                });
-                canvasPages.appendChild(b);
-            })(i);
+        if (canvasSlideIndex === -1) {
+            canvasName.textContent = 'Canvas';
+            canvasName.title = 'Overall - whole canvas';
+            canvasName.setAttribute('aria-label', 'Overall - whole canvas');
+        } else {
+            canvasName.textContent = 'Slide ' + (canvasSlideIndex + 1);
+            canvasName.title = 'Slide ' + (canvasSlideIndex + 1);
+            canvasName.setAttribute('aria-label', 'Slide ' + (canvasSlideIndex + 1));
         }
 
         if (canvasPrev) canvasPrev.disabled = canvasSlideIndex <= -1;
@@ -1476,30 +1273,6 @@ import { layerState, canvasState } from './state.js';
         const rgb = hexToRgb(editor.color);
         const hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
         return { h: hsl[0], s: hsl[1], l: hsl[2] };
-    }
-
-    function hslToHex(h, s, l) {
-        const rgb = hslToRgb(h, s, l);
-        return rgbToHex(rgb[0], rgb[1], rgb[2]);
-    }
-
-    function hsvToRgb(h, s, v) {
-        const c = v * s;
-        const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-        const m = v - c;
-        let rgb;
-        if (h < 60) rgb = [c, x, 0];
-        else if (h < 120) rgb = [x, c, 0];
-        else if (h < 180) rgb = [0, c, x];
-        else if (h < 240) rgb = [0, x, c];
-        else if (h < 300) rgb = [x, 0, c];
-        else rgb = [c, 0, x];
-        return [Math.round((rgb[0] + m) * 255), Math.round((rgb[1] + m) * 255), Math.round((rgb[2] + m) * 255)];
-    }
-
-    function hsvToHex(h, s, v) {
-        const rgb = hsvToRgb(h, s, v);
-        return rgbToHex(rgb[0], rgb[1], rgb[2]);
     }
 
     // Current color as (h, s, v) so the spectrum square markers line up.
@@ -1673,39 +1446,36 @@ import { layerState, canvasState } from './state.js';
         updateSliderValues(rgb[0], rgb[1], rgb[2]);
     }
 
-    function toggleColorPanel() {
-        if (colorPanelOpen) closeColorPanel();
-        else openColorPanel();
-    }
-
-    function openColorPanel() {
-        if (!colorPopup || !colorPickerBtn) return;
-        committedColor = editor.color;
-        canvasSlideIndex = Math.max(0, editingSlideIndex);
-        renderCanvasSection();
-        renderCarousel();
-        colorPopup.classList.add('ss-text2-open');
-        colorPopup.setAttribute('aria-hidden', 'false');
-        colorPickerBtn.classList.add('ss-text2-active');
-        colorPanelOpen = true;
-    }
-
-    function closeColorPanel() {
-        if (!colorPopup || !colorPickerBtn) return;
-        colorPopup.classList.remove('ss-text2-open');
-        colorPopup.setAttribute('aria-hidden', 'true');
-        colorPickerBtn.classList.remove('ss-text2-active');
-        colorPanelOpen = false;
-        revertSwatchColor();
-    }
-
     function pickScreenColor() {
         if (window.EyeDropper) {
             try {
                 const dropper = new window.EyeDropper();
-                dropper.open().then(function (result) {
-                    if (result && result.sRGBHex) applyBase({ color: normalizeHex(result.sRGBHex) });
-                }).catch(function () {});
+                const restore = function () {
+                    if (popup) {
+                        popup.style.display = 'flex';
+                        popup.setAttribute('aria-hidden', 'false');
+                        const main = document.querySelector('main');
+                        if (main) main.setAttribute('aria-hidden', 'true');
+                        document.body.style.overflow = 'hidden';
+                    }
+                };
+                if (popup) {
+                    // Un-blur the page and drop the add-text box out of the
+                    // way so the eyedropper can sample the actual canvas.
+                    popup.style.display = 'none';
+                    popup.setAttribute('aria-hidden', 'true');
+                    const main = document.querySelector('main');
+                    if (main) main.setAttribute('aria-hidden', 'false');
+                    document.body.style.overflow = '';
+                }
+                setTimeout(function () {
+                    dropper.open().then(function (result) {
+                        restore();
+                        if (result && result.sRGBHex) applyBase({ color: normalizeHex(result.sRGBHex) });
+                    }).catch(function () {
+                        restore();
+                    });
+                }, 60);
                 return;
             } catch (e) {}
         }
@@ -1755,7 +1525,8 @@ import { layerState, canvasState } from './state.js';
 
         // Keep the canvas palette in step with the slide being edited.
         canvasSlideIndex = target;
-        if (colorPanelOpen) renderCanvasSection();
+        renderCanvasSection();
+        refreshColorSelectors();
 
         // If a text box already lives on that slide, edit it; otherwise start a
         // fresh "Add Text" session positioned on that slide.
@@ -1771,6 +1542,7 @@ import { layerState, canvasState } from './state.js';
             syncControls();
             renderContentAndPreview();
             updateSlideNav();
+            renderCarousel();
             setTimeout(function () {
                 renderEditablePreview();
                 if (editableAnchor) {
@@ -1830,6 +1602,9 @@ import { layerState, canvasState } from './state.js';
         syncControls();
         renderContentAndPreview();
         updateSlideNav();
+        canvasSlideIndex = -1;
+        renderCanvasSection();
+        renderCarousel();
 
         lastActiveElement = document.activeElement;
         popup.style.display = 'flex';
@@ -1887,7 +1662,6 @@ import { layerState, canvasState } from './state.js';
         if (main) main.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = '';
         closeFontDropdown();
-        closeColorPanel();
         editingTextBox = null;
         try { if (lastActiveElement && typeof lastActiveElement.focus === 'function') lastActiveElement.focus(); } catch (e) {}
     }
@@ -1974,6 +1748,7 @@ import { layerState, canvasState } from './state.js';
 
         if (typeof window.selectLayer === 'function') window.selectLayer(textBox);
         if (typeof window.saveState === 'function') window.saveState();
+        if (typeof window.refreshBackgroundPalette === 'function') window.refreshBackgroundPalette();
         return textBox;
     }
 
@@ -2002,6 +1777,7 @@ import { layerState, canvasState } from './state.js';
             layerState.layers[idx] = layer;
         }
         if (typeof window.saveState === 'function') window.saveState();
+        if (typeof window.refreshBackgroundPalette === 'function') window.refreshBackgroundPalette();
     }
 
     // ------------------------------------------------------------------
@@ -2028,24 +1804,6 @@ import { layerState, canvasState } from './state.js';
         if (!family) return DEFAULT_FONT;
         const first = family.split(',')[0].trim().replace(/['"]/g, '');
         return first || DEFAULT_FONT;
-    }
-
-    function normalizeHex(color) {
-        if (!color) return '#000000';
-        color = String(color).trim();
-        if (color.charAt(0) === '#') {
-            if (color.length === 4) {
-                return '#' + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
-            }
-            return color.length === 7 ? color.toLowerCase() : '#000000';
-        }
-        const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-        if (m) {
-            return '#' + [1, 2, 3].map(function (i) {
-                return parseInt(m[i], 10).toString(16).padStart(2, '0');
-            }).join('').toLowerCase();
-        }
-        return '#000000';
     }
 
     // ------------------------------------------------------------------

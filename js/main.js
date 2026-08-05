@@ -9,6 +9,7 @@ import './layers.js';
 import './keyboard.js';
 import './export.js';
 import './designer.js';
+import './background-color.js';
 import './slidestudio.js';
 import './backupexport.js';
 import './text-editor2.js';
