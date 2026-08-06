@@ -499,18 +499,75 @@
                                 <div class="ss-transparency-value" id="ss-transparencyValue">99%</div>
                             </div>
                             
-                            <!-- Add color picker inputs (always visible) -->
-                            <div class="ss-slide-color-controls">
-                                <div class="ss-color-picker-container" id="ss-colorPickerContainer">
-                                    <input type="color" id="ss-slideColorPicker" value="#ffffff">
-                                    <input type="text" id="ss-slideColorHex" placeholder="ffffff" maxlength="6">
+                            <!-- Background color panel: the full smart-color
+                                 picker (canvas palette + complementary colors,
+                                 Spectrum/Grid/Sliders carousel, hex input,
+                                 eyedropper) replacing the old native color
+                                 input. Own module: js/background-color.js -->
+                            <div class="ss-bg-color-panel" id="ss-bgColorPanel">
+                                <div class="ss-collapsible-header ss-bg-color-header" id="ss-bgColorHeader" role="button" tabindex="0" aria-expanded="true">Color Management</div>
+                                <div class="ss-collapsible-content ss-bg-color-content" id="ss-bgColorContent">
+                                <div class="ss-bg-tool-row">
+                                    <button type="button" class="ss-bg-tool" id="ss-bgPipette" title="Pick a background color from the screen" aria-label="Pick a background color">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17 5 21l4-1 8-8-3-3-8 8z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/><path d="M13 7l4-4 4 4-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>
+                                    </button>
+                                    <input type="text" id="ss-bgColorHex" value="#ffffff" maxlength="7" spellcheck="false" title="Background color hex" aria-label="Background color hex">
+                                </div>
+                                <div class="ss-bg-canvas-section">
+                                    <div class="ss-bg-canvas-nav">
+                                        <button type="button" class="ss-bg-palette-nav" id="ss-bgCanvasPrev" title="Previous" aria-label="Previous">◀</button>
+                                        <span class="ss-bg-canvas-name" id="ss-bgCanvasName">All Slides</span>
+                                        <button type="button" class="ss-bg-palette-nav" id="ss-bgCanvasNext" title="Next" aria-label="Next">▶</button>
+                                    </div>
+                                    <div class="ss-bg-canvas-body">
+                                        <div class="ss-bg-canvas-palette">
+                                            <div class="ss-bg-canvas-palette-row">
+                                                <div class="ss-bg-palette-step">
+                                                    <button type="button" class="ss-bg-palette-step-btn" id="ss-bgPaletteMinus" title="Remove a color (down to 3)" aria-label="Remove a color">−</button>
+                                                </div>
+                                                <div class="ss-bg-canvas-palette-stack">
+                                                    <div class="ss-bg-palette-col" id="ss-bgPaletteMain"></div>
+                                                    <div class="ss-bg-palette-col" id="ss-bgPaletteSub"></div>
+                                                </div>
+                                                <div class="ss-bg-palette-step">
+                                                    <button type="button" class="ss-bg-palette-step-btn" id="ss-bgPalettePlus" title="Add a color (up to 11)" aria-label="Add a color">+</button>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                                <div class="ss-bg-palette-header">
+                                    <button type="button" class="ss-bg-palette-nav" id="ss-bgCarPrev" title="Previous color selector" aria-label="Previous color selector">◀</button>
+                                    <div class="ss-bg-palette-title" id="ss-bgCarTitle">Spectrum</div>
+                                    <button type="button" class="ss-bg-palette-nav" id="ss-bgCarNext" title="Next color selector" aria-label="Next color selector">▶</button>
+                                </div>
+                                <div class="ss-bg-color-pages" id="ss-bgColorPages">
+                                    <div class="ss-bg-color-page ss-bg-color-page--spectrum" data-page="spectrum">
+                                        <div class="ss-bg-spectrum-sv" id="ss-bgSpectrumSv">
+                                            <div class="ss-bg-spectrum-marker" id="ss-bgSpectrumSvMarker"></div>
+                                        </div>
+                                        <div class="ss-bg-spectrum-hue" id="ss-bgSpectrumHue">
+                                            <div class="ss-bg-spectrum-marker ss-bg-spectrum-hue-marker" id="ss-bgSpectrumHueMarker"></div>
+                                        </div>
+                                    </div>
+                                    <div class="ss-bg-color-page ss-bg-color-page--grid" data-page="grid">
+                                        <div class="ss-bg-color-swatches" id="ss-bgColorSwatches"></div>
+                                    </div>
+                                    <div class="ss-bg-color-page ss-bg-color-page--sliders" data-page="sliders">
+                                        <div class="ss-bg-sliders" id="ss-bgSliders"></div>
+                                        <div class="ss-bg-slider-preview">
+                                            <button type="button" class="ss-bg-comp-swatch ss-bg-slider-swatch" id="ss-bgSliderPreview"></button>
+                                            <span class="ss-bg-slider-hex" id="ss-bgSliderHex">#ffffff</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Zoom Controls -->
+            </div>
+            
+            <!-- Zoom Controls -->
                 <div class="ss-sidebar-section ss-collapsible">
                     <div class="ss-collapsible-header">Zoom Controls</div>
                     <div class="ss-collapsible-content">
@@ -728,10 +785,10 @@
         </div>
     </div>
 
-    <!-- Text 2 Editor Modal (new, independent from the old Add Text editor).
+    <!-- Text Editor Modal (new, independent from the old Add Text editor).
          Text added here behaves like an image: drag, corner-resize, rotate,
          double-click to reopen this editor. -->
-    <div class="ss-text2-popup" id="ss-text2Popup" aria-hidden="true" role="dialog" aria-label="Text editor 2" aria-modal="true" style="display:none;">
+    <div class="ss-text2-popup" id="ss-text2Popup" aria-hidden="true" role="dialog" aria-label="Text editor" aria-modal="true" style="display:none;">
         <div class="ss-text2-popup-overlay" id="ss-text2Overlay"></div>
         <div class="ss-text2-popup-content" role="document" tabindex="-1">
             <div class="ss-text2-header">
@@ -795,57 +852,53 @@
                         <button type="button" class="ss-text2-tool" data-style="strike" title="Strikethrough"><s>S</s></button>
                         <button type="button" class="ss-text2-tool" data-style="underline" title="Underline"><u>U</u></button>
                         <button type="button" class="ss-text2-tool" data-style="italic" title="Italic"><i>I</i></button>
-                    </div>
 
-                    <!-- Color tools in one row -->
-                    <div class="ss-text2-row ss-text2-row--color">
+                        <span class="ss-text2-divider"></span>
+
                         <button type="button" class="ss-text2-tool" id="ss-text2Pipette" title="Pick a color from the screen">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17 5 21l4-1 8-8-3-3-8 8z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/><path d="M13 7l4-4 4 4-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>
-                        </button>
-                        <button type="button" class="ss-text2-tool ss-text2-color-btn" id="ss-text2ColorBtn" title="Change text color" aria-label="Change text color">
-                            <span class="ss-text2-color-dot" id="ss-text2ColorDot"></span>
                         </button>
                         <input type="text" id="ss-text2ColorHex" value="#121212" maxlength="7" spellcheck="false" title="Color hex" aria-label="Text color hex">
                     </div>
                 </div>
 
-                <!-- Color selector: opens when the color button is clicked.
-                     A compact Canvas palette section (dominant colors of each
-                     slide with their complementary colors) is pinned at the
-                     top; under it the selector carousel cycles Spectrum, Grid
-                     and Sliders - none of them scroll, each fits the
-                     fixed-height area so it is always fully visible. -->
-                <div class="ss-text2-color-popup" id="ss-text2ColorPopup" aria-hidden="true">
+                <!-- Color selector: always visible in the editor. A compact
+                     Canvas palette section (dominant colors of each slide with
+                     their complementary colors) is pinned at the top; under it
+                     the selector carousel cycles Spectrum, Grid and Sliders -
+                     none of them scroll, each fits the fixed-height area so it
+                     is always fully visible. -->
+                <div class="ss-text2-color-popup" id="ss-text2ColorPopup" aria-hidden="false">
 
-                    <!-- Canvas palette: left/right arrows + "Canvas" + an
-                         "All" button for the whole canvas + one number per
-                         slide, then the dominant colors of the selected
-                         slide as a row of swatches (5 default, + adds up to
-                         11, - removes down to 3) with the complementary
-                         colors in a touching row directly under them. The
-                         row keeps a constant total width, so swatches get
-                         thinner as more colors are added. -->
+                    <!-- Canvas palette: left/right arrows + "Canvas" (or
+                         "Slide N" once a slide is picked) then the dominant
+                         colors of the selected slide as a row of swatches
+                         (5 default, + adds up to 11, - removes down to 3)
+                         with the complementary colors in a touching row
+                         directly under them. + and - flank the palette and
+                         are vertically centered; the row keeps a constant
+                         total width, so swatches get thinner as more colors
+                         are added. -->
                     <div class="ss-text2-canvas-section">
                         <div class="ss-text2-canvas-nav">
                             <button type="button" class="ss-text2-palette-nav" id="ss-text2CanvasPrev" title="Previous" aria-label="Previous">◀</button>
-                            <span class="ss-text2-canvas-name">Canvas</span>
-                            <div class="ss-text2-canvas-pages" id="ss-text2CanvasPages"></div>
+                            <span class="ss-text2-canvas-name" id="ss-text2CanvasName">Canvas</span>
                             <button type="button" class="ss-text2-palette-nav" id="ss-text2CanvasNext" title="Next" aria-label="Next">▶</button>
                         </div>
                         <div class="ss-text2-canvas-body">
                             <div class="ss-text2-canvas-palette">
-                                <div class="ss-text2-palette-label">Dominant Colors</div>
                                 <div class="ss-text2-canvas-palette-row">
+                                    <div class="ss-text2-palette-step">
+                                        <button type="button" class="ss-text2-palette-step-btn" id="ss-text2PaletteMinus" title="Remove a color (down to 3)" aria-label="Remove a color">−</button>
+                                    </div>
                                     <div class="ss-text2-canvas-palette-stack">
                                         <div class="ss-text2-palette-col" id="ss-text2PaletteMain"></div>
                                         <div class="ss-text2-palette-col" id="ss-text2PaletteSub"></div>
                                     </div>
                                     <div class="ss-text2-palette-step">
                                         <button type="button" class="ss-text2-palette-step-btn" id="ss-text2PalettePlus" title="Add a color (up to 11)" aria-label="Add a color">+</button>
-                                        <button type="button" class="ss-text2-palette-step-btn" id="ss-text2PaletteMinus" title="Remove a color (down to 3)" aria-label="Remove a color">−</button>
                                     </div>
                                 </div>
-                                <div class="ss-text2-palette-label ss-text2-palette-label--muted">complementary</div>
                             </div>
                         </div>
                     </div>

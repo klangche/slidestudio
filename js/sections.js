@@ -32,6 +32,11 @@ export function addSection() {
     if (guidanceState.active) {
         updateGuidanceOverlay();
     }
+    
+    // Immediately reset background color palette to 'All Slides' when a new slide is added
+    if (window.refreshBackgroundPalette) {
+        window.refreshBackgroundPalette();
+    }
 
     // activate transition and clean up after it runs
     if (canvasContainer) {

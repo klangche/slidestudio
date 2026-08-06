@@ -6,9 +6,16 @@ SlideStudio dev server
 A zero-dependency static HTTP server with live reload.
 
 It serves the project root over HTTP (required for the Service Worker /
-PWA features, which file:// blocks) and injects a tiny script into every
-served HTML page that watches a project fingerprint and reloads the tab
-automatically whenever a project file changes -- no manual refresh.
+PWA features, which file:// blocks) and keeps an EventSource (SSE)
+connection open to the open page. Whenever a project file changes, a
+"reload" event is pushed over that connection and the tab refreshes
+itself -- no manual refresh, no polling.
+
+The same SSE connection doubles as the page-presence signal: when the
+last tab is closed the connection drops and the server shuts itself down
+automatically (just like Ctrl+C). Refreshing the page simply opens a new
+connection, so it never stops the server. A slow fingerprint scan runs on
+a background thread, so editing files never blocks or stalls the server.
 
 Run it through dev-server.ps1, or directly:
 
@@ -28,13 +35,14 @@ import time
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
-RELOAD_ENDPOINT = "/__slide_reload_version"
-BYE_ENDPOINT = "/__slide_bye"
-# How long the server waits for the page to come back (e.g. after a manual
-# refresh) once the tab has reported it is closing before shutting down.
-AUTO_STOP_GRACE = 5.0
+LIVE_ENDPOINT = "/__slide_live"
+SCAN_INTERVAL = 1.0
+# How long the server keeps running after the last page's SSE connection
+# closes. Long enough to survive a slow page reload and EventSource
+# auto-reconnects; short enough to feel responsive after the tab is closed.
+AUTO_STOP_GRACE = 10.0
 IGNORE_DIRS = {".git", ".hg", ".svn", "__pycache__", "node_modules", ".venv", "venv"}
 IGNORE_SUFFIXES = (".pyc", ".pyo", ".tmp", ".bak")
 
@@ -44,28 +52,10 @@ LIVE_RELOAD_SCRIPT = """
 <script>
 (function () {
   "use strict";
-  var EP = "__SLIDE_RELOAD_ENDPOINT__";
-  var BYE = "__SLIDE_BYE_ENDPOINT__";
-  var current = null;
-  function poll() {
-    fetch(EP, { cache: "no-store" })
-      .then(function (r) { return r.text(); })
-      .then(function (version) {
-        if (current === null) { current = version; return; }
-        if (version !== current) { window.__slideWillReload = true; window.location.reload(); }
-      })
-      .catch(function () { setTimeout(poll, 1500); });
-  }
-  function sendBye() {
-    if (window.__slideWillReload) return;
-    try {
-      if (navigator.sendBeacon) { navigator.sendBeacon(BYE, "bye"); }
-      else { fetch(BYE, { method: "POST", keepalive: true }); }
-    } catch (e) {}
-  }
-  window.addEventListener("pagehide", sendBye);
-  setTimeout(poll, 300);
-  setInterval(poll, 700);
+  var es = new EventSource("__SLIDE_LIVE_ENDPOINT__");
+  es.onmessage = function (ev) {
+    if (ev.data === "reload") { window.location.reload(); }
+  };
 })();
 </script>
 """
@@ -95,7 +85,7 @@ def paint(text, code):
 
 def make_fingerprint(root):
     """Return a closure that computes a hash of every project file's
-    mtime/size, so the browser can detect changes in real time."""
+    mtime/size, so the scanner can detect changes in real time."""
 
     def compute():
         h = hashlib.sha256()
@@ -119,21 +109,76 @@ def make_fingerprint(root):
     return compute
 
 
+def broadcast(activity, message):
+    """Send a message to every open SSE connection."""
+    with activity["lock"]:
+        targets = list(activity["clients"].items())
+    for wfile, lock in targets:
+        try:
+            with lock:
+                wfile.write(("data: %s\n\n" % message).encode("utf-8"))
+                wfile.flush()
+        except OSError:
+            with activity["lock"]:
+                activity["clients"].pop(wfile, None)
+
+
+def scanner_loop(activity, fingerprint, interval):
+    """Watch the project on a background thread and push a reload event
+    whenever the fingerprint changes. Runs off the request threads, so
+    heavy scans never stall the server."""
+    last = None
+    while True:
+        try:
+            version = fingerprint()
+        except Exception:
+            version = None
+        if last is not None and version != last:
+            broadcast(activity, "reload")
+        last = version
+        time.sleep(interval)
+
+
+def auto_stop_monitor(activity, server, grace):
+    """Shut the server down once the last page's SSE connection has been
+    gone for the grace period (tab closed for real, not just refreshed)."""
+    while True:
+        time.sleep(0.5)
+        now = time.monotonic()
+        with activity["lock"]:
+            present = activity["present"]
+            open_clients = len(activity["clients"])
+            last = activity["last"]
+        if present and open_clients == 0 and (now - last) >= grace:
+            print()
+            print(paint("  No page open - server stopped.", "90"))
+            server.shutdown()
+            return
+
+
+class SlideStudioServer(ThreadingHTTPServer):
+    def handle_error(self, request, client_address):
+        # Aborting an idle keep-alive connection is normal when the browser
+        # closes a tab -- not an error worth printing a traceback for.
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)):
+            return
+        super().handle_error(request, client_address)
+
+
 class SlideStudioHandler(SimpleHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
-    def __init__(self, *args, root=None, fingerprint=None, activity=None, **kwargs):
+    def __init__(self, *args, root=None, activity=None, **kwargs):
         self._root = root or os.getcwd()
-        self._fingerprint = fingerprint or (lambda: "")
-        self._activity = activity or {"last": time.monotonic(), "bye": False}
+        self._activity = activity
         super().__init__(*args, directory=self._root, **kwargs)
 
     # -- logging ----------------------------------------------------------
 
     def log_message(self, fmt, *args):
-        # Every request counts as page activity, including the live-reload
-        # heartbeat and the goodbye beacon.
-        self._activity["last"] = time.monotonic()
+        if self._activity is not None:
+            self._activity["last"] = time.monotonic()
         try:
             code = int(args[1])
             requestline = args[0]
@@ -142,7 +187,7 @@ class SlideStudioHandler(SimpleHTTPRequestHandler):
         parts = requestline.split()
         method = parts[0] if parts else "?"
         path = parts[1] if len(parts) > 1 else "?"
-        if path.startswith(RELOAD_ENDPOINT) or path.startswith(BYE_ENDPOINT):
+        if path.startswith(LIVE_ENDPOINT):
             return
         if code < 300:
             color = "32"
@@ -173,41 +218,50 @@ class SlideStudioHandler(SimpleHTTPRequestHandler):
 
     # -- routes -----------------------------------------------------------
 
-    def _is_reload_request(self):
-        path = self.path.split("?", 1)[0].rstrip("/")
-        return path == RELOAD_ENDPOINT
+    def _stream(self):
+        """Keep an SSE connection open while the page is alive. Doubles as
+        the auto-stop presence signal: when the tab closes, the browser
+        drops this connection and the monitor shuts the server down."""
+        activity = self._activity
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+        wfile = self.wfile
+        lock = threading.Lock()
+        with activity["lock"]:
+            activity["clients"][wfile] = lock
+            activity["present"] = True
+            activity["last"] = time.monotonic()
+        try:
+            while True:
+                time.sleep(2.0)
+                try:
+                    with lock:
+                        wfile.write(b": ping\n\n")
+                        wfile.flush()
+                except OSError:
+                    break
+        finally:
+            with activity["lock"]:
+                activity["clients"].pop(wfile, None)
+                activity["last"] = time.monotonic()
 
     def do_GET(self):
-        if self._is_reload_request():
-            body = self._fingerprint().encode("ascii")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+        path = self.path.split("?", 1)[0].rstrip("/")
+        if path == LIVE_ENDPOINT:
+            self._stream()
             return
         super().do_GET()
 
     def do_HEAD(self):
-        if self._is_reload_request():
-            body = self._fingerprint().encode("ascii")
-            self.send_response(200)
-            self.send_header("Content-Length", str(len(body)))
+        path = self.path.split("?", 1)[0].rstrip("/")
+        if path == LIVE_ENDPOINT:
+            self.send_response(405)
             self.end_headers()
             return
         super().do_HEAD()
-
-    def do_POST(self):
-        """Goodbye beacon from the page on close - triggers auto-stop."""
-        path = self.path.split("?", 1)[0].rstrip("/")
-        if path == BYE_ENDPOINT:
-            self._activity["bye"] = True
-            self._activity["last"] = time.monotonic()
-            self.send_response(204)
-            self.send_header("Content-Length", "0")
-            self.end_headers()
-            return
-        self.send_error(501, "POST not supported")
 
     def send_head(self):
         """Inject the live-reload script into HTML files; delegate the rest."""
@@ -223,7 +277,7 @@ class SlideStudioHandler(SimpleHTTPRequestHandler):
                 with open(path, "r", encoding="utf-8", errors="replace") as fh:
                     content = fh.read()
                 script = LIVE_RELOAD_SCRIPT.replace(
-                    "__SLIDE_RELOAD_ENDPOINT__", RELOAD_ENDPOINT
+                    "__SLIDE_LIVE_ENDPOINT__", LIVE_ENDPOINT
                 )
                 idx = content.lower().rfind("</body>")
                 if idx != -1:
@@ -244,19 +298,6 @@ class SlideStudioHandler(SimpleHTTPRequestHandler):
         # No directory listings in dev mode -- keeps logs clean.
         self.send_error(404, "Directory listing is disabled")
         return None
-
-
-def auto_stop_monitor(server, activity, grace):
-    """Shut the server down shortly after the last open page reports it is
-    closing (and no new page takes its place)."""
-    while True:
-        time.sleep(0.5)
-        now = time.monotonic()
-        if activity["bye"] and (now - activity["last"]) >= grace:
-            print()
-            print(paint("  No page connected - server stopped.", "90"))
-            server.shutdown()
-            return
 
 
 def print_banner(args, root, url):
@@ -301,16 +342,20 @@ def main():
         parser.error("root directory does not exist: %s" % root)
 
     enable_vt()
-    activity = {"last": time.monotonic(), "bye": False}
+    activity = {
+        "clients": {},
+        "lock": threading.Lock(),
+        "present": False,
+        "last": time.monotonic(),
+    }
     handler = partial(
         SlideStudioHandler,
         root=root,
-        fingerprint=None if args.no_reload else make_fingerprint(root),
         activity=activity,
     )
 
     try:
-        server = ThreadingHTTPServer((args.host, args.port), handler)
+        server = SlideStudioServer((args.host, args.port), handler)
     except OSError as exc:
         print(paint("  ERROR: cannot bind %s:%d - %s" % (args.host, args.port, exc), "1;91"))
         print(paint("  Is the port already in use?", "93"))
@@ -321,9 +366,18 @@ def main():
 
     print_banner(args, root, url)
 
+    if not args.no_reload:
+        threading.Thread(
+            target=scanner_loop,
+            args=(activity, make_fingerprint(root), SCAN_INTERVAL),
+            daemon=True,
+        ).start()
+
     if not args.no_auto_stop:
         threading.Thread(
-            target=auto_stop_monitor, args=(server, activity, AUTO_STOP_GRACE), daemon=True
+            target=auto_stop_monitor,
+            args=(activity, server, AUTO_STOP_GRACE),
+            daemon=True,
         ).start()
 
     try:

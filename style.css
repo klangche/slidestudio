@@ -1590,38 +1590,62 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     background: rgba(52, 152, 219, 0.1);
 }
 
-.ss-slide-color-controls {
+/* Background color panel (replaces the old native color input). Uses its own
+   ss-bg-* classes for the canvas palette and the Spectrum/Grid/Sliders
+   carousel (no ss-text2-* naming, so the background picker is fully
+   independent from the text editor), but shares the visual styles below. */
+.ss-bg-color-panel {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    margin-top: 6px;
+    gap: 7px;
     width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+    margin-top: 6px;
 }
 
-.ss-color-picker-container {
+/* The Color Management section lives directly in the Slide Management
+   toolbox like the rest of its controls (no nested box). The panel uses the
+   generic collapsible header/content pattern for its own compact toggle. */
+.ss-bg-color-panel.ss-collapsed .ss-bg-color-content {
+    height: 0;
+    opacity: 0;
+}
+.ss-bg-color-panel.ss-collapsed .ss-collapsible-header::after {
+    content: "+";
+}
+
+/* The canvas palette shares the text-editor's fixed 308px stack which is
+   too wide for the sidebar, so let it stretch to fill the panel instead. */
+.ss-bg-color-panel .ss-bg-canvas-body {
+    justify-content: stretch;
+}
+.ss-bg-color-panel .ss-bg-canvas-palette {
+    width: 100%;
+}
+.ss-bg-color-panel .ss-bg-canvas-palette-row {
+    width: 100%;
+}
+.ss-bg-color-panel .ss-bg-canvas-palette-stack {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+}
+
+.ss-bg-tool-row {
     display: flex;
-    gap: 6px;
     align-items: center;
     justify-content: center;
-    width: 100%;
+    gap: 8px;
+    flex: 0 0 auto;
 }
 
-#ss-slideColorPicker {
-    width: 36px;
-    height: 28px;
+#ss-bgColorHex {
+    width: 72px;
+    padding: 4px 3px;
     border: 1px solid var(--ss-border-color);
-    border-radius: 4px;
-    cursor: pointer;
-    background: var(--ss-control-box-bg);
-}
-
-#ss-slideColorHex {
-    width: 65px;
-    padding: 5px 3px;
-    border: 1px solid var(--ss-border-color);
-    border-radius: 4px;
-    font-size: 11px;
+    border-radius: 6px;
+    font-size: 12px;
     font-family: monospace;
     text-align: center;
     background: var(--ss-control-box-bg);
@@ -2563,7 +2587,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     background: var(--ss-border-color);
     flex: 0 0 auto;
 }
-.ss-text2-tool {
+.ss-text2-tool,
+.ss-bg-tool {
     flex: 0 0 auto;
     width: 32px;
     height: 32px;
@@ -2583,7 +2608,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     transition: all 0.15s ease;
     font-size: 13px;
 }
-.ss-text2-tool:hover {
+.ss-text2-tool:hover,
+.ss-bg-tool:hover {
     background: rgba(52,152,219,0.1);
     border-color: rgba(52,152,219,0.4);
 }
@@ -2592,7 +2618,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     border-color: rgba(52,152,219,0.5);
     color: #3498db;
 }
-.ss-text2-tool svg {
+.ss-text2-tool svg,
+.ss-bg-tool svg {
     width: 15px;
     height: 15px;
     fill: none;
@@ -2601,38 +2628,6 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 }
 .ss-text2-cap { font-size: 11px; font-weight: 700; }
 .ss-text2-opp { font-size: 16px; }
-.ss-text2-color-btn {
-    position: relative;
-    flex: 0 0 auto;
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    max-width: 32px;
-    max-height: 32px;
-    padding: 0;
-    border: 1px solid rgba(0,0,0,0.2);
-    border-radius: 50%;
-    background: var(--ss-bg-color);
-    cursor: pointer;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-.ss-text2-color-btn.ss-text2-active {
-    border-color: rgba(52,152,219,0.6);
-    box-shadow: 0 0 0 2px rgba(52,152,219,0.25);
-}
-.ss-text2-color-dot {
-    display: block;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #121212;
-    border: 2px solid rgba(255,255,255,0.85);
-    box-sizing: border-box;
-}
 .ss-text2-poster {
     width: auto;
     min-width: 46px;
@@ -2659,7 +2654,7 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     text-align: center;
 }
 
-/* --- Color selector: opened by the color button. A pushdown (in normal
+/* --- Color selector: always visible in the editor (a pushdown in normal
    flow). The Canvas palette section (dominant colors + complementary
    colors) is pinned at the top; under it a fixed-height carousel cycles
    Spectrum, Grid and Sliders - none of them scroll, each fits the area so
@@ -2667,7 +2662,7 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 .ss-text2-color-popup {
     position: static;
     z-index: 12020;
-    display: none;
+    display: flex;
     flex-direction: column;
     gap: 7px;
     width: 100%;
@@ -2680,16 +2675,15 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     border-radius: 10px;
     box-shadow: none;
 }
-.ss-text2-color-popup.ss-text2-open {
-    display: flex;
-}
-.ss-text2-color-pages {
+.ss-text2-color-pages,
+.ss-bg-color-pages {
     position: relative;
-    height: 236px;
+    height: 150px;
     overflow: hidden;
     flex: 0 0 auto;
 }
-.ss-text2-color-page {
+.ss-text2-color-page,
+.ss-bg-color-page {
     position: absolute;
     inset: 0;
     display: none;
@@ -2699,7 +2693,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     padding: 1px;
     box-sizing: border-box;
 }
-.ss-text2-color-page.ss-text2-color-page--active {
+.ss-text2-color-page.ss-text2-color-page--active,
+.ss-bg-color-page.ss-bg-color-page--active {
     display: flex;
 }
 
@@ -2709,7 +2704,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
    complementary colors in a touching row directly under them. The palette
    stack keeps a constant total width, so the swatches get thinner as more
    colors are added (+ up to 11, - down to 3); + and - sit on the right. --- */
-.ss-text2-canvas-section {
+.ss-text2-canvas-section,
+.ss-bg-canvas-section {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -2717,13 +2713,15 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     border-bottom: 1px solid var(--ss-border-color);
     padding-bottom: 8px;
 }
-.ss-text2-canvas-nav {
+.ss-text2-canvas-nav,
+.ss-bg-canvas-nav {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
 }
-.ss-text2-canvas-name {
+.ss-text2-canvas-name,
+.ss-bg-canvas-name {
     flex: 0 0 auto;
     font-size: 11px;
     font-weight: 700;
@@ -2732,77 +2730,27 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     color: var(--ss-text-color);
     opacity: 0.8;
 }
-.ss-text2-canvas-pages {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.ss-text2-canvas-page {
-    flex: 0 0 auto;
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    min-height: 22px;
-    max-width: 22px;
-    max-height: 22px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid var(--ss-border-color);
-    border-radius: 6px;
-    background: var(--ss-control-box-bg);
-    color: var(--ss-text-color);
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1;
-    transition: all 0.15s ease;
-}
-.ss-text2-canvas-page:hover {
-    background: rgba(52,152,219,0.12);
-    border-color: rgba(52,152,219,0.5);
-}
-.ss-text2-canvas-page.ss-text2-active {
-    background: rgba(52,152,219,0.18);
-    border-color: rgba(52,152,219,0.5);
-    color: #3498db;
-}
-.ss-text2-canvas-page.ss-text2-canvas-page--all {
-    width: auto;
-    min-width: 30px;
-    max-width: none;
-    padding: 0 6px;
-    font-size: 10px;
-}
-.ss-text2-canvas-body {
+.ss-text2-canvas-body,
+.ss-bg-canvas-body {
     display: flex;
     justify-content: center;
 }
-.ss-text2-canvas-palette {
+.ss-text2-canvas-palette,
+.ss-bg-canvas-palette {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 0;
     flex: 0 0 auto;
 }
-.ss-text2-canvas-palette .ss-text2-palette-label {
-    align-self: stretch;
-    text-align: center;
-    box-sizing: border-box;
-}
-.ss-text2-canvas-palette .ss-text2-palette-label:first-child {
-    margin-bottom: 4px;
-}
-.ss-text2-canvas-palette .ss-text2-palette-label:last-child {
-    margin-top: 4px;
-}
-.ss-text2-canvas-palette-row {
+.ss-text2-canvas-palette-row,
+.ss-bg-canvas-palette-row {
     display: flex;
     gap: 6px;
     align-items: center;
 }
-.ss-text2-canvas-palette-stack {
+.ss-text2-canvas-palette-stack,
+.ss-bg-canvas-palette-stack {
     display: flex;
     flex-direction: column;
     flex: 0 0 auto;
@@ -2811,21 +2759,25 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     border-radius: 5px;
     overflow: hidden;
 }
-.ss-text2-palette-col {
+.ss-text2-palette-col,
+.ss-bg-palette-col {
     display: flex;
     flex-direction: row;
     gap: 0;
     flex: 1 1 auto;
     min-width: 0;
 }
-.ss-text2-canvas-palette-stack > .ss-text2-palette-col {
+.ss-text2-canvas-palette-stack > .ss-text2-palette-col,
+.ss-bg-canvas-palette-stack > .ss-bg-palette-col {
     border: none;
     border-radius: 0;
 }
-.ss-text2-canvas-palette-stack > .ss-text2-palette-col:first-child {
+.ss-text2-canvas-palette-stack > .ss-text2-palette-col:first-child,
+.ss-bg-canvas-palette-stack > .ss-bg-palette-col:first-child {
     border-bottom: 1px solid rgba(0,0,0,0.15);
 }
-.ss-text2-palette-col .ss-text2-swatch {
+.ss-text2-palette-col .ss-text2-swatch,
+.ss-bg-palette-col .ss-bg-swatch {
     flex: 1 1 0;
     min-width: 0;
     width: auto;
@@ -2835,16 +2787,19 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     box-shadow: none;
     border-left: 1px solid rgba(0,0,0,0.15);
 }
-.ss-text2-palette-col .ss-text2-swatch:first-child {
+.ss-text2-palette-col .ss-text2-swatch:first-child,
+.ss-bg-palette-col .ss-bg-swatch:first-child {
     border-left: none;
 }
-.ss-text2-palette-step {
+.ss-text2-palette-step,
+.ss-bg-palette-step {
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 6px;
 }
-.ss-text2-palette-step-btn {
+.ss-text2-palette-step-btn,
+.ss-bg-palette-step-btn {
     flex: 0 0 auto;
     width: 22px;
     height: 22px;
@@ -2866,24 +2821,23 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     line-height: 1;
     transition: all 0.15s ease;
 }
-.ss-text2-palette-step-btn:hover:not(:disabled) {
+.ss-text2-palette-step-btn:hover:not(:disabled),
+.ss-bg-palette-step-btn:hover:not(:disabled) {
     background: rgba(52,152,219,0.12);
     border-color: rgba(52,152,219,0.5);
 }
 .ss-text2-palette-step-btn:disabled,
-.ss-text2-palette-nav:disabled {
+.ss-bg-palette-step-btn:disabled,
+.ss-text2-palette-nav:disabled,
+.ss-bg-palette-nav:disabled {
     opacity: 0.35;
     cursor: default;
-}
-.ss-text2-palette-label.ss-text2-palette-label--muted {
-    text-transform: none;
-    font-weight: 500;
-    letter-spacing: 0.03em;
 }
 
 /* Big swatch used by the sliders preview (also reused by the old comp
    page, which no longer exists). */
-.ss-text2-comp-swatch {
+.ss-text2-comp-swatch,
+.ss-bg-comp-swatch {
     width: 100%;
     height: 26px;
     border: none;
@@ -2895,10 +2849,12 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 }
 
 /* --- Spectrum page: S/L square + hue bar --- */
-.ss-text2-color-page--spectrum {
+.ss-text2-color-page--spectrum,
+.ss-bg-color-page--spectrum {
     justify-content: space-between;
 }
-.ss-text2-spectrum-sv {
+.ss-text2-spectrum-sv,
+.ss-bg-spectrum-sv {
     position: relative;
     flex: 1 1 auto;
     min-height: 0;
@@ -2909,7 +2865,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     background-color: #f00;
     background-image: linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0));
 }
-.ss-text2-spectrum-hue {
+.ss-text2-spectrum-hue,
+.ss-bg-spectrum-hue {
     position: relative;
     flex: 0 0 auto;
     height: 18px;
@@ -2921,7 +2878,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
         hsl(0,100%,50%), hsl(60,100%,50%), hsl(120,100%,50%),
         hsl(180,100%,50%), hsl(240,100%,50%), hsl(300,100%,50%), hsl(360,100%,50%));
 }
-.ss-text2-spectrum-marker {
+.ss-text2-spectrum-marker,
+.ss-bg-spectrum-marker {
     position: absolute;
     width: 12px;
     height: 12px;
@@ -2933,48 +2891,64 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     left: 0;
     top: 0;
 }
-.ss-text2-spectrum-hue-marker {
+.ss-text2-spectrum-hue-marker,
+.ss-bg-spectrum-hue-marker {
     top: 50%;
 }
 
 /* --- Grid page: hue x lightness rows + grayscale ramp --- */
-.ss-text2-color-page--grid {
-    justify-content: center;
+.ss-text2-color-page--grid,
+.ss-bg-color-page--grid {
+    justify-content: stretch;
 }
-.ss-text2-color-page--grid .ss-text2-color-swatches {
+.ss-text2-color-page--grid .ss-text2-color-swatches,
+.ss-bg-color-page--grid .ss-bg-color-swatches {
     display: flex;
     flex-direction: column;
     gap: 0;
     width: 100%;
+    height: 100%;
 }
-.ss-text2-color-page--grid .ss-text2-color-row .ss-text2-swatch--color {
-    height: 20px;
+.ss-text2-color-page--grid .ss-text2-color-row,
+.ss-bg-color-page--grid .ss-bg-color-row {
+    flex: 1 1 0;
+    min-height: 0;
+}
+.ss-text2-color-page--grid .ss-text2-color-row .ss-text2-swatch--color,
+.ss-bg-color-page--grid .ss-bg-color-row .ss-bg-swatch--color {
+    height: 100%;
+    min-height: 0;
 }
 
 /* --- Sliders page: RGB sliders + preview --- */
-.ss-text2-color-page--sliders {
+.ss-text2-color-page--sliders,
+.ss-bg-color-page--sliders {
     justify-content: space-between;
 }
-.ss-text2-sliders {
+.ss-text2-sliders,
+.ss-bg-sliders {
     display: flex;
     flex-direction: column;
     gap: 6px;
     flex: 1 1 auto;
-    justify-content: center;
+    justify-content: space-evenly;
 }
-.ss-text2-slider-row {
+.ss-text2-slider-row,
+.ss-bg-slider-row {
     display: flex;
     align-items: center;
     gap: 6px;
 }
-.ss-text2-slider-row label {
+.ss-text2-slider-row label,
+.ss-bg-slider-row label {
     flex: 0 0 14px;
     font-size: 12px;
     font-weight: 700;
     color: var(--ss-text-color);
     text-align: center;
 }
-.ss-text2-slider-row input[type="range"] {
+.ss-text2-slider-row input[type="range"],
+.ss-bg-slider-row input[type="range"] {
     flex: 1 1 auto;
     height: 16px;
     margin: 0;
@@ -2984,37 +2958,43 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     background: none;
     border: none;
 }
-.ss-text2-slider-row .ss-text2-slider-val {
+.ss-text2-slider-row .ss-text2-slider-val,
+.ss-bg-slider-row .ss-bg-slider-val {
     flex: 0 0 30px;
     font-size: 11px;
     font-family: monospace;
     text-align: right;
     color: var(--ss-text-color);
 }
-.ss-text2-slider-preview {
+.ss-text2-slider-preview,
+.ss-bg-slider-preview {
     display: flex;
     align-items: center;
     gap: 10px;
 }
-.ss-text2-slider-preview .ss-text2-comp-swatch {
+.ss-text2-slider-preview .ss-text2-comp-swatch,
+.ss-bg-slider-preview .ss-bg-comp-swatch {
     width: 44px;
     height: 26px;
     flex: 0 0 auto;
     border: 1px solid rgba(0,0,0,0.25);
     border-radius: 6px;
 }
-.ss-text2-slider-hex {
+.ss-text2-slider-hex,
+.ss-bg-slider-hex {
     font-size: 12px;
     font-family: monospace;
     color: var(--ss-text-color);
 }
-.ss-text2-palette-header {
+.ss-text2-palette-header,
+.ss-bg-palette-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
 }
-.ss-text2-palette-nav {
+.ss-text2-palette-nav,
+.ss-bg-palette-nav {
     flex: 0 0 auto;
     width: 24px;
     height: 24px;
@@ -3029,11 +3009,13 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     font-size: 11px;
     line-height: 1;
 }
-.ss-text2-palette-nav:hover {
+.ss-text2-palette-nav:hover,
+.ss-bg-palette-nav:hover {
     background: rgba(52,152,219,0.12);
     border-color: rgba(52,152,219,0.5);
 }
-.ss-text2-palette-title {
+.ss-text2-palette-title,
+.ss-bg-palette-title {
     flex: 1 1 auto;
     text-align: center;
     font-size: 11px;
@@ -3043,14 +3025,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     color: var(--ss-text-color);
     opacity: 0.8;
 }
-.ss-text2-palette-label {
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    opacity: 0.55;
-}
-.ss-text2-swatch {
+.ss-text2-swatch,
+.ss-bg-swatch {
     flex: 0 0 auto;
     width: 22px;
     height: 22px;
@@ -3061,27 +3037,33 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     transition: transform 0.12s ease;
 }
-.ss-text2-swatch:hover {
+.ss-text2-swatch:hover,
+.ss-bg-swatch:hover {
     box-shadow: inset 0 0 0 2px rgba(52,152,219,0.55);
 }
-.ss-text2-color-swatches {
+.ss-text2-color-swatches,
+.ss-bg-color-swatches {
     display: flex;
     flex-direction: column;
     gap: 0;
 }
-.ss-text2-color-row {
+.ss-text2-color-row,
+.ss-bg-color-row {
     display: flex;
     gap: 0;
 }
-.ss-text2-color-row .ss-text2-swatch--color {
+.ss-text2-color-row .ss-text2-swatch--color,
+.ss-bg-color-row .ss-bg-swatch--color {
     flex: 1 1 0;
+    min-width: 0;
     height: 18px;
     border: none;
     border-radius: 0;
     box-shadow: none;
     border-right: 1px solid rgba(255,255,255,0.18);
 }
-.ss-text2-color-row .ss-text2-swatch--color:last-child {
+.ss-text2-color-row .ss-text2-swatch--color:last-child,
+.ss-bg-color-row .ss-bg-swatch--color:last-child {
     border-right: none;
 }
 

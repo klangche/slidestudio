@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+<iframe id="app" src="/index.html" style="width:1400px;height:900px;border:0;"></iframe>
+<pre id="diag">loading...</pre>
+<script>
+    function setDiag(t) { try { document.getElementById('diag').textContent = t; } catch (e) {} }
+    const iframe = document.getElementById('app');
+    function measure(label) {
+        const doc = iframe.contentDocument;
+        const stack = doc.querySelector('.ss-bg-color-panel .ss-bg-canvas-palette-stack');
+        const row = doc.querySelector('.ss-bg-color-panel .ss-bg-canvas-palette-row');
+        const sws = doc.querySelectorAll('.ss-bg-color-panel .ss-bg-palette-col .ss-bg-swatch');
+        const sidebar = doc.querySelector('.ss-sidebar');
+        if (!stack || !row || !sidebar || sws.length < 3) return label + ': NOT READY sws=' + sws.length;
+        const sr = sidebar.getBoundingClientRect();
+        const rr = row.getBoundingClientRect();
+        const st = stack.getBoundingClientRect();
+        const swArr = Array.prototype.slice.call(sws);
+        const k = swArr.length / 2;
+        const main = swArr.slice(0, k);
+        let txt = label + ': k=' + k + '\n';
+        txt += 'row: left=' + rr.left.toFixed(1) + ' right=' + rr.right.toFixed(1) + ' width=' + rr.width.toFixed(1) + '\n';
+        txt += 'stack: left=' + st.left.toFixed(1) + ' right=' + st.right.toFixed(1) + ' width=' + st.width.toFixed(1) + '\n';
+        txt += 'stack overflow right of sidebar: ' + (st.right - sr.right).toFixed(1) + '\n';
+        main.forEach(function (s, i) {
+            const r = s.getBoundingClientRect();
+            txt += '  sw ' + i + ': left=' + r.left.toFixed(1) + ' right=' + r.right.toFixed(1) + ' w=' + r.width.toFixed(1) + '\n';
+        });
+        txt += 'last main sw right - stack right: ' + (main[main.length - 1].getBoundingClientRect().right - st.right).toFixed(1) + '\n';
+        return txt;
+    }
+    iframe.addEventListener('load', function () {
+        try {
+            const doc = iframe.contentDocument;
+            const w = iframe.contentWindow;
+            const errs = [];
+            w.addEventListener('error', function (e) { errs.push('ERR: ' + e.message + ' @ ' + e.filename + ':' + e.lineno); });
+            w.addEventListener('unhandledrejection', function (e) { errs.push('REJ: ' + (e.reason && e.reason.message)); });
+            let txt = '';
+            function dumpPalette(label) {
+                const main = doc.getElementById('ss-bgPaletteMain');
+                const sws = main.querySelectorAll('.ss-bg-swatch');
+                const colors = Array.prototype.slice.call(sws).map(function (s) { return s.dataset.color; });
+                return label + ': count=' + sws.length + ' colors=' + JSON.stringify(colors) + '\n';
+            }
+            const imgCanvas = doc.getElementById('ss-image-canvas');
+            if (imgCanvas) {
+                imgCanvas.width = 1080;
+                imgCanvas.height = 1920;
+                const ctx = imgCanvas.getContext('2d');
+                const hues = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+                hues.forEach(function (h, i) {
+                    ctx.fillStyle = 'hsl(' + h + ',70%,50%)';
+                    ctx.fillRect(i * 90, 0, 90, 1920);
+                });
+            }
+            txt += 'drew image, canvas exists=' + !!imgCanvas + '\n';
+            if (typeof w.refreshBackgroundPalette === 'function') w.refreshBackgroundPalette();
+            let i = 0;
+            function pointerTest() {
+                const sv = doc.getElementById('ss-bgSpectrumSv');
+                const svMarker = doc.getElementById('ss-bgSpectrumSvMarker');
+                const hue = doc.getElementById('ss-bgSpectrumHue');
+                const hueMarker = doc.getElementById('ss-bgSpectrumHueMarker');
+                const hexInput = doc.getElementById('ss-bgColorHex');
+                const sr = sv.getBoundingClientRect();
+                const hr = hue.getBoundingClientRect();
+                const svCx = sr.left + sr.width * 0.25;
+                const svCy = sr.top + sr.height * 0.25;
+                sv.dispatchEvent(new w.PointerEvent('pointerdown', { clientX: svCx, clientY: svCy, bubbles: true }));
+                const svAfter = 'after sv pointerdown: hex=' + (hexInput ? hexInput.value : '?') +
+                    ' sv marker left=' + svMarker.style.left + ' top=' + svMarker.style.top + '\n';
+                const hx = hr.left + hr.width * 0.5;
+                hue.dispatchEvent(new w.PointerEvent('pointerdown', { clientX: hx, clientY: hr.top + hr.height * 0.5, bubbles: true }));
+                let txt = 'POINTER TEST\n';
+                txt += 'sv rect: w=' + sr.width.toFixed(1) + ' h=' + sr.height.toFixed(1) + '\n';
+                txt += svAfter;
+                txt += 'after hue pointerdown at 50%: hex=' + (hexInput ? hexInput.value : '?') + '\n';
+                txt += 'hue marker left=' + hueMarker.style.left + '\n';
+                txt += 'sv marker after hue: left=' + svMarker.style.left + ' top=' + svMarker.style.top + '\n';
+                const dragCx = sr.left + sr.width * 0.7;
+                const dragCy = sr.top + sr.height * 0.3;
+                sv.dispatchEvent(new w.PointerEvent('pointermove', { clientX: dragCx, clientY: dragCy, bubbles: true }));
+                txt += 'after sv pointermove to 70%,30%: sv marker left=' + svMarker.style.left +
+                    ' top=' + svMarker.style.top + '\n';
+                const r2 = sv.getBoundingClientRect();
+                const m2 = svMarker.getBoundingClientRect();
+                const deltaX = Math.abs((m2.left + m2.width / 2) - (r2.left + r2.width * 0.7));
+                const deltaY = Math.abs((m2.top + m2.height / 2) - (r2.top + r2.height * 0.3));
+                txt += 'marker center vs pointer at 70%,30%: dx=' + deltaX.toFixed(1) + 'px dy=' + deltaY.toFixed(1) + 'px\n';
+                return txt;
+            }
+            function text2PointerTest() {
+                const addBtn = doc.getElementById('ss-addTextBtn');
+                if (addBtn) addBtn.click();
+                const tsv = doc.getElementById('ss-text2SpectrumSv');
+                const tsvM = doc.getElementById('ss-text2SpectrumSvMarker');
+                const thue = doc.getElementById('ss-text2SpectrumHue');
+                const thueM = doc.getElementById('ss-text2SpectrumHueMarker');
+                const popup = doc.getElementById('ss-text2Popup');
+                if (!tsv || !thue || !tsvM || !thueM) return 'TEXT2: elements missing\n';
+                const tsr = tsv.getBoundingClientRect();
+                const thr = thue.getBoundingClientRect();
+                const cx = tsr.left + tsr.width * 0.25;
+                const cy = tsr.top + tsr.height * 0.25;
+                tsv.dispatchEvent(new w.PointerEvent('pointerdown', { clientX: cx, clientY: cy, bubbles: true }));
+                const t1 = 'text2 after sv pointerdown at 25%,25%: sv marker left=' + tsvM.style.left +
+                    ' top=' + tsvM.style.top + '\n';
+                const hx2 = thr.left + thr.width * 0.5;
+                thue.dispatchEvent(new w.PointerEvent('pointerdown', { clientX: hx2, clientY: thr.top + thr.height * 0.5, bubbles: true }));
+                const t2 = 'text2 after hue pointerdown at 50%: hue marker left=' + thueM.style.left +
+                    ' sv marker left=' + tsvM.style.left + ' top=' + tsvM.style.top + '\n';
+                return 'TEXT2 TEST (popup display=' + popup.style.display + ')\n' + t1 + t2;
+            }
+            function step() {
+                try {
+                    const pl = doc.getElementById('ss-bgPalettePlus');
+                    if (i >= 6) { setDiag(txt + dumpPalette('final') + measure('final layout') + pointerTest() + text2PointerTest() + 'errs=' + JSON.stringify(errs)); return; }
+                    if (pl.disabled) { setDiag(txt + dumpPalette('stuck') + 'errs=' + JSON.stringify(errs)); return; }
+                    pl.click();
+                    txt += dumpPalette('after click ' + (i + 1));
+                    i++;
+                    setTimeout(step, 300);
+                } catch (e) { setDiag('STEP ERR: ' + e.message + '\n' + txt + 'errs=' + JSON.stringify(errs)); }
+            }
+            setTimeout(step, 500);
+        } catch (e) { setDiag('LOAD ERR: ' + e.message); }
+    });
+    setTimeout(function () {
+        try {
+            const doc = iframe.contentDocument;
+            const sws = doc.querySelectorAll('.ss-bg-color-panel .ss-bg-palette-col .ss-bg-swatch');
+            const cur = document.getElementById('diag').textContent;
+            if (cur === 'loading...') setDiag('FINAL: swatches=' + sws.length + ' len=' + doc.body.innerHTML.length);
+        } catch (e) { setDiag('FINAL ERR: ' + e.message); }
+    }, 15000);
+</script>
+</body>
+</html>

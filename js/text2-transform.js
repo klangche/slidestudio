@@ -1,4 +1,4 @@
-// Text 2 Transform - a standalone rotate/crop/resize handle system for text2
+// Text Transform - a standalone rotate/crop/resize handle system for text2
 // boxes. Functionally identical to the image transform widget (blue corner
 // scale handles, orange edge crop handles, green rotation handle, blue
 // outline) but implemented here in its own module. It does NOT import or touch
