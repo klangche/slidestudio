@@ -150,15 +150,17 @@ export function tintShadeHex(hex, shift) {
 // Grow a palette of real colors to exactly `want` swatches WITHOUT ever
 // repeating a color: midway blends between neighboring colors first, then
 // quarter blends, then tints/shades of the real colors. The real colors
-// always come first and keep their order (most dominant first). If no more
-// meaningfully distinct colors can be generated, the palette simply stays
-// smaller - it never cycles back to a color already in the row.
+// always come first and keep their order (most dominant first). A fine,
+// even step ladder of tints/shades guarantees the row reaches `want` even for
+// an all-white/all-black canvas (which only yields a few gray levels with a
+// coarse ladder).
 export function expandPalette(unique, want) {
     if (unique.length >= want) return unique.slice(0, want);
     const out = unique.slice();
+    const NEAR = 20;
     const addIfNew = function (c) {
         if (out.length >= want) return true;
-        if (out.some(function (p) { return colorDistHex(p, c) < 45; })) return false;
+        if (out.some(function (p) { return colorDistHex(p, c) < NEAR; })) return false;
         out.push(c);
         return out.length >= want;
     };
@@ -171,17 +173,33 @@ export function expandPalette(unique, want) {
             addIfNew(blendHex(unique[i], unique[(i + 1) % unique.length], 0.75));
         }
     }
-    const shifts = [0.22, -0.22, 0.4, -0.4, 0.55, -0.55, 0.7, -0.7];
+    const shifts = [0.4, -0.4, 0.24, -0.24, 0.12, -0.12, 0.5, -0.5,
+                    0.75, -0.75, 0.88, -0.88, 0.62, -0.62, 0.16, -0.16,
+                    0.96, -0.96, 0.32, -0.32];
     let progress = true;
     while (out.length < want && progress) {
         progress = false;
         for (let i = 0; i < unique.length && out.length < want; i++) {
             for (let s = 0; s < shifts.length && out.length < want; s++) {
                 const c = tintShadeHex(unique[i], shifts[s]);
-                if (out.some(function (p) { return colorDistHex(p, c) < 45; })) continue;
+                if (out.some(function (p) { return colorDistHex(p, c) < NEAR; })) continue;
                 out.push(c);
                 progress = true;
             }
+        }
+    }
+    // A purely achromatic palette (white/black/gray canvas) has few naturally
+    // distinct gray levels, so the tint ladder above can stall below `want`.
+    // Fill the remainder with an even black-to-white ramp to always reach it.
+    if (out.length < want && out.every(function (c) {
+        const rgb = hexToRgb(c);
+        return Math.abs(rgb[0] - rgb[1]) < 12 && Math.abs(rgb[1] - rgb[2]) < 12;
+    })) {
+        for (let i = 0; i < want && out.length < want; i++) {
+            const v = Math.round((i / Math.max(1, want - 1)) * 255);
+            const rampColor = rgbToHex(v, v, v);
+            if (out.some(function (p) { return colorDistHex(p, rampColor) < NEAR; })) continue;
+            out.push(rampColor);
         }
     }
     return out.slice(0, want);
@@ -260,67 +278,111 @@ export function kmeansTopK(samples, k) {
 // Canvas sampling
 // ------------------------------------------------------------------
 
-// Weigh the text boxes of the sampled slide into the dominant-color stream so
-// added text colors show up in the palette. The weight is proportional to the
-// area the text box covers on the slide.
-function addTextColorSamples(samples, slideIndex, slideW, slideH, SW, SH) {
+// Sample the source bitmap of every visible image at a fixed resolution and
+// add it to the sample stream. Sampling reads the image's own bitmap (the
+// visible crop only), never the composited canvas, so moving, scaling or
+// rotating an image cannot shift the sampled colors - the palette only changes
+// when the image's content actually changes (crop) or leaves the slide
+// (moved off-canvas / off the slide strip entirely).
+function addImageColorSamples(samples, regionLeft, regionRight, canvasH) {
+    const it = window.SSImageTransform;
+    if (!it || typeof it.getSampleableImages !== 'function') return;
+    const images = it.getSampleableImages();
+    for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        const aabb = img.aabb;
+        const right = aabb ? aabb.left + aabb.width : 0;
+        const bottom = aabb ? aabb.top + aabb.height : 0;
+        if (!aabb || right <= regionLeft || aabb.left >= regionRight ||
+            bottom <= 0 || aabb.top >= canvasH) continue;
+        const r = img.visibleRect;
+        if (!r || !img.bitmap || r.width <= 0 || r.height <= 0) continue;
+        // Fixed-resolution grid over the visible crop - independent of the
+        // on-canvas scale/position, so resize/move never changes the samples.
+        const ratio = r.width / r.height;
+        let bw, bh;
+        if (ratio >= 1) { bw = 48; bh = Math.max(1, Math.round(48 / ratio)); }
+        else { bh = 48; bw = Math.max(1, Math.round(48 * ratio)); }
+        let c;
+        try {
+            c = document.createElement('canvas');
+            c.width = bw;
+            c.height = bh;
+            const ctx = c.getContext('2d');
+            ctx.drawImage(img.bitmap, r.x, r.y, r.width, r.height, 0, 0, bw, bh);
+        } catch (e) { continue; }
+        let data;
+        try { data = c.getContext('2d').getImageData(0, 0, bw, bh).data; }
+        catch (e) { continue; }
+        for (let p = 0; p < data.length; p += 4) {
+            if (data[p + 3] <= 40) continue;
+            let rr = data[p], gg = data[p + 1], bb = data[p + 2];
+            if (img.grayscale) {
+                const gv = Math.round(0.299 * rr + 0.587 * gg + 0.114 * bb);
+                rr = gg = bb = gv;
+            }
+            samples.push([rr, gg, bb]);
+        }
+    }
+}
+
+// Each visible text box contributes a fixed number of samples of its color, so
+// resizing or moving a box (while it stays on the slide) does not change how
+// it is weighted. Boxes moved entirely off the slide are skipped.
+function addTextColorSamples(samples, slideIndex, slideW, slideH) {
     const designerCanvas = document.getElementById('ss-designer-canvas');
     if (!designerCanvas || !samples) return;
     const boxes = designerCanvas.querySelectorAll('.ss-text2-element');
     if (!boxes.length) return;
-    const budget = Math.max(1, Math.round(SW * SH * 0.15));
+    const sections = Math.max(1, canvasState.sections || 1);
+    const idx = Math.max(0, Math.min(slideIndex, sections - 1));
+    // The visible region of this slide in canvas coordinates. Text boxes that
+    // were moved entirely outside it (off the slide, cropped away by another
+    // slide's bounds) must not leak their color into the palette.
+    const regionLeft = idx * slideW;
+    const regionRight = regionLeft + slideW;
+    const regionTop = 0;
+    const regionBottom = slideH;
+    const perBox = 16;
     for (let i = 0; i < boxes.length; i++) {
         const box = boxes[i];
         const cs = window.getComputedStyle(box);
         if (cs.display === 'none' || cs.visibility === 'hidden') continue;
-        const left = parseFloat(box.style.left) || 0;
-        if (slideIndex >= 0 && Math.floor(left / slideW) !== slideIndex) continue;
         const contentEl = box.querySelector('.ss-text-content') || box;
         const hex = rgbStringToHex(window.getComputedStyle(contentEl).color);
         if (!hex) continue;
+        const left = parseFloat(box.style.left) || 0;
+        const top = parseFloat(box.style.top) || 0;
         const boxW = parseFloat(box.style.width) || 0;
         const boxH = parseFloat(box.style.height) || 0;
         if (boxW <= 0 || boxH <= 0) continue;
-        const areaFrac = Math.max(0, Math.min(1, (boxW * boxH) / (slideW * slideH)));
-        const count = Math.max(1, Math.round(budget * areaFrac));
+        // Skip boxes fully outside the visible slide region.
+        if (left + boxW <= regionLeft || left >= regionRight ||
+            top + boxH <= regionTop || top >= regionBottom) continue;
         const rgb = hexToRgb(hex);
-        for (let j = 0; j < count; j++) samples.push([rgb[0], rgb[1], rgb[2]]);
+        for (let j = 0; j < perBox; j++) samples.push(rgb.slice());
     }
 }
 
-// Raw [r, g, b] samples of one slide's pixels (image canvas slice + the text
-// boxes that live on that slide), downscaled so sampling is fast.
+// Raw [r, g, b] samples of one slide: the designer canvas background plus the
+// images and text boxes that sit on the slide, all sampled geometry-invariantly.
 function sampleSlidePixels(slideIndex) {
     const W = Math.max(1, Math.round(canvasState.width));
     const H = Math.max(1, Math.round(canvasState.height));
     const sections = Math.max(1, canvasState.sections || 1);
     const slideW = W / sections;
-    const sx = Math.min(slideIndex, sections - 1) * slideW;
-    const drawW = slideW;
+    const regionLeft = Math.min(slideIndex, sections - 1) * slideW;
+    const regionRight = regionLeft + slideW;
 
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(drawW));
-    canvas.height = H;
-    const ctx = canvas.getContext('2d');
-    const designerCanvas = document.getElementById('ss-designer-canvas');
-    ctx.fillStyle = (designerCanvas && designerCanvas.style.backgroundColor) || '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    const imgCanvas = document.getElementById('ss-image-canvas');
-    if (imgCanvas) ctx.drawImage(imgCanvas, sx, 0, drawW, H, 0, 0, canvas.width, canvas.height);
-
-    const SW = 48;
-    const SH = Math.max(1, Math.round(SW * H / Math.max(1, drawW)));
-    const small = document.createElement('canvas');
-    small.width = SW;
-    small.height = SH;
-    const sctx = small.getContext('2d');
-    sctx.drawImage(canvas, 0, 0, SW, SH);
-    const data = sctx.getImageData(0, 0, SW, SH).data;
     const samples = [];
-    for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] > 40) samples.push([data[i], data[i + 1], data[i + 2]]);
-    }
-    addTextColorSamples(samples, slideIndex, slideW, H, SW, SH);
+    const designerCanvas = document.getElementById('ss-designer-canvas');
+    const bgHex = (designerCanvas && designerCanvas.style.backgroundColor) || '#ffffff';
+    const bgRgb = hexToRgb(bgHex);
+    // Fixed background sample count so the canvas background always has a
+    // presence regardless of how much of the slide the images happen to cover.
+    for (let i = 0; i < 64; i++) samples.push(bgRgb.slice());
+    addImageColorSamples(samples, regionLeft, regionRight, H);
+    addTextColorSamples(samples, slideIndex, slideW, H);
     return samples;
 }
 
@@ -339,6 +401,13 @@ export function sampleCanvasColors(slideIndex, k) {
             const slice = sampleSlidePixels(s);
             for (let i = 0; i < slice.length; i++) pooled.push(slice[i]);
         }
+        // Sort the pooled stream so the result is order-independent: kmeans
+        // seeds its centroids from evenly spaced indices, so a stable order
+        // makes the palette depend only on which colors are present on the
+        // canvas - not on which slide order they happen to be sampled in.
+        pooled.sort(function (a, b) {
+            return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+        });
         return kmeansTopK(pooled, k);
     } catch (e) {
         return padPalette(DEFAULT_PALETTE.slice(), k);

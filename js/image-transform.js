@@ -151,6 +151,9 @@ import { snapBox, snapReset } from './guidance.js';
         if (window.updateLayerOrderButtons) {
             window.updateLayerOrderButtons();
         }
+        if (typeof window.refreshBackgroundPalette === 'function') {
+            window.refreshBackgroundPalette();
+        }
     }
 
     // ============================================================================
@@ -561,6 +564,9 @@ import { snapBox, snapReset } from './guidance.js';
         
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
+        if (typeof window.refreshBackgroundPalette === 'function') {
+            window.refreshBackgroundPalette();
+        }
     }
 
     // ============================================================================
@@ -1233,6 +1239,26 @@ const layer = layerState && layerState.layers ?
             return state.images
                 .filter(img => img.visible !== false && img.id !== excludeImgId)
                 .map(img => getImageAABB(img));
+        },
+        // Expose the source bitmaps (with their visible crop and world AABB)
+        // for color sampling. Sampling reads the bitmap directly at a fixed
+        // resolution, so moving/scaling/rotating an image never changes the
+        // palette - only cropping or moving it off-canvas does.
+        getSampleableImages: function() {
+            return state.images
+                .filter(img => img.visible !== false && img.bitmap)
+                .map(img => ({
+                    id: img.id,
+                    bitmap: img.bitmap,
+                    visibleRect: {
+                        x: img.visibleRect.x,
+                        y: img.visibleRect.y,
+                        width: img.visibleRect.width,
+                        height: img.visibleRect.height
+                    },
+                    aabb: getImageAABB(img),
+                    grayscale: !!img.grayscale
+                }));
         }
     };
 

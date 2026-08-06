@@ -13,7 +13,7 @@ import { canvasState } from './state.js';
 import { updateCanvasColor } from './layers.js';
 import {
     normalizeHex, hexToRgb, rgbToHex, rgbToHsl, hslToHex,
-    hsvToHex, complementOf, sampleCanvasColors,
+    hsvToHex, complementOf, colorDistHex, sampleCanvasColors,
     MIN_PALETTE_SIZE, MAX_PALETTE_SIZE
 } from './color-utils.js';
 
@@ -58,14 +58,18 @@ function pos(marker, leftPct, topPct) {
 }
 
 // Apply a color: preview on the canvas live (commit = false) or apply it to
-// the history + separator colors as well (commit = true).
+// the history + separator colors as well (commit = true). Hovering sets the
+// preview state, so a click must commit even when the preview already equals
+// the clicked color - otherwise clicking a swatch after hovering does nothing.
 function setColor(hex, commit) {
     const c = normalizeHex(hex);
-    state.color = c;
-    const designerCanvas = document.getElementById('ss-designer-canvas');
-    if (designerCanvas) designerCanvas.style.backgroundColor = c;
-    syncControls();
-    if (commit) {
+    if (state.color !== c) {
+        state.color = c;
+        const designerCanvas = document.getElementById('ss-designer-canvas');
+        if (designerCanvas) designerCanvas.style.backgroundColor = c;
+        syncControls();
+    }
+    if (commit && state.committed !== c) {
         state.committed = c;
         updateCanvasColor(c);
         refreshBackgroundPalette();
@@ -101,7 +105,23 @@ function renderNav() {
 
 function buildPalette(slideIndex, k) {
     const colors = sampleCanvasColors(slideIndex, k);
-    return { top: colors, bottom: colors.map(complementOf) };
+    const want = Math.max(MIN_PALETTE_SIZE, Math.min(MAX_PALETTE_SIZE, k || MIN_PALETTE_SIZE));
+    // The current background color always leads the row, so the canvas
+    // section reflects the slide background and its complement always shows
+    // as the first swatch of the complementary row (even when an image or
+    // text boxes cover the sampled pixels).
+    const bg = state.committed || state.color || '#ffffff';
+    const merged = [];
+    [bg].concat(colors).forEach(function (c) {
+        if (merged.length >= want) return;
+        // Tolerate close-but-distinct steps so an all-white/all-black canvas
+        // can still fill the row up to `want` (the gray ramp is inherently
+        // fine-grained).
+        if (merged.some(function (p) { return colorDistHex(p, c) < 20; })) return;
+        merged.push(c);
+    });
+    const top = merged.length ? merged : [bg];
+    return { top: top, bottom: top.map(complementOf) };
 }
 
 function fillRow(container, colors) {
@@ -109,7 +129,7 @@ function fillRow(container, colors) {
     colors.forEach(function (c) {
         const sw = document.createElement('button');
         sw.type = 'button';
-        sw.className = 'ss-text2-swatch';
+        sw.className = 'ss-bg-swatch';
         sw.dataset.color = c;
         sw.style.background = c;
         sw.title = c;
@@ -136,7 +156,7 @@ function renderCarousel() {
     state.carouselIndex = ((state.carouselIndex % n) + n) % n;
     const children = refs.pages.children;
     for (let i = 0; i < children.length; i++) {
-        children[i].classList.toggle('ss-text2-color-page--active', i === state.carouselIndex);
+        children[i].classList.toggle('ss-bg-color-page--active', i === state.carouselIndex);
     }
     const page = CAROUSEL_PAGES[state.carouselIndex];
     if (refs.carTitle) refs.carTitle.textContent = CAROUSEL_TITLES[page];
@@ -153,7 +173,9 @@ function renderSpectrum() {
     refs.spectrumSv.style.backgroundColor = hslToHex(h, 1, 0.5);
     refs.spectrumSv.style.backgroundImage = 'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0))';
     pos(refs.spectrumSvMarker, s * 100, (1 - v) * 100);
-    pos(refs.spectrumHueMarker, (h / 360) * 100, 50);
+    if (refs.spectrumHueMarker) {
+        pos(refs.spectrumHueMarker, (h / 360) * 100, 50);
+    }
 }
 
 function svFromEvent(e) {
@@ -164,6 +186,11 @@ function svFromEvent(e) {
     const v = clamp01(1 - (e.clientY - rect.top) / rect.height);
     const h = currentHsl()[0];
     setColor(hsvToHex(h, s, v), false);
+    // Snap the marker to the exact pointer position. setColor re-renders the
+    // spectrum from the stored color (hex -> hsl round-trip), which drifts the
+    // marker a few percent; positioning it from the raw pointer fraction here
+    // keeps it under the cursor, matching the text editor's color panel.
+    pos(refs.spectrumSvMarker, s * 100, (1 - v) * 100);
 }
 
 function hueFromEvent(e) {
@@ -173,6 +200,11 @@ function hueFromEvent(e) {
     const h = clamp01((e.clientX - rect.left) / rect.width) * 360;
     const hsl = currentHsl();
     setColor(hslToHex(h, hsl[1], hsl[2]), false);
+    // Snap the hue marker to the clicked fraction; setColor re-renders the
+    // spectrum from the stored color, but the hue round-trips exactly, so the
+    // marker stays put. The SV marker keeps the color-derived s/v, matching
+    // the text editor's color panel.
+    pos(refs.spectrumHueMarker, (h / 360) * 100, 50);
 }
 
 function bindSpectrum() {
@@ -220,12 +252,12 @@ function renderGrid() {
     refs.swatches.innerHTML = '';
     COLOR_LIGHTNESS.forEach(function (l) {
         const row = document.createElement('div');
-        row.className = 'ss-text2-color-row';
+        row.className = 'ss-bg-color-row';
         COLOR_HUES.forEach(function (h) {
             const c = hslToHex(h, 0.62, l);
             const sw = document.createElement('button');
             sw.type = 'button';
-            sw.className = 'ss-text2-swatch ss-text2-swatch--color';
+            sw.className = 'ss-bg-swatch ss-bg-swatch--color';
             sw.dataset.color = c;
             sw.style.background = c;
             sw.title = c;
@@ -236,13 +268,13 @@ function renderGrid() {
         refs.swatches.appendChild(row);
     });
     const ramp = document.createElement('div');
-    ramp.className = 'ss-text2-color-row';
+    ramp.className = 'ss-bg-color-row';
     for (let i = 0; i <= 8; i++) {
         const v = Math.round((i / 8) * 255);
         const c = rgbToHex(v, v, v);
         const sw = document.createElement('button');
         sw.type = 'button';
-        sw.className = 'ss-text2-swatch ss-text2-swatch--color';
+        sw.className = 'ss-bg-swatch ss-bg-swatch--color';
         sw.dataset.color = c;
         sw.style.background = c;
         sw.title = c;
@@ -258,7 +290,7 @@ function buildSliders() {
     refs.sliders.innerHTML = '';
     ['R', 'G', 'B'].forEach(function (ch) {
         const row = document.createElement('div');
-        row.className = 'ss-text2-slider-row';
+        row.className = 'ss-bg-slider-row';
         const label = document.createElement('label');
         label.textContent = ch;
         const input = document.createElement('input');
@@ -268,7 +300,7 @@ function buildSliders() {
         input.step = '1';
         input.dataset.channel = ch;
         const val = document.createElement('span');
-        val.className = 'ss-text2-slider-val';
+        val.className = 'ss-bg-slider-val';
         input.addEventListener('input', function () {
             const r = parseInt(refs.sliders.querySelector('[data-channel="R"]').value, 10) || 0;
             const g = parseInt(refs.sliders.querySelector('[data-channel="G"]').value, 10) || 0;
@@ -287,7 +319,7 @@ function renderSliders() {
     if (!refs.sliders.childElementCount) buildSliders();
     const rgb = currentRgb();
     const inputs = refs.sliders.querySelectorAll('input[type="range"]');
-    const vals = refs.sliders.querySelectorAll('.ss-text2-slider-val');
+    const vals = refs.sliders.querySelectorAll('.ss-bg-slider-val');
     if (inputs.length === 3) {
         inputs[0].value = rgb[0];
         inputs[1].value = rgb[1];
@@ -388,9 +420,10 @@ function bindEvents() {
 // background palette (image moves, flips, filters, slide add/remove...).
 function wrapImageDraw() {
     if (window.SSImageTransform && typeof window.SSImageTransform.draw === 'function') {
-        const orig = window.SSImageTransform.draw;
+        const cur = window.SSImageTransform.draw;
+        if (cur.toString().indexOf('refreshBackgroundPalette') !== -1) return;
         window.SSImageTransform.draw = function () {
-            const res = orig.apply(this, arguments);
+            const res = cur.apply(this, arguments);
             refreshBackgroundPalette();
             return res;
         };
@@ -442,6 +475,9 @@ export function initializeBackgroundColorPicker() {
     bindEvents();
     renderAll();
     wrapImageDraw();
+    // ES module evaluation order can run this file before image-transform.js
+    // assigns window.SSImageTransform, so re-attempt the wrap next frame.
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(wrapImageDraw);
 }
 
 export function refreshBackgroundPalette() {

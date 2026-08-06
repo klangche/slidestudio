@@ -1,4 +1,4 @@
-﻿// Text 2 Editor - a self-contained text editor. Text added here:
+﻿// Text Editor - a self-contained text editor. Text added here:
 //   - acts exactly like an image on the canvas (drag, corner-resize, rotate,
 //     edge handles crop the box without reflowing the text)
 //   - opens this editor on double-click (or via the "Add Text" button when selected)

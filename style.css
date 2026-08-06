@@ -1590,10 +1590,10 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     background: rgba(52, 152, 219, 0.1);
 }
 
-/* Background color panel (replaces the old native color input). Reuses the
-   generic ss-text2-* structural classes for the canvas palette and the
-   Spectrum/Grid/Sliders carousel so both pickers look identical, but lives in
-   its own module with its own ids. */
+/* Background color panel (replaces the old native color input). Uses its own
+   ss-bg-* classes for the canvas palette and the Spectrum/Grid/Sliders
+   carousel (no ss-text2-* naming, so the background picker is fully
+   independent from the text editor), but shares the visual styles below. */
 .ss-bg-color-panel {
     display: flex;
     flex-direction: column;
@@ -1617,16 +1617,16 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 
 /* The canvas palette shares the text-editor's fixed 308px stack which is
    too wide for the sidebar, so let it stretch to fill the panel instead. */
-.ss-bg-color-panel .ss-text2-canvas-body {
+.ss-bg-color-panel .ss-bg-canvas-body {
     justify-content: stretch;
 }
-.ss-bg-color-panel .ss-text2-canvas-palette {
+.ss-bg-color-panel .ss-bg-canvas-palette {
     width: 100%;
 }
-.ss-bg-color-panel .ss-text2-canvas-palette-row {
+.ss-bg-color-panel .ss-bg-canvas-palette-row {
     width: 100%;
 }
-.ss-bg-color-panel .ss-text2-canvas-palette-stack {
+.ss-bg-color-panel .ss-bg-canvas-palette-stack {
     flex: 1 1 auto;
     width: auto;
     min-width: 0;
@@ -2587,7 +2587,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     background: var(--ss-border-color);
     flex: 0 0 auto;
 }
-.ss-text2-tool {
+.ss-text2-tool,
+.ss-bg-tool {
     flex: 0 0 auto;
     width: 32px;
     height: 32px;
@@ -2607,7 +2608,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     transition: all 0.15s ease;
     font-size: 13px;
 }
-.ss-text2-tool:hover {
+.ss-text2-tool:hover,
+.ss-bg-tool:hover {
     background: rgba(52,152,219,0.1);
     border-color: rgba(52,152,219,0.4);
 }
@@ -2616,7 +2618,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     border-color: rgba(52,152,219,0.5);
     color: #3498db;
 }
-.ss-text2-tool svg {
+.ss-text2-tool svg,
+.ss-bg-tool svg {
     width: 15px;
     height: 15px;
     fill: none;
@@ -2672,13 +2675,15 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     border-radius: 10px;
     box-shadow: none;
 }
-.ss-text2-color-pages {
+.ss-text2-color-pages,
+.ss-bg-color-pages {
     position: relative;
     height: 150px;
     overflow: hidden;
     flex: 0 0 auto;
 }
-.ss-text2-color-page {
+.ss-text2-color-page,
+.ss-bg-color-page {
     position: absolute;
     inset: 0;
     display: none;
@@ -2688,7 +2693,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     padding: 1px;
     box-sizing: border-box;
 }
-.ss-text2-color-page.ss-text2-color-page--active {
+.ss-text2-color-page.ss-text2-color-page--active,
+.ss-bg-color-page.ss-bg-color-page--active {
     display: flex;
 }
 
@@ -2698,7 +2704,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
    complementary colors in a touching row directly under them. The palette
    stack keeps a constant total width, so the swatches get thinner as more
    colors are added (+ up to 11, - down to 3); + and - sit on the right. --- */
-.ss-text2-canvas-section {
+.ss-text2-canvas-section,
+.ss-bg-canvas-section {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -2706,13 +2713,15 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     border-bottom: 1px solid var(--ss-border-color);
     padding-bottom: 8px;
 }
-.ss-text2-canvas-nav {
+.ss-text2-canvas-nav,
+.ss-bg-canvas-nav {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
 }
-.ss-text2-canvas-name {
+.ss-text2-canvas-name,
+.ss-bg-canvas-name {
     flex: 0 0 auto;
     font-size: 11px;
     font-weight: 700;
@@ -2721,23 +2730,27 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     color: var(--ss-text-color);
     opacity: 0.8;
 }
-.ss-text2-canvas-body {
+.ss-text2-canvas-body,
+.ss-bg-canvas-body {
     display: flex;
     justify-content: center;
 }
-.ss-text2-canvas-palette {
+.ss-text2-canvas-palette,
+.ss-bg-canvas-palette {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 0;
     flex: 0 0 auto;
 }
-.ss-text2-canvas-palette-row {
+.ss-text2-canvas-palette-row,
+.ss-bg-canvas-palette-row {
     display: flex;
     gap: 6px;
     align-items: center;
 }
-.ss-text2-canvas-palette-stack {
+.ss-text2-canvas-palette-stack,
+.ss-bg-canvas-palette-stack {
     display: flex;
     flex-direction: column;
     flex: 0 0 auto;
@@ -2746,21 +2759,25 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     border-radius: 5px;
     overflow: hidden;
 }
-.ss-text2-palette-col {
+.ss-text2-palette-col,
+.ss-bg-palette-col {
     display: flex;
     flex-direction: row;
     gap: 0;
     flex: 1 1 auto;
     min-width: 0;
 }
-.ss-text2-canvas-palette-stack > .ss-text2-palette-col {
+.ss-text2-canvas-palette-stack > .ss-text2-palette-col,
+.ss-bg-canvas-palette-stack > .ss-bg-palette-col {
     border: none;
     border-radius: 0;
 }
-.ss-text2-canvas-palette-stack > .ss-text2-palette-col:first-child {
+.ss-text2-canvas-palette-stack > .ss-text2-palette-col:first-child,
+.ss-bg-canvas-palette-stack > .ss-bg-palette-col:first-child {
     border-bottom: 1px solid rgba(0,0,0,0.15);
 }
-.ss-text2-palette-col .ss-text2-swatch {
+.ss-text2-palette-col .ss-text2-swatch,
+.ss-bg-palette-col .ss-bg-swatch {
     flex: 1 1 0;
     min-width: 0;
     width: auto;
@@ -2770,16 +2787,19 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     box-shadow: none;
     border-left: 1px solid rgba(0,0,0,0.15);
 }
-.ss-text2-palette-col .ss-text2-swatch:first-child {
+.ss-text2-palette-col .ss-text2-swatch:first-child,
+.ss-bg-palette-col .ss-bg-swatch:first-child {
     border-left: none;
 }
-.ss-text2-palette-step {
+.ss-text2-palette-step,
+.ss-bg-palette-step {
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 6px;
 }
-.ss-text2-palette-step-btn {
+.ss-text2-palette-step-btn,
+.ss-bg-palette-step-btn {
     flex: 0 0 auto;
     width: 22px;
     height: 22px;
@@ -2801,19 +2821,23 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     line-height: 1;
     transition: all 0.15s ease;
 }
-.ss-text2-palette-step-btn:hover:not(:disabled) {
+.ss-text2-palette-step-btn:hover:not(:disabled),
+.ss-bg-palette-step-btn:hover:not(:disabled) {
     background: rgba(52,152,219,0.12);
     border-color: rgba(52,152,219,0.5);
 }
 .ss-text2-palette-step-btn:disabled,
-.ss-text2-palette-nav:disabled {
+.ss-bg-palette-step-btn:disabled,
+.ss-text2-palette-nav:disabled,
+.ss-bg-palette-nav:disabled {
     opacity: 0.35;
     cursor: default;
 }
 
 /* Big swatch used by the sliders preview (also reused by the old comp
    page, which no longer exists). */
-.ss-text2-comp-swatch {
+.ss-text2-comp-swatch,
+.ss-bg-comp-swatch {
     width: 100%;
     height: 26px;
     border: none;
@@ -2825,10 +2849,12 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
 }
 
 /* --- Spectrum page: S/L square + hue bar --- */
-.ss-text2-color-page--spectrum {
+.ss-text2-color-page--spectrum,
+.ss-bg-color-page--spectrum {
     justify-content: space-between;
 }
-.ss-text2-spectrum-sv {
+.ss-text2-spectrum-sv,
+.ss-bg-spectrum-sv {
     position: relative;
     flex: 1 1 auto;
     min-height: 0;
@@ -2839,7 +2865,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     background-color: #f00;
     background-image: linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0));
 }
-.ss-text2-spectrum-hue {
+.ss-text2-spectrum-hue,
+.ss-bg-spectrum-hue {
     position: relative;
     flex: 0 0 auto;
     height: 18px;
@@ -2851,7 +2878,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
         hsl(0,100%,50%), hsl(60,100%,50%), hsl(120,100%,50%),
         hsl(180,100%,50%), hsl(240,100%,50%), hsl(300,100%,50%), hsl(360,100%,50%));
 }
-.ss-text2-spectrum-marker {
+.ss-text2-spectrum-marker,
+.ss-bg-spectrum-marker {
     position: absolute;
     width: 12px;
     height: 12px;
@@ -2863,54 +2891,64 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     left: 0;
     top: 0;
 }
-.ss-text2-spectrum-hue-marker {
+.ss-text2-spectrum-hue-marker,
+.ss-bg-spectrum-hue-marker {
     top: 50%;
 }
 
 /* --- Grid page: hue x lightness rows + grayscale ramp --- */
-.ss-text2-color-page--grid {
+.ss-text2-color-page--grid,
+.ss-bg-color-page--grid {
     justify-content: stretch;
 }
-.ss-text2-color-page--grid .ss-text2-color-swatches {
+.ss-text2-color-page--grid .ss-text2-color-swatches,
+.ss-bg-color-page--grid .ss-bg-color-swatches {
     display: flex;
     flex-direction: column;
     gap: 0;
     width: 100%;
     height: 100%;
 }
-.ss-text2-color-page--grid .ss-text2-color-row {
+.ss-text2-color-page--grid .ss-text2-color-row,
+.ss-bg-color-page--grid .ss-bg-color-row {
     flex: 1 1 0;
     min-height: 0;
 }
-.ss-text2-color-page--grid .ss-text2-color-row .ss-text2-swatch--color {
+.ss-text2-color-page--grid .ss-text2-color-row .ss-text2-swatch--color,
+.ss-bg-color-page--grid .ss-bg-color-row .ss-bg-swatch--color {
     height: 100%;
     min-height: 0;
 }
 
 /* --- Sliders page: RGB sliders + preview --- */
-.ss-text2-color-page--sliders {
+.ss-text2-color-page--sliders,
+.ss-bg-color-page--sliders {
     justify-content: space-between;
 }
-.ss-text2-sliders {
+.ss-text2-sliders,
+.ss-bg-sliders {
     display: flex;
     flex-direction: column;
     gap: 6px;
     flex: 1 1 auto;
     justify-content: space-evenly;
 }
-.ss-text2-slider-row {
+.ss-text2-slider-row,
+.ss-bg-slider-row {
     display: flex;
     align-items: center;
     gap: 6px;
 }
-.ss-text2-slider-row label {
+.ss-text2-slider-row label,
+.ss-bg-slider-row label {
     flex: 0 0 14px;
     font-size: 12px;
     font-weight: 700;
     color: var(--ss-text-color);
     text-align: center;
 }
-.ss-text2-slider-row input[type="range"] {
+.ss-text2-slider-row input[type="range"],
+.ss-bg-slider-row input[type="range"] {
     flex: 1 1 auto;
     height: 16px;
     margin: 0;
@@ -2920,37 +2958,43 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     background: none;
     border: none;
 }
-.ss-text2-slider-row .ss-text2-slider-val {
+.ss-text2-slider-row .ss-text2-slider-val,
+.ss-bg-slider-row .ss-bg-slider-val {
     flex: 0 0 30px;
     font-size: 11px;
     font-family: monospace;
     text-align: right;
     color: var(--ss-text-color);
 }
-.ss-text2-slider-preview {
+.ss-text2-slider-preview,
+.ss-bg-slider-preview {
     display: flex;
     align-items: center;
     gap: 10px;
 }
-.ss-text2-slider-preview .ss-text2-comp-swatch {
+.ss-text2-slider-preview .ss-text2-comp-swatch,
+.ss-bg-slider-preview .ss-bg-comp-swatch {
     width: 44px;
     height: 26px;
     flex: 0 0 auto;
     border: 1px solid rgba(0,0,0,0.25);
     border-radius: 6px;
 }
-.ss-text2-slider-hex {
+.ss-text2-slider-hex,
+.ss-bg-slider-hex {
     font-size: 12px;
     font-family: monospace;
     color: var(--ss-text-color);
 }
-.ss-text2-palette-header {
+.ss-text2-palette-header,
+.ss-bg-palette-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
 }
-.ss-text2-palette-nav {
+.ss-text2-palette-nav,
+.ss-bg-palette-nav {
     flex: 0 0 auto;
     width: 24px;
     height: 24px;
@@ -2965,11 +3009,13 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     font-size: 11px;
     line-height: 1;
 }
-.ss-text2-palette-nav:hover {
+.ss-text2-palette-nav:hover,
+.ss-bg-palette-nav:hover {
     background: rgba(52,152,219,0.12);
     border-color: rgba(52,152,219,0.5);
 }
-.ss-text2-palette-title {
+.ss-text2-palette-title,
+.ss-bg-palette-title {
     flex: 1 1 auto;
     text-align: center;
     font-size: 11px;
@@ -2979,7 +3025,8 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     color: var(--ss-text-color);
     opacity: 0.8;
 }
-.ss-text2-swatch {
+.ss-text2-swatch,
+.ss-bg-swatch {
     flex: 0 0 auto;
     width: 22px;
     height: 22px;
@@ -2990,27 +3037,33 @@ body.ss-dark-mode .ss-header-right .ss-theme-toggle:hover {
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     transition: transform 0.12s ease;
 }
-.ss-text2-swatch:hover {
+.ss-text2-swatch:hover,
+.ss-bg-swatch:hover {
     box-shadow: inset 0 0 0 2px rgba(52,152,219,0.55);
 }
-.ss-text2-color-swatches {
+.ss-text2-color-swatches,
+.ss-bg-color-swatches {
     display: flex;
     flex-direction: column;
     gap: 0;
 }
-.ss-text2-color-row {
+.ss-text2-color-row,
+.ss-bg-color-row {
     display: flex;
     gap: 0;
 }
-.ss-text2-color-row .ss-text2-swatch--color {
+.ss-text2-color-row .ss-text2-swatch--color,
+.ss-bg-color-row .ss-bg-swatch--color {
     flex: 1 1 0;
+    min-width: 0;
     height: 18px;
     border: none;
     border-radius: 0;
     box-shadow: none;
     border-right: 1px solid rgba(255,255,255,0.18);
 }
-.ss-text2-color-row .ss-text2-swatch--color:last-child {
+.ss-text2-color-row .ss-text2-swatch--color:last-child,
+.ss-bg-color-row .ss-bg-swatch--color:last-child {
     border-right: none;
 }
 
