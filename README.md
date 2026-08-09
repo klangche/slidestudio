@@ -519,7 +519,7 @@ Misc: `ss-exportBtn`, `ss-backupBtn`, `ss-saveTemplateBtn`, `ss-loadBackupBtn`,
 | `.ss-designer-canvas` | The 1080×N surface; gets `transform: scale()` + `--ss-zoom`. |
 | `.ss-image-element` / `.ss-text-element` | DOM layers; `position: absolute`, `cursor: grab`. |
 | `.ss-image-element.selected` | Green selection outline (overridden to none in an earlier rule — the visible one is at the bottom of the file). |
-| `.ss-image-element.ss-locked.selected::after` | **Locked ring** (only visible while the locked element is selected): `box-shadow: inset 0 0 0 calc(10.5px / var(--ss-zoom, 1)) rgba(231,76,60,.85)`. Constant 10.5 px on screen at any zoom. |
+| `.ss-image-element.ss-locked.selected::after` | **Locked ring** (only visible while the locked element is selected): `box-shadow: inset 0 0 0 calc(5.25px / var(--ss-zoom, 1)) rgba(231,76,60,.85)`. Constant 5.25 px on screen at any zoom. |
 | `.ss-resize-handles` / `.ss-resize-handle` | Selection handles; shown via `.selected .ss-resize-handles { display: block }`. |
 | `.ss-rotation-handle` | Rotation handle below the element. |
 | `.ss-slide-separator` | 1 px section divider. |

@@ -29,6 +29,7 @@ import ctypes
 import hashlib
 import io
 import os
+import socket
 import sys
 import threading
 import time
@@ -42,7 +43,7 @@ SCAN_INTERVAL = 1.0
 # How long the server keeps running after the last page's SSE connection
 # closes. Long enough to survive a slow page reload and EventSource
 # auto-reconnects; short enough to feel responsive after the tab is closed.
-AUTO_STOP_GRACE = 10.0
+AUTO_STOP_GRACE = 3.0
 IGNORE_DIRS = {".git", ".hg", ".svn", "__pycache__", "node_modules", ".venv", "venv"}
 IGNORE_SUFFIXES = (".pyc", ".pyo", ".tmp", ".bak")
 
@@ -151,7 +152,7 @@ def auto_stop_monitor(activity, server, grace):
             last = activity["last"]
         if present and open_clients == 0 and (now - last) >= grace:
             print()
-            print(paint("  No page open - server stopped.", "90"))
+            print(paint("  No page open for %.1fs - server stopped." % (now - last), "90"))
             server.shutdown()
             return
 
@@ -169,9 +170,10 @@ class SlideStudioServer(ThreadingHTTPServer):
 class SlideStudioHandler(SimpleHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
-    def __init__(self, *args, root=None, activity=None, **kwargs):
+    def __init__(self, *args, root=None, activity=None, verbose=False, **kwargs):
         self._root = root or os.getcwd()
         self._activity = activity
+        self._verbose = verbose
         super().__init__(*args, directory=self._root, **kwargs)
 
     # -- logging ----------------------------------------------------------
@@ -188,6 +190,8 @@ class SlideStudioHandler(SimpleHTTPRequestHandler):
         method = parts[0] if parts else "?"
         path = parts[1] if len(parts) > 1 else "?"
         if path.startswith(LIVE_ENDPOINT):
+            return
+        if code < 400 and not self._verbose:
             return
         if code < 300:
             color = "32"
@@ -229,20 +233,34 @@ class SlideStudioHandler(SimpleHTTPRequestHandler):
         self.send_header("Connection", "keep-alive")
         self.end_headers()
         wfile = self.wfile
+        sock = self.connection
         lock = threading.Lock()
         with activity["lock"]:
             activity["clients"][wfile] = lock
             activity["present"] = True
             activity["last"] = time.monotonic()
         try:
+            # A browser never sends bytes on an EventSource GET, so the read
+            # side is the reliable close signal: recv() returns b"" the moment
+            # the tab dies (write failures are buffered and can go unnoticed
+            # for a long time). Pings are sent whenever the read times out.
+            sock.settimeout(2.0)
             while True:
-                time.sleep(2.0)
                 try:
-                    with lock:
-                        wfile.write(b": ping\n\n")
-                        wfile.flush()
+                    chunk = sock.recv(1)
+                except socket.timeout:
+                    chunk = None
                 except OSError:
                     break
+                if chunk == b"":
+                    break
+                if chunk is None:
+                    try:
+                        with lock:
+                            wfile.write(b": ping\n\n")
+                            wfile.flush()
+                    except OSError:
+                        break
         finally:
             with activity["lock"]:
                 activity["clients"].pop(wfile, None)
@@ -335,6 +353,11 @@ def main():
         action="store_true",
         help="keep running after the browser tab is closed",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="log every request (default: only errors are shown)",
+    )
     args = parser.parse_args()
 
     root = os.path.abspath(args.root)
@@ -352,6 +375,7 @@ def main():
         SlideStudioHandler,
         root=root,
         activity=activity,
+        verbose=args.verbose,
     )
 
     try:
