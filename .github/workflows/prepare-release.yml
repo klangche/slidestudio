@@ -1,0 +1,40 @@
+name: Prepare release
+
+# Run by hand: Actions tab, "Prepare release", Run workflow.
+# Collects changes/ into VERSIONS.md and README.md and opens a pull request named "Release vX.Y.Z".
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+
+      - name: Collect changes
+        id: collect
+        run: python3 .github/scripts/prepare_release.py
+
+      - name: Open the release pull request
+        if: steps.collect.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          VERSION: ${{ steps.collect.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BRANCH="release/v${VERSION}"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "Release v${VERSION}"
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "Release v${VERSION}" \
+            --body "Collects all files in changes/ into VERSIONS.md and README.md. Merge it, then push the tag v${VERSION}. See BUILD.md."
