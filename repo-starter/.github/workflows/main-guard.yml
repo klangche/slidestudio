@@ -1,0 +1,32 @@
+name: Main guard
+
+# Fails when a commit lands on main without a pull request.
+# This only warns. It cannot block the push. Blocking needs branch protection (see BUILD.md).
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  guard:
+    if: github.event.before != '0000000000000000000000000000000000000000'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Commit must belong to a pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in 1 2 3 4 5; do
+            COUNT=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq 'length')
+            if [ "$COUNT" -gt 0 ]; then
+              echo "OK: this commit belongs to a pull request"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::This commit was pushed to main without a pull request."
+          exit 1

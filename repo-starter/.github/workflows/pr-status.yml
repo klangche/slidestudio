@@ -1,0 +1,47 @@
+name: PR status labels
+
+# Puts the label "ready" or "needs attention" on open pull requests.
+# Runs after "Check repo" finishes, and again for every open PR when main changes.
+
+on:
+  workflow_run:
+    workflows: ["Check repo"]
+    types: [completed]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: read
+  statuses: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  one-pr:
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update labels for the pull request that was checked
+        env:
+          PR: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          if [ -z "$PR" ]; then echo "No pull request for this run"; exit 0; fi
+          bash .github/scripts/update_labels.sh "$PR"
+
+  all-prs:
+    if: github.event_name != 'workflow_run'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update labels for every open pull request
+        run: |
+          for n in $(gh pr list --state open --json number --jq '.[].number'); do
+            bash .github/scripts/update_labels.sh "$n"
+          done
