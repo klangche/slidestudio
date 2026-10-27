@@ -110,17 +110,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         updateClearButton();
         isProjectNameChanged = this.textContent !== defaultProjectName && this.textContent.trim() !== '';
-        exportBtn.disabled = !isProjectNameChanged;
     });
 
     projectName.addEventListener('blur', function() {
         if (this.textContent.trim() === '') {
             this.textContent = defaultProjectName;
-            isProjectNameChanged = false;
-            exportBtn.disabled = true;
         } else if (this.textContent !== defaultProjectName) {
             isProjectNameChanged = true;
-            exportBtn.disabled = false;
         }
         updateClearButton();
     });
@@ -157,7 +153,6 @@ document.addEventListener('DOMContentLoaded', function() {
         projectName.textContent = '';
         projectName.focus();
         isProjectNameChanged = false;
-        exportBtn.disabled = true;
         updateClearButton();
     });
 
@@ -183,9 +178,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Export button functionality
-    exportBtn.addEventListener('click', function() {
-        if (!this.disabled) {
-            alert(`Exporterar projekt: ${projectName.textContent}`);
+    exportBtn.addEventListener('click', async function() {
+        if (this.disabled) return;
+        try {
+            let name = (projectName.textContent || '').trim() || 'slide_export';
+            name = name.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_');
+            const result = await window.Designer.exportCanvasZip(name + '.zip');
+            console.log('Export complete:', result);
+        } catch (err) {
+            console.error('Export failed:', err);
+            alert('Export failed: ' + err.message);
         }
     });
 

@@ -1,9 +1,9 @@
-const CACHE_NAME = 'slidestudio-v2.0';
+const CACHE_NAME = 'slidestudio-v2.6';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon.svg',
+  '/icons/icon.svg',
   '/sw.js'
 ];
 
@@ -41,32 +41,31 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Network-first: always try the latest files from the server, fall back to cache when offline
   event.respondWith(
-    caches.match(event.request)
-      .then(cachedResponse => {
-        // Return cached version or fetch from network
-        if (cachedResponse) {
-          return cachedResponse;
+    fetch(event.request)
+      .then(networkResponse => {
+        // Don't cache non-successful responses
+        if (!networkResponse || networkResponse.status !== 200) {
+          return networkResponse;
         }
 
-        return fetch(event.request)
-          .then(networkResponse => {
-            // Don't cache non-successful responses
-            if (!networkResponse || networkResponse.status !== 200) {
-              return networkResponse;
+        // Cache successful responses for offline use
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME)
+          .then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+
+        return networkResponse;
+      })
+      .catch(error => {
+        console.log('Fetch failed; returning cached fallback:', error);
+        return caches.match(event.request)
+          .then(cachedResponse => {
+            if (cachedResponse) {
+              return cachedResponse;
             }
-
-            // Cache successful responses
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return networkResponse;
-          })
-          .catch(error => {
-            console.log('Fetch failed; returning offline page:', error);
             // If it's a page request, return the cached homepage
             if (event.request.destination === 'document') {
               return caches.match('/');
