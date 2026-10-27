@@ -328,6 +328,19 @@ export function updateImageToolButtons() {
             }
         }
     });
+
+    // Keep the lock button color in sync: red while the selected element is
+    // locked, default otherwise. Prevents a stale red icon after deselect.
+    const lockBtn = document.getElementById('ss-lockImageBtn');
+    if (lockBtn) {
+        if (isText2Selected && isText2Locked) {
+            lockBtn.style.color = '#e74c3c';
+        } else if (hasSelectedImage && isLocked) {
+            lockBtn.style.color = '#e74c3c';
+        } else {
+            lockBtn.style.color = '';
+        }
+    }
 }
 
 // Make updateImageToolButtons globally accessible

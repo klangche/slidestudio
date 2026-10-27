@@ -46,6 +46,7 @@ import {
 
     let editingTextBox = null;
     let editingSlideIndex = 0;
+    let editingPolaroidImg = null;
     let lastActiveElement = null;
     let fontDropdownOpen = false;
     let carouselIndex = 0;
@@ -1606,6 +1607,12 @@ import {
         renderCanvasSection();
         renderCarousel();
 
+        showPopup();
+    }
+
+    // Reveals the popup and focuses the editable preview (shared by the
+    // normal text flow and the polaroid lip-text flow).
+    function showPopup() {
         lastActiveElement = document.activeElement;
         popup.style.display = 'flex';
         popup.setAttribute('aria-hidden', 'false');
@@ -1625,6 +1632,73 @@ import {
                 setEditableCaretPosition(editableAnchor, { line: lastLine, offset: lastText.length });
             }
         }, 10);
+    }
+
+    // Loads the editor state from a polaroid's text payload (or the legacy
+    // plain-text lip text), then opens the popup. Apply writes the result back
+    // to the polaroid instead of touching the text layer system.
+    function openForPolaroid(img) {
+        if (!popup) init();
+        if (!popup) return;
+        if (!img || !img.polaroid) return;
+
+        editingTextBox = null;
+        editingPolaroidImg = img;
+        const sections = canvasState.sections || 1;
+        editingSlideIndex = Math.max(0, Math.min(sections - 1,
+            Math.floor((img.position.x + BASE_CANVAS_WIDTH / 2) / BASE_CANVAS_WIDTH)));
+
+        const pol = img.polaroid;
+        if (pol.textPayload) {
+            const b = pol.textPayload.base || {};
+            editor.lines = (pol.textPayload.lines && pol.textPayload.lines.length)
+                ? pol.textPayload.lines.map(parseTextLine)
+                : String(pol.textPayload.text || '').split('\n').map(function (t) { return { text: t }; });
+            editor.text = editor.lines.map(function (l) { return l.text; }).join('\n');
+            editor.font = pol.textPayload.font || parseFontName(b.fontFamily) || DEFAULT_FONT;
+            editor.fontSize = clampFontSize(parseFloat(b.fontSize) || 48);
+            editor.color = normalizeHex(b.color) || '#121212';
+            committedColor = editor.color;
+            editor.fontWeight = (b.fontWeight === 'bold' || parseFloat(b.fontWeight) >= 600) ? 'bold' : 'normal';
+            editor.fontStyle = b.fontStyle === 'italic' ? 'italic' : 'normal';
+            editor.textDecoration = (b.textDecoration || 'none').toLowerCase();
+            editor.textTransform = b.textTransform === 'uppercase' ? 'uppercase' : 'none';
+            editor.textAlign = 'center';
+            editor.letterSpacing = clampLetterSpacing(parseFloat(b.letterSpacing) || 0);
+            const fsize = parseFloat(b.fontSize) || 48;
+            const lh = parseFloat(b.lineHeight);
+            editor.lineHeight = clampLineHeight(lh ? lh / fsize : 1.2);
+            editor.equalWidth = !!pol.textPayload.equalWidth;
+        } else {
+            // Legacy handwriting style from before the editor integration.
+            const lines = String(pol.text || '').split('\n').map(function (t) { return { text: t }; });
+            editor.lines = lines;
+            editor.text = lines.map(function (l) { return l.text; }).join('\n');
+            editor.font = 'Segoe Script';
+            editor.fontSize = 48;
+            editor.color = '#121212';
+            committedColor = editor.color;
+            editor.fontWeight = 'normal';
+            editor.fontStyle = 'normal';
+            editor.textDecoration = 'none';
+            editor.textTransform = 'none';
+            editor.textAlign = 'center';
+            editor.letterSpacing = 0;
+            editor.lineHeight = 1.2;
+            editor.equalWidth = false;
+        }
+        loadGoogleFont(editor.font);
+        if (title) title.textContent = 'Update Text';
+        if (applyBtn) applyBtn.textContent = 'Update Text';
+
+        syncControls();
+        renderContentAndPreview();
+        updateSlideNav();
+        canvasSlideIndex = -1;
+        renderCanvasSection();
+        renderCarousel();
+
+        showPopup();
     }
 
     function syncControls() {
@@ -1663,6 +1737,7 @@ import {
         document.body.style.overflow = '';
         closeFontDropdown();
         editingTextBox = null;
+        editingPolaroidImg = null;
         try { if (lastActiveElement && typeof lastActiveElement.focus === 'function') lastActiveElement.focus(); } catch (e) {}
     }
 
@@ -1672,6 +1747,27 @@ import {
     function handleApply() {
         if (!popup || popup.style.display === 'none') return;
         const text = editor.lines.map(function (l) { return l.text; }).join('\n');
+
+        // Polaroid lip text: write the payload back to the image instead of
+        // creating/updating a text layer.
+        if (editingPolaroidImg) {
+            const pol = editingPolaroidImg.polaroid;
+            if (pol) {
+                if (text.trim()) {
+                    pol.text = text;
+                    pol.textPayload = collectText2Data();
+                } else {
+                    pol.text = '';
+                    pol.textPayload = null;
+                }
+                if (window.SSImageTransform && typeof window.SSImageTransform.draw === 'function') {
+                    window.SSImageTransform.draw();
+                }
+            }
+            close();
+            return;
+        }
+
         if (!text.trim()) return;
         const data = collectText2Data();
         const designerCanvas = document.getElementById('ss-designer-canvas');
@@ -1818,6 +1914,7 @@ import {
     window.SSTextEditor2 = {
         open: open,
         close: close,
+        openForPolaroid: openForPolaroid,
         isText2Element: function (el) { return !!(el && el.classList && el.classList.contains('ss-text2-element')); },
         getSelected: getSelectedText2Element,
         updateAddTextButton: updateAddTextButton,

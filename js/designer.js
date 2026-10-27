@@ -172,6 +172,7 @@ function initializeDesignerEventListeners() {
     const flipVerticalBtn = document.getElementById('ss-flipVerticalBtn');
     const replaceImageBtn = document.getElementById('ss-replaceImageBtn');
     const lockImageBtn = document.getElementById('ss-lockImageBtn');
+    const polaroidFrameBtn = document.getElementById('ss-polaroidFrameBtn');
     const dropShadowBtn = document.getElementById('ss-dropShadowBtn');
     const grayscaleBtn = document.getElementById('ss-grayscaleBtn');
     
@@ -236,6 +237,13 @@ function initializeDesignerEventListeners() {
         }
         if (window.SSImageTransform && window.SSImageTransform.toggleLock) {
             window.SSImageTransform.toggleLock();
+            updateImageToolUIForSelection();
+        }
+    });
+    if (polaroidFrameBtn) polaroidFrameBtn.addEventListener('click', function() {
+        if (activeText2Selected()) return;
+        if (window.SSImageTransform && window.SSImageTransform.togglePolaroid) {
+            window.SSImageTransform.togglePolaroid();
             updateImageToolUIForSelection();
         }
     });

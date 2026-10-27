@@ -39,7 +39,8 @@ param(
     [switch] $NoBrowser,
     [switch] $NoReload,
     [switch] $NoAutoStop,
-    [switch] $StrictPort
+    [switch] $StrictPort,
+    [switch] $LogRequests
 )
 
 $ErrorActionPreference = 'Stop'
@@ -59,9 +60,6 @@ function Get-FreePort {
     return 0
 }
 
-Write-Host ""
-Write-Host "  SlideStudio  -  Dev Server" -ForegroundColor Cyan
-Write-Host "  ==========================" -ForegroundColor Cyan
 Write-Host ""
 
 # --- 1. Python ------------------------------------------------------------
@@ -104,18 +102,12 @@ if (-not $NoBrowser) {
     Start-Process $url
     Write-Step "Opened $url in your default browser."
 }
-
-Write-Host ""
-Write-Host "  Serving       $root" -ForegroundColor Green
-Write-Host "  URL           $url" -ForegroundColor Green
-Write-Host "  Live reload   $(if ($NoReload) { 'OFF' } else { 'ON' })" -ForegroundColor Green
-Write-Host "  Auto-stop     $(if ($NoAutoStop) { 'OFF' } else { 'ON (exits when the tab is closed)' })" -ForegroundColor Green
-Write-Host "  Stop          Ctrl+C" -ForegroundColor Gray
 Write-Host ""
 
 $serverArgs = @('--port', "$listenPort", '--root', $root)
 if ($NoReload) { $serverArgs += '--no-reload' }
 if ($NoAutoStop) { $serverArgs += '--no-auto-stop' }
+if ($LogRequests) { $serverArgs += '--verbose' }
 
 $exitCode = 0
 try {

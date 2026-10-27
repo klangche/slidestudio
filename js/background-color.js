@@ -35,7 +35,13 @@ const state = {
     committed: '#ffffff',
     slideIndex: -1,
     paletteSize: 5,
-    carouselIndex: 0
+    carouselIndex: 0,
+    // Exact pointer positions, kept so re-renders (commit/refresh) don't move
+    // the markers off the cursor. The hex -> HSL -> V round-trip drifts a few
+    // percent, so these are set from the pointer in svFromEvent/hueFromEvent
+    // and recomputed from the color in setColor when it comes from elsewhere.
+    sv: null,
+    hue: null
 };
 
 function clamp01(v) {
@@ -65,6 +71,9 @@ function setColor(hex, commit) {
     const c = normalizeHex(hex);
     if (state.color !== c) {
         state.color = c;
+        const hsl = currentHsl();
+        state.hue = hsl[0];
+        state.sv = { s: hsl[1], v: hsl[2] + hsl[1] * Math.min(hsl[2], 1 - hsl[2]) };
         const designerCanvas = document.getElementById('ss-designer-canvas');
         if (designerCanvas) designerCanvas.style.backgroundColor = c;
         syncControls();
@@ -172,9 +181,12 @@ function renderSpectrum() {
     const v = l + s * Math.min(l, 1 - l);
     refs.spectrumSv.style.backgroundColor = hslToHex(h, 1, 0.5);
     refs.spectrumSv.style.backgroundImage = 'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0))';
-    pos(refs.spectrumSvMarker, s * 100, (1 - v) * 100);
+    const sx = state.sv ? state.sv.s : s;
+    const sv = state.sv ? state.sv.v : v;
+    const sh = state.hue != null ? state.hue : h;
+    pos(refs.spectrumSvMarker, sx * 100, (1 - sv) * 100);
     if (refs.spectrumHueMarker) {
-        pos(refs.spectrumHueMarker, (h / 360) * 100, 50);
+        pos(refs.spectrumHueMarker, (sh / 360) * 100, 50);
     }
 }
 
@@ -190,6 +202,7 @@ function svFromEvent(e) {
     // spectrum from the stored color (hex -> hsl round-trip), which drifts the
     // marker a few percent; positioning it from the raw pointer fraction here
     // keeps it under the cursor, matching the text editor's color panel.
+    state.sv = { s: s, v: v };
     pos(refs.spectrumSvMarker, s * 100, (1 - v) * 100);
 }
 
@@ -204,6 +217,7 @@ function hueFromEvent(e) {
     // spectrum from the stored color, but the hue round-trips exactly, so the
     // marker stays put. The SV marker keeps the color-derived s/v, matching
     // the text editor's color panel.
+    state.hue = h;
     pos(refs.spectrumHueMarker, (h / 360) * 100, 50);
 }
 

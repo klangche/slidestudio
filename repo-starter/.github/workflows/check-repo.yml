@@ -1,0 +1,49 @@
+name: Check repo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Required files exist
+        run: |
+          for f in README.md AGENTS.md CLAUDE.md VERSIONS.md BUILD.md STATUS.md TLDR.txt \
+                   languages.csv READ_ME_FIRST.txt .gitattributes \
+                   changes/_TEMPLATE.md status/_TEMPLATE.md; do
+            test -f "$f" || { echo "Missing file: $f"; exit 1; }
+          done
+          grep -qF '<!-- NEWEST VERSION BELOW THIS LINE -->' VERSIONS.md \
+            || { echo "VERSIONS.md lost its marker line"; exit 1; }
+          grep -qx '## Features' README.md \
+            || { echo "README.md lost its '## Features' section"; exit 1; }
+
+      - name: AGENTS.md and CLAUDE.md are identical
+        run: cmp AGENTS.md CLAUDE.md
+
+      - name: languages.csv is valid
+        run: python3 .github/scripts/check_languages.py
+
+      - name: Files in changes/ and status/ are valid
+        run: python3 .github/scripts/check_front_matter.py
+
+      - name: Pull request adds a file in changes/
+        if: >-
+          github.event_name == 'pull_request'
+          && !startsWith(github.head_ref, 'release/')
+          && !contains(github.event.pull_request.labels.*.name, 'skip-changes')
+        env:
+          BASE: ${{ github.base_ref }}
+        run: python3 .github/scripts/check_front_matter.py --require-new "$BASE"
