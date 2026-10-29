@@ -1,7 +1,6 @@
 {
   "name": "slidestudio",
   "private": true,
-  "type": "module",
   "scripts": {
     "smoke": "node tests/smoke.mjs"
   },
