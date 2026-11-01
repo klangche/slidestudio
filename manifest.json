@@ -1,13 +1,12 @@
 {
   "name": "SlideStudio",
   "short_name": "SlideStudio",
-  "description": "Create beautiful presentations with SlideStudio",
+  "description": "Create social media slide carousels with SlideStudio",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#1a1a1a",
   "theme_color": "#1a1a1a",
-  "orientation": "landscape",
   "icons": [
     {
       "src": "/icons/icon.svg",
