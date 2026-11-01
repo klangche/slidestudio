@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "smoke": "node tests/smoke.mjs",
-    "offline": "node tests/offline.mjs"
+    "offline": "node tests/offline.mjs",
+    "save-state": "node tests/save-state.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"
