@@ -4,6 +4,7 @@
   "scripts": {
     "smoke": "node tests/smoke.mjs",
     "offline": "node tests/offline.mjs",
+    "restore-state": "node tests/restore-state.mjs",
     "save-state": "node tests/save-state.mjs"
   },
   "devDependencies": {
