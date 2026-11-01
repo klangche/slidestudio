@@ -53,7 +53,8 @@ make it installable).
 
 Boot sequence:
 
-1. `index.html` loads `<script type="module" src="js/main.js">`.
+1. `index.html` loads `<script type="module" src="js/main.js">`, then
+   `js/pwa-install.js` (service worker registration, Install App button).
 2. `js/main.js` imports every module in dependency order (state first, selfcheck
    last). Import order matters because most modules rely on `window.*` bridges set
    up by earlier modules — `selfcheck.js` verifies them all at the end.
@@ -203,6 +204,11 @@ Shared DOM helpers (formerly missing, now the source of truth):
 `setupTextResizeHandlers` (corner resize scales the font proportionally so text
 behaves like an image), and `addTextElement` (fallback direct text creation).
 Also exposes `window.SSText.setupTextResizeHandlers`.
+
+### `js/pwa-install.js`
+Registers the service worker (`/sw.js`) on `load` and adds the floating
+"Install App" button (`.ss-install-button`), shown on `beforeinstallprompt`.
+Loaded by `index.html`, not imported by `main.js`.
 
 ### `js/selfcheck.js`
 On `DOMContentLoaded` verifies every `window.*` bridge in `REQUIRED_BRIDGES`
@@ -557,6 +563,7 @@ Misc: `ss-exportBtn`, `ss-backupBtn`, `ss-saveTemplateBtn`, `ss-loadBackupBtn`,
 | `.ss-dark-mode` | Body-level dark theme. |
 | `.ss-sidebar-visible` / `.ss-sidebar-hidden` | Sidebar visibility. |
 | `.ss-disabled` | Disabled control state. |
+| `.ss-hidden` | `display: none` initial state for popups and the canvas container; JS shows them by setting `style.display`. |
 
 ---
 
