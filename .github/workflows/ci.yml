@@ -54,3 +54,4 @@ jobs:
           sleep 1
           npm run smoke
           npm run offline
+          npm run restore-state
