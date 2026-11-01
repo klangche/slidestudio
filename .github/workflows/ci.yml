@@ -53,3 +53,4 @@ jobs:
           python3 -m http.server 8000 &
           sleep 1
           npm run smoke
+          npm run offline

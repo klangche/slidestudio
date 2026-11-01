@@ -1,10 +1,34 @@
-const CACHE_NAME = 'slidestudio-v2.6';
+const CACHE_NAME = 'slidestudio-v2.7';
 const urlsToCache = [
   '/',
   '/index.html',
+  '/style.css',
   '/manifest.json',
   '/icons/icon.svg',
-  '/sw.js'
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-1024.png',
+  '/sw.js',
+  '/js/background-color.js',
+  '/js/backupexport.js',
+  '/js/color-utils.js',
+  '/js/designer.js',
+  '/js/export.js',
+  '/js/guidance.js',
+  '/js/history.js',
+  '/js/image-transform.js',
+  '/js/keyboard.js',
+  '/js/layers.js',
+  '/js/main.js',
+  '/js/sections.js',
+  '/js/selection.js',
+  '/js/selfcheck.js',
+  '/js/slidestudio.js',
+  '/js/state.js',
+  '/js/text-editor2.js',
+  '/js/text2-transform.js',
+  '/js/ui-helpers.js',
+  '/js/zoom.js'
 ];
 
 // Install

@@ -2,7 +2,7 @@
 
 A jacked-up social-media slide carousel editor. Build 1080 × 1920 story-sized slides
 (1–20 of them), place and edit images and rich text, snap everything into alignment,
-then export each slide in the SoMe formats that matter: **9:16 Stories, 3:4/4:5 Post,
+then export each slide in the SoMe formats that matter: **9:16 Stories, 4:5 Post,
 1:1 Square**.
 
 The whole app is **vanilla JavaScript ES modules** — no build step, no framework, no
@@ -23,7 +23,7 @@ HTTP server — see [Running](#running).
 - [Image transform model (js/image-transform.js)](#image-transform-model)
 - [History / undo / redo (js/history.js)](#history)
 - [Zoom model (js/zoom.js)](#zoom-model)
-- [Text editor (js/text-editor.js)](#text-editor)
+- [Text editor (js/text-editor2.js)](#text-editor)
 - [Export, backup and templates (js/export.js)](#export)
 - [Guidance overlays](#guidance-overlays)
 - [Global bridge inventory](#global-bridge-inventory)
@@ -152,9 +152,8 @@ DOM-layer operations wired to the sidebar tool buttons:
   `saveState()`), `toggleDropShadowSelectedImage`, `toggleGrayscaleSelectedImage`.
 - Z-order: `moveLayerToTop/Up/Down/Bottom`.
 - `updateImageToolButtons` (enables/disables buttons based on selection),
-  `initializeColorPicker` (slide background color + hex),
-  `initializeUploadFunctionality` (Upload Images → `importImageToCanvas`, and
-  Add Text → `SSTextEditor.open()`),
+  `updateCanvasColor` (slide background color, used by `background-color.js`),
+  `initializeUploadFunctionality` (Upload Images → `importImageToCanvas`),
   `initializeTransparencySlider` (guides overlay opacity),
   `cleanupImagesOutsideCanvas` (interval, every 5 s).
 
@@ -175,11 +174,27 @@ The mathematically-correct canvas image system (IIFE exposing `window.SSImageTra
 `window.SSImage`, `window.ImageTransform`). See
 [Image transform model](#image-transform-model).
 
-### `js/text-editor.js`
-Modal rich-text editor (own internal 1080 × 1920 canvas preview). Exposes
-`window.SSTextEditor = { open, close }`; "Add to page" creates a
-`.ss-text-element` and wires dragging/selecting/resize/rotation. See
-[Text editor](#text-editor).
+### `js/text-editor2.js`
+Modal text editor (`#ss-text2Popup`) with a live preview. Wires the
+**Add Text** sidebar button and double-click on a text box. Exposes
+`window.SSTextEditor2`; applying creates or updates a `.ss-text2-element` and
+registers it with `text2-transform.js`. See [Text editor](#text-editor).
+
+### `js/text2-transform.js`
+Rotate/crop/resize handles for text boxes (corner scale, edge crop, rotation,
+outline in `#ss-text2-handles`). Independent of `image-transform.js`. Exposes
+`window.SSText2Transform`.
+
+### `js/color-utils.js`
+Pure color math and canvas palette sampling (`normalizeHex`, `hexToRgb`,
+`complementOf`, `sampleCanvasColors`, ...), imported by `text-editor2.js` and
+`background-color.js`. No `window` bridge.
+
+### `js/background-color.js`
+Slide background color panel in the Slide Management section (`#ss-bgColorPanel`):
+canvas palette with complements, Spectrum/Grid/Sliders, hex input
+(`#ss-bgColorHex`) and eyedropper. Applies colors through
+`updateCanvasColor`. Exposes `window.refreshBackgroundPalette`.
 
 ### `js/ui-helpers.js`
 Shared DOM helpers (formerly missing, now the source of truth):
@@ -255,9 +270,10 @@ several `window` bridges exist purely to reconcile them.
   `layer.cropData`.
 
 ### Text layers (DOM only)
-`.ss-text-element` divs, added by `text-editor.js` (`handleAddToPage`) or
-`ui-helpers.js` `addTextElement()`. They get resize (font-scaling) and rotation
-handles like images. Restored by `history.js` `restoreTextLayer()`.
+`.ss-text-element.ss-text2-element` divs, added by `text-editor2.js` (or
+`.ss-text-element` by `ui-helpers.js` `addTextElement()`). Text2 boxes get
+handles from `text2-transform.js`. Restored by `history.js` `restoreTextLayer()`,
+which rebuilds text2 boxes with `SSTextEditor2.renderContentToElement`.
 
 ---
 
@@ -406,22 +422,29 @@ Reading the current zoom elsewhere (e.g. image-transform locked ring) parses the
 
 ## Text editor
 
-`js/text-editor.js`. A modal (`#ss-textPopup`) with an internal
-1080 × 1920 canvas preview and a rich-text toolbar (fonts — including Google
-Fonts and uploaded `@font-face` CSS — size, color, bold/italic/underline/strike,
-align, letter/word spacing, caps). Exposes:
+`js/text-editor2.js`. A modal (`#ss-text2Popup`, all ids/classes
+`ss-text2-*`) with one toolbar row and a live preview that shows the final
+layout. Features: any Google Font by name, recent fonts first, "Poster"
+equal-width rows, and a color panel (canvas palette with complements,
+Spectrum/Grid/Sliders, hex, eyedropper; color math in `color-utils.js`).
 
-- `window.SSTextEditor = { open, close }` — "Add Text" sidebar button calls
-  `open()`.
-- `openTextEditor(textBox)` re-opens the editor for an existing text box
-  (double-click on canvas).
+- The **Add Text** sidebar button (`#ss-addTextBtn`) calls `open()`, or
+  `open(selected)` when a text box is selected (the button then reads
+  "Update Text"). Double-click on a `.ss-text2-element` also opens it.
+- `window.SSTextEditor2` — `open, close, openForPolaroid, isText2Element,
+  getSelected, updateAddTextButton, renderContentToElement,
+  registerWithImageTransform`.
 
-"Add to page" (`handleAddToPage`) renders the editor canvas into a new
-`.ss-text-element`, adds it to `layerState.layers` at z-index ≥ 200, wires
-`makeElementDraggable` / `makeElementSelectable` /
-`SSText.setupTextResizeHandlers` / `setupRotationHandler`, and calls
-`saveState()`. Rotation is stored in `layer.rotation` by the rotation handler
-and re-applied on restore via the `transform` string.
+Applying (`handleApply`) creates a new `.ss-text2-element` centered on the
+current slide, adds it to `layerState.layers` (`type: 'text'`, `isText2: true`)
+at z-index ≥ 200, wires `makeElementDraggable` / `makeElementSelectable`,
+registers it with `SSText2Transform`, and calls `saveState()`; or it updates the
+box being edited. For a polaroid image it writes the text to the polaroid lip
+instead.
+
+`window.SSText2Transform` (`js/text2-transform.js`) — `register, select,
+deselectAll, getSelectedElement, hasSelected, isText2, deleteSelected,
+duplicateSelected, toggleLock`.
 
 ---
 
@@ -437,7 +460,8 @@ and re-applied on restore via the `transform` string.
 2. `exportCanvasZip(filename)` — splits that single snapshot into:
    - `fullsize.png`,
    - `9-16 Stories/slide_N.png` (1080×1920),
-   - `3-4 Post/slide_N.png` (1080×1350),
+   - `3-4 Post/slide_N.png` (1080×1350, which is 4:5; the folder name says
+     3-4),
    - `1-1 Square/slide_N.png` (1080×1080),
    each cropped **centered vertically** within every 1080×1920 section, packaged
    with an in-file ZIP builder (`makeZip`). Returns
@@ -470,8 +494,8 @@ The transparency slider (`#ss-transparencySlider`) drives
 
 ## Global bridge inventory
 
-Self-checked by `js/selfcheck.js` (`REQUIRED_BRIDGES`). Everything is also listed
-by the modules that define them:
+Every `window.*` bridge assigned in `js/`. `js/selfcheck.js` checks the ones in
+`REQUIRED_BRIDGES` at load:
 
 | Bridge | Defined in |
 | --- | --- |
@@ -479,11 +503,13 @@ by the modules that define them:
 | `saveState` | `history.js` |
 | `makeElementDraggable, makeElementSelectable, selectLayer, updateImageToolUIForSelection, toggleMultiSelectMode, groupElements, ungroupLayer, toggleGroupSelected, updateLayerOrderButtons` | `selection.js` |
 | `createResizeHandles, getResizeHandlesForElement, setupRotationHandler, adjustTextElementSize, addTextElement, setupTextResizeHandlers, SSText` | `ui-helpers.js` |
-| `updateImageToolButtons` | `layers.js` |
+| `updateImageToolButtons`, `_pendingUploads` (upload queue until `image-transform.js` loads) | `layers.js` |
 | `snapToGuidelines, snapElementAt, snapBox, snapReset` | `guidance.js` |
 | `Designer` (+ export/backup/template functions) | `designer.js` |
 | `SSImageTransform, SSImage, ImageTransform, importImageToCanvas, setupImageResizeHandlers, applyImageEffectsToElement, updateLayerVisibleRect, resetCrop, updateHandlePositions` | `image-transform.js` |
-| `SSTextEditor` | `text-editor.js` |
+| `SSTextEditor2` | `text-editor2.js` |
+| `SSText2Transform` | `text2-transform.js` |
+| `refreshBackgroundPalette` | `background-color.js` |
 
 ---
 
@@ -507,7 +533,7 @@ Tools: `ss-flipHorizontalBtn`, `ss-flipVerticalBtn`, `ss-duplicateImageBtn`,
 
 Misc: `ss-exportBtn`, `ss-backupBtn`, `ss-saveTemplateBtn`, `ss-loadBackupBtn`,
 `ss-restoreDefaultsBtn`, `ss-projectName`, `ss-clearButton`, `ss-themeToggle`,
-`ss-menuToggle`, `ss-logoHeader`, `ss-aboutPopup`, `ss-textPopup`,
+`ss-menuToggle`, `ss-logoHeader`, `ss-aboutPopup`, `ss-text2Popup`,
 `ss-slideColorPicker`, `ss-undoBtn`, `ss-redoBtn`.
 
 ---
@@ -560,8 +586,3 @@ Misc: `ss-exportBtn`, `ss-backupBtn`, `ss-saveTemplateBtn`, `ss-loadBackupBtn`,
   boundaries.
 - **Save often.** Many handlers call `window.saveState()` after mutations; if you
   add a new mutation path, mirror that.
-
----
-
-Related docs: `TEXT_EDITOR_README.md` (text editor deep-dive),
-`IMPLEMENTATION_VISUAL.txt` (implementation/visual notes).
