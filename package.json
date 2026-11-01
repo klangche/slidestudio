@@ -5,7 +5,8 @@
     "smoke": "node tests/smoke.mjs",
     "offline": "node tests/offline.mjs",
     "restore-state": "node tests/restore-state.mjs",
-    "save-state": "node tests/save-state.mjs"
+    "save-state": "node tests/save-state.mjs",
+    "keep-images": "node tests/keep-images.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"
