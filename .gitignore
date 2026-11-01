@@ -142,3 +142,6 @@ vite.config.ts.timestamp-*
 __pycache__/
 *.py[cod]
 *.egg-info/
+
+# macOS
+.DS_Store

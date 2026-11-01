@@ -90,9 +90,18 @@ export function saveState() {
         return layerCopy;
     });
     
-    // Only save if state has actually changed
+    // Only save if state has actually changed. Image data URLs are compared
+    // with === per layer instead of being serialized; timestamp is ignored.
     const lastState = historyState.undoStack[historyState.undoStack.length - 1];
-    if (!lastState || JSON.stringify(state) !== JSON.stringify(lastState)) {
+    const skipKeys = function(key, value) {
+        return (key === 'timestamp' || key === 'src' || key === 'imageData') ? undefined : value;
+    };
+    const unchanged = lastState &&
+        JSON.stringify(state, skipKeys) === JSON.stringify(lastState, skipKeys) &&
+        state.layers.every(function(layer, i) {
+            return layer.src === lastState.layers[i].src && layer.imageData === lastState.layers[i].imageData;
+        });
+    if (!unchanged) {
         historyState.undoStack.push(state);
         
         if (historyState.undoStack.length > historyState.maxHistory) {
@@ -179,13 +188,14 @@ export function restoreState(state) {
     layerState.selectedLayer = null;
     layerState.nextZIndex = 10;
     
-    // Clear canvas
+    // Clear canvas, keeping the guidance overlay and the SSImageTransform canvas and handles
     if (designerCanvas) {
-        while (designerCanvas.firstChild) {
-            if (designerCanvas.firstChild.id !== 'ss-guidance-overlay') {
-                designerCanvas.removeChild(designerCanvas.firstChild);
+        const keep = ['ss-guidance-overlay', 'ss-image-canvas', 'ss-image-handles'];
+        Array.from(designerCanvas.childNodes).forEach(function(child) {
+            if (keep.indexOf(child.id) === -1) {
+                designerCanvas.removeChild(child);
             }
-        }
+        });
     }
     
     // Restore layers

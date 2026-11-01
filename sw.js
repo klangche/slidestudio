@@ -1,4 +1,4 @@
-const CACHE_NAME = 'slidestudio-v2.7';
+const CACHE_NAME = 'slidestudio-v2.9';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -10,7 +10,6 @@ const urlsToCache = [
   '/icons/icon-1024.png',
   '/sw.js',
   '/js/background-color.js',
-  '/js/backupexport.js',
   '/js/color-utils.js',
   '/js/designer.js',
   '/js/export.js',
@@ -20,6 +19,7 @@ const urlsToCache = [
   '/js/keyboard.js',
   '/js/layers.js',
   '/js/main.js',
+  '/js/pwa-install.js',
   '/js/sections.js',
   '/js/selection.js',
   '/js/selfcheck.js',

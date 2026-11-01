@@ -197,6 +197,24 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('Template saved successfully!');
     });
 
+    // Restore Defaults button: clears all locally stored data and reloads
+    const restoreDefaultsBtn = document.getElementById('ss-restoreDefaultsBtn');
+    restoreDefaultsBtn.addEventListener('click', function() {
+        try {
+            const confirmed = confirm('This will clear all locally stored data for SlideStudio (including templates and preferences). Continue?');
+            if (!confirmed) return;
+            // Clear localStorage keys for this origin
+            localStorage.clear();
+            // Optionally, also clear sessionStorage
+            try { sessionStorage.clear(); } catch (e) {}
+            // Reload to reinitialize app state
+            window.location.reload();
+        } catch (e) {
+            console.error('Failed to restore defaults', e);
+            alert('Failed to restore defaults. Check console for details.');
+        }
+    });
+
     // Load saved theme preference
     const savedTheme = localStorage.getItem('ss-theme');
     if (savedTheme === 'dark') {

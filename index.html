@@ -47,353 +47,6 @@
     <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/urban-jungle" crossorigin="anonymous">
     <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/graffonti" crossorigin="anonymous">
     <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/trashhand" crossorigin="anonymous">
-    <style>
-        /* Additional styles for the designer workspace */
-        .ss-workspace {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background-color: var(--ss-bg-color);
-            transition: all 0.3s ease;
-            overflow: hidden;
-            position: relative;
-        }
-        .ss-workspace-placeholder {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.03);
-            border: 3px dashed var(--ss-border-color);
-            border-radius: 8px;
-            margin: 20px;
-            padding: 40px;
-            text-align: center;
-            color: var(--ss-text-color);
-            transition: all 0.3s ease;
-        }
-        .ss-workspace-placeholder h2 {
-            font-size: 28px;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-        .ss-workspace-placeholder p {
-            font-size: 16px;
-            margin-bottom: 25px;
-            max-width: 500px;
-            line-height: 1.5;
-        }
-        
-        .ss-workspace-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            opacity: 0.7;
-        }
-        
-        .ss-sidebar-hidden .ss-workspace {
-            margin-left: 0;
-        }
-        
-        .ss-sidebar-visible .ss-workspace {
-            margin-left: 0;
-        }
-        
-        /* Canvas area for future functionality */
-        .ss-canvas-container {
-            flex: 1;
-            display: flex;
-            overflow: auto;
-            padding: 20px;
-        }
-        
-        /* Sized wrapper around the scaled canvas so the scroll area matches
-           the visible (scaled) canvas size. margin:auto centers it when it
-           fits and still lets scrolling reach every edge when it overflows. */
-        .ss-canvas-scroll {
-            margin: auto;
-            position: relative;
-            flex: 0 0 auto;
-        }
-        
-        .ss-canvas {
-            background-color: white;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--ss-border-color);
-            position: relative;
-        }
-
-        /* Designer canvas styles */
-        .ss-designer-canvas {
-            width: 1080px;
-            height: 1920px;
-            background-color: #ffffff;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            border: 1px solid var(--ss-border-color);
-            position: absolute;
-            top: 0;
-            left: 0;
-            transform-origin: top left;
-        }
-
-        /* Zoom value display */
-        .ss-zoom-value {
-            font-size: 11px;
-            font-weight: 500;
-            color: #666;
-            min-width: 36px;
-            text-align: center;
-        }
-
-        /* Text editor modal styles */
-        .ss-text-popup { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10000; }
-        .ss-text-popup-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); cursor: default; }
-        .ss-google-font-popup { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 11000; }
-        .ss-google-font-popup--open { display: flex; }
-        .ss-google-font-popup__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(2px); } 
-        .ss-google-font-popup__content { position: relative; width: min(90vw, 420px); background: var(--ss-bg-color); color: var(--ss-text-color); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); padding: 0; z-index: 11010; overflow: hidden; }
-        .ss-google-font-popup__header { padding: 14px 16px 10px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,0,0,0.08); background: var(--ss-control-box-bg); }
-        .ss-google-font-popup__header h3 { margin:0; font-size:16px; font-weight:600; }
-        .ss-google-font-popup__action-row { display:flex; align-items:center; gap:8px; }
-        .ss-google-font-popup__close,
-        .ss-google-font-popup__google-link { width:28px; height:28px; border-radius:6px; border:1px solid transparent; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; transition: background 0.2s ease; }
-        .ss-google-font-popup__close { background:none; color:var(--ss-text-color); }
-        .ss-google-font-popup__close:hover { background: rgba(0,0,0,0.05); }
-        .ss-google-font-popup__google-link { border-color: rgba(0,0,0,0.1); background: var(--ss-control-box-bg); color:#4285f4; }
-        .ss-google-font-popup__google-link:hover { background: rgba(66,133,244,0.1); }
-        .ss-google-font-popup__body { padding: 16px; display:flex; flex-direction:column; gap:12px; }
-        .ss-google-font-popup__instructions { font-size:13px; color:#555; }
-        .ss-google-font-popup__textarea { width:100%; min-height:120px; border:1px solid var(--ss-border-color); border-radius:10px; padding:10px; font-size:13px; font-family: 'Segoe UI', sans-serif; background: var(--ss-control-box-bg); color: var(--ss-text-color); resize:vertical; }
-        .ss-google-font-popup__upload-row { display:flex; align-items:center; gap:8px; }
-        .ss-google-font-popup__hint { font-size:11px; color:#777; }
-        .ss-text-popup-content { position: relative; width: min(85vw, 720px); min-width: 280px; background: var(--ss-bg-color); color: var(--ss-text-color); border-radius: 10px; box-shadow: 0 14px 50px rgba(0,0,0,0.55); overflow: hidden; display:flex; flex-direction:column; align-items:stretch; padding:0; --ss-font-panel-height: 220px; --ss-text-footer-height: 260px; --ss-text-popup-height: min(calc((100vh - 80px) * 1.3), 832px); height: var(--ss-text-popup-height); max-height: var(--ss-text-popup-height); }
-        .ss-text-popup button { background: none; border: none; color: #666; font-size: 12px; font-weight: 500; cursor: pointer; padding: 6px 10px; border-radius: 6px; transition: all 0.2s ease; text-decoration: none; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
-        .ss-text-popup button:hover:not(:disabled) { color: #3498db; background: rgba(52, 152, 219, 0.1); }
-        .ss-text-popup-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; gap:12px; position:relative; }
-        .ss-text-popup-header h3 { margin:0; font-size:18px; font-weight:600; text-align:left; flex:1; }
-        .ss-text-edit-button {
-            background:none;
-            border:none;
-            box-shadow:none;
-            padding:6px 0;
-            font-size:13px;
-            font-weight:600;
-            color: var(--ss-text-color);
-            text-transform:none;
-            cursor:pointer;
-        }
-        .ss-text-popup-header button { flex:0 0 auto; }
-        .ss-text-color-controls { display:flex; align-items:center; gap:6px; margin-left:8px; }
-        .ss-text-color-controls input[type="color"] { width:32px; height:28px; border:1px solid var(--ss-border-color); border-radius:6px; background: var(--ss-control-box-bg); }
-        .ss-text-color-controls input[type="text"] { width:68px; padding:5px 6px; border:1px solid var(--ss-border-color); border-radius:6px; font-size:11px; font-family:monospace; background: var(--ss-control-box-bg); color: var(--ss-text-color); }
-        .ss-header-size-control { display:flex; flex-direction:column; gap:2px; font-size:10px; color: var(--ss-text-color); margin-left:6px; text-transform:uppercase; letter-spacing:0.05em; }
-        .ss-header-size-control .ss-text-font-size-input { width:70px; }
-        .ss-header-size-control input { width:100%; padding:6px 8px; border:1px solid var(--ss-border-color); border-radius:6px; background: var(--ss-control-box-bg); color: var(--ss-text-color); font-size:12px; text-align:center; }
-        .ss-text-color-controls { display:flex; align-items:center; gap:6px; margin-left:8px; }
-        .ss-text-color-controls input[type="color"] { width:32px; height:28px; border:1px solid var(--ss-border-color); border-radius:6px; background: var(--ss-control-box-bg); }
-        .ss-text-color-controls input[type="text"] { width:68px; padding:5px 6px; border:1px solid var(--ss-border-color); border-radius:6px; font-size:11px; font-family:monospace; background: var(--ss-control-box-bg); color: var(--ss-text-color); }
-        .ss-text-font-dropdown { position:relative; flex:1 1 auto; min-width:0; margin:0; }
-        .ss-font-upload-toast { position:absolute; top:12px; right:18px; display:flex; align-items:center; gap:10px; padding:6px 12px; border-radius:8px; border:1px solid var(--ss-border-color); background: var(--ss-bg-color); color: var(--ss-text-color); font-size:12px; font-weight:500; box-shadow:0 8px 20px rgba(0,0,0,0.15); opacity:0; pointer-events:none; transform:translateY(-6px); transition: opacity 0.25s ease, transform 0.25s ease; z-index:6; }
-        .ss-font-upload-toast.visible { opacity:1; pointer-events:auto; transform:translateY(0); }
-        .ss-font-upload-toast__message { max-width:220px; line-height:1.2; }
-        .ss-font-upload-toast__close { width:28px; height:28px; border-radius:50%; border:1px solid transparent; background: rgba(0,0,0,0.05); color: var(--ss-text-color); font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-        .ss-font-upload-toast__close:hover { border-color: currentColor; background: rgba(0,0,0,0.08); }
-            .ss-text-toolbar { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
-            .ss-text-button-row { display:flex; gap:6px; }
-            .ss-text-button { flex:1; display:flex; align-items:center; justify-content:center; padding:8px; border-radius:6px; border:1px solid transparent; background: none; cursor:pointer; font-size:12px; font-weight:600; color:var(--ss-text-color); transition: all 0.2s ease; position:relative; }
-            .ss-text-button svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.6; }
-            .ss-text-button span { margin-left:4px; }
-            .ss-text-button:hover:not(:disabled) { color: #3498db; background: rgba(52, 152, 219, 0.1); }
-            .ss-text-button--caps::after {
-                content: '';
-                position: absolute;
-                top: 4px;
-                right: 4px;
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: rgba(0,0,0,0.15);
-                border: 1px solid rgba(255,255,255,0.5);
-                transition: background 0.2s ease;
-            }
-            .ss-text-button--caps[aria-pressed="true"]::after {
-                background: #3ed577;
-                border-color: #1c4624;
-                box-shadow: 0 0 0 2px rgba(62,213,119,0.25);
-            }
-        .ss-text-font-button { width:100%; padding:8px 12px; border-radius:6px; border:1px solid transparent; background: none; font-size:13px; font-weight:500; text-align:left; cursor:pointer; transition: all 0.2s ease; position:relative; color: var(--ss-text-color); }
-        .ss-text-font-button:hover:not(:disabled) { color: #3498db; background: rgba(52, 152, 219, 0.1); }
-        .ss-text-font-button span { display:inline-block; pointer-events:none; }
-        .ss-text-font-button svg { position:absolute; right:12px; top:50%; transform:translateY(-50%); width:12px; height:6px; }
-        .ss-text-font-button[aria-expanded="true"] { border-color: var(--ss-button-bg); box-shadow:0 3px 6px rgba(0,0,0,0.18); }
-        .ss-text-font-dropdown-list { position:absolute; left:0; bottom:calc(100% + 6px); top:auto; transform:none; width:100%; max-height:220px; overflow-y:auto; background: var(--ss-bg-color); border:1px solid var(--ss-border-color); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.18); padding:8px; display:none; grid-template-columns:repeat(2,minmax(0,1fr)); grid-gap:8px; z-index:12; }
-        .ss-text-font-dropdown-list.open { display:grid; }
-        .ss-text-font-option { background:none; border:none; text-align:left; font-size:14px; font-weight:500; color:var(--ss-text-color); cursor:pointer; border-radius:6px; display:flex; align-items:center; justify-content:flex-start; gap:10px; padding:0.65rem 0.75rem; position:relative; width:100%; overflow:hidden; }
-        .ss-text-font-option::after { content:''; position:absolute; inset:0; border-radius:6px; border:1px solid transparent; transition:border 0.2s ease, background 0.2s ease; pointer-events:none; z-index:-1; box-sizing:border-box; }
-        .ss-text-font-option:hover::after { border-color: rgba(52,152,219,0.5); background: rgba(52,152,219,0.08); }
-        .ss-text-font-option[aria-selected="true"]::after { border-color: rgba(0,0,0,0.2); background: rgba(0,0,0,0.05); }
-        .ss-font-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .ss-font-remove { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:16px; color:#ff3b30; cursor:pointer; background:none; border:none; padding:0; line-height:1; opacity:0.7; font-family:'Trebuchet MS', 'Segoe UI', sans-serif; }
-        .ss-font-remove:hover { opacity:1; }
-        .ss-text-popup-controls { display:flex; align-items:center; gap:10px; margin-left:auto; }
-        .ss-text-popup-controls button { min-width:0; min-height:0; }
-        .ss-add-to-page-btn {
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            gap:6px;
-            padding:6px 12px;
-            border-radius:8px;
-            border:1px solid rgba(0,0,0,0.12);
-            background: rgba(0,0,0,0.04);
-            color: var(--ss-text-color);
-            font-size:12px;
-            font-weight:600;
-            text-transform:none;
-            transition: border-color 0.2s ease, background 0.2s ease;
-            white-space:nowrap;
-        }
-        .ss-add-to-page-btn:hover:not(:disabled) { background: rgba(52,152,219,0.12); border-color: rgba(52,152,219,0.4); }
-        .ss-add-to-page-btn:disabled,
-        .ss-add-to-page-btn[disabled] {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .ss-add-to-page-icon svg { width:18px; height:18px; }
-        .ss-add-to-page-label { font-size:12px; font-weight:600; text-transform:none; }
-        .ss-text-font-secondary {
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            gap:6px;
-            padding:8px 12px;
-            border-radius:6px;
-            border:1px solid transparent;
-            background:none;
-            color:var(--ss-text-color);
-            font-size:12px;
-            font-weight:600;
-            cursor:pointer;
-            transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-            min-width:0;
-            max-width:none;
-            flex:0 0 auto;
-        }
-        .ss-text-font-secondary:hover:not(:disabled) {
-            color:#3498db;
-            background: rgba(52, 152, 219, 0.1);
-            border-color: rgba(52, 152, 219, 0.2);
-        }
-        .ss-text-tool-action {
-            background: none !important;
-            border: none !important;
-            color: #666;
-            cursor: pointer;
-            padding: 6px 10px;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            min-width: 0;
-            width: auto;
-            opacity: 0.7;
-        }
-        .ss-text-font-actions { display:flex; flex-direction:column; gap:16px; width:100%; }
-        .ss-text-font-action-row { display:flex; align-items:center; gap:8px; width:100%; flex-wrap:wrap; }
-        .ss-text-font-action-row .ss-text-popup-match-btn { margin-top:0; }
-        .ss-text-fixed-button { flex:0 0 auto; min-width:120px; height:34px; display:inline-flex; align-items:center; justify-content:center; text-transform:none; }
-        .ss-text-popup-close { color: var(--ss-text-color); font-size:22px; background:none; border:none; cursor:pointer; width:28px; height:28px; padding:0; display:flex; align-items:center; justify-content:center; border-radius:6px; transition: background 0.2s ease; user-select:none; min-width:28px; max-width:28px; min-height:28px; max-height:28px; line-height:1; }
-        .ss-text-popup-close:hover { background: rgba(0,0,0,0.05); }
-        .ss-text-popup-body {
-            flex:1;
-            position:relative;
-            overflow:hidden;
-            min-height:0;
-            padding-bottom: 0;
-            display:flex;
-            flex-direction:column;
-            justify-content:flex-start;
-            align-items:stretch;
-        }
-        .ss-text-editor-viewport {
-            flex:1;
-            position:relative;
-            top:0;
-            height:100%;
-            max-height:100%;
-            min-height:0;
-            width:100%;
-            max-width:100%;
-            overflow:hidden;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateY(0);
-            margin:0;
-            display:flex;
-            align-items:flex-start;
-            justify-content:center;
-        }
-        .ss-text-editor-empty { width:100%; padding:32px 28px; border-top:1px solid rgba(0,0,0,0.08); text-align:center; font-size:15px; color: rgba(0,0,0,0.65); background: var(--ss-control-box-bg); }
-        .ss-text-font-panel { max-height:0; overflow:hidden; transition: max-height 0.3s ease, padding 0.3s ease; background: var(--ss-bg-color); padding:0 20px; box-sizing:border-box; position:relative; }
-        .ss-text-font-size-input input::-webkit-outer-spin-button,
-        .ss-text-font-size-input input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
-        .ss-text-font-color input[type="color"] {
-            width: 36px;
-            height: 28px;
-            border: 1px solid var(--ss-border-color);
-            border-radius: 4px;
-            cursor: pointer;
-            background: var(--ss-control-box-bg);
-        }
-        .ss-text-font-color input[type="text"] {
-            width: 70px;
-            padding: 5px 3px;
-            border: 1px solid var(--ss-border-color);
-            border-radius: 4px;
-            font-size: 11px;
-            font-family: monospace;
-            text-align: center;
-            background: var(--ss-control-box-bg);
-            color: var(--ss-text-color);
-        }
-        .ss-text-popup-content.ss-font-panel-open .ss-text-font-panel {
-            max-height: 220px;
-            padding: 12px 20px 12px;
-            overflow: visible;
-        }
-        .ss-text-popup-content.ss-font-panel-open .ss-text-editor-viewport {
-            transform: translateY(0);
-        }
-        .ss-text-popup-footer {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            padding: 12px 20px 20px;
-            font-size: 13px;
-            color: var(--ss-text-color);
-            text-align: left;
-            background: var(--ss-bg-color);
-            box-shadow: 0 -8px 30px rgba(0,0,0,0.2);
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            z-index: 2;
-        }
-        .ss-text-popup-footer span {
-            font-size: 12px;
-            color: var(--ss-text-color);
-            padding-bottom: 4px;
-        }
-        .ss-text-popup-content.ss-font-panel-open .ss-text-popup-footer {
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-    </style>
 </head>
 <body class="ss-sidebar-visible">
     <header class="ss-header">
@@ -414,8 +67,8 @@
             <!-- Centered SlideStudio logo (moves About trigger to header center) -->
             <div id="ss-logoHeader" class="ss-logo-header ss-logo-center" title="About SlideStudio">
                 <div class="ss-logo">
-                    <img class="ss-duotone" src="icons/icon.svg" alt="SlideStudio" style="width:28px; height:28px; vertical-align:middle;">
-                    <span style="vertical-align:middle;">SlideStudio</span>
+                    <img class="ss-duotone" src="icons/icon.svg" alt="SlideStudio">
+                    <span>SlideStudio</span>
                 </div>
             </div>
 
@@ -491,7 +144,7 @@
                             <div class="ss-slider-container">
                                 <div class="ss-slider" id="ss-transparencySlider">
                                     <div class="ss-slider-track"></div>
-                                    <div class="ss-slider-fill" id="ss-transparencyFill" style="width: 0%;"></div>
+                                    <div class="ss-slider-fill" id="ss-transparencyFill"></div>
                                     <div class="ss-slider-thumb" id="ss-transparencyThumb"></div>
                                 </div>
                             </div>
@@ -575,7 +228,7 @@
                             <div class="ss-slider-container">
                                 <div class="ss-slider" id="ss-slider">
                                     <div class="ss-slider-track"></div>
-                                    <div class="ss-slider-fill" id="ss-sliderFill" style="width: 0%;"></div>
+                                    <div class="ss-slider-fill" id="ss-sliderFill"></div>
                                     <div class="ss-slider-thumb" id="ss-sliderThumb"></div>
                                 </div>
                             </div>
@@ -676,7 +329,7 @@
                             </div>
                             
                             <!-- Layer Order buttons with spacing (separator removed) -->
-                            <div class="ss-layer-order-buttons" style="margin-top: 8px;">
+                            <div class="ss-layer-order-buttons">
                                 <button class="ss-layer-order-button" id="ss-moveToTopBtn" title="Move to Top">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M12 19V5M5 12l7-7 7 7"/>
@@ -707,7 +360,7 @@
 
                 <!-- Export button (moved from header) -->
                 <div class="ss-sidebar-section">
-                    <div class="ss-sidebar-export" style="display:flex; justify-content:center; padding:8px 12px;">
+                    <div class="ss-sidebar-export">
                         <button class="ss-export-button" id="ss-exportBtn">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -747,15 +400,15 @@
         <div class="ss-workspace" id="ss-workspace">
 <div class="ss-workspace-placeholder" id="ss-workspacePlaceholder">
     <!-- Use the same logo as in the header but centered -->
-    <div class="ss-logo" style="display:flex; flex-direction: column; align-items:center; gap:0.5em; font-family:sans-serif; font-size:48px; font-weight:bold; color:var(--ss-text-color); margin-bottom: 20px;">
-            <img class="ss-duotone" src="icons/icon.svg" alt="SlideStudio" style="height:1em; width:auto; vertical-align:middle;">
-      <span style="text-align: center;">SlideStudio</span>
+    <div class="ss-logo ss-logo-stack">
+            <img class="ss-duotone" src="icons/icon.svg" alt="SlideStudio">
+      <span>SlideStudio</span>
     </div>
-    <p style="font-size: 18px; color: var(--ss-text-color); opacity: 0.8; margin-top: 10px;">under construction</p>
+    <p class="ss-workspace-placeholder-note">under construction</p>
 </div>
             
             <!-- Canvas container for future functionality -->
-            <div class="ss-canvas-container" id="ss-canvasContainer" style="display: none;">
+            <div class="ss-canvas-container ss-hidden" id="ss-canvasContainer">
                 <!-- Designer canvas will be inserted here by designer.js -->
             </div>
         </div>
@@ -764,13 +417,13 @@
     
 
     <!-- About Popup -->
-    <div class="ss-about-popup" id="ss-aboutPopup" style="display:none;">
+    <div class="ss-about-popup ss-hidden" id="ss-aboutPopup">
         <div class="ss-about-popup-content">
             <div class="ss-about-logo">
                 <!-- Updated: Centered icon above text -->
-                <div class="ss-logo" style="display:flex; flex-direction: column; align-items:center; gap:0.5em; font-family:sans-serif; font-size:48px; font-weight:bold; color:var(--ss-text-color);">
-                                    <img class="ss-duotone" src="icons/icon.svg" alt="Slide Studio" style="height:3em; width:auto; vertical-align:middle;">
-                  <span style="text-align: center;">Slide Studio</span>
+                <div class="ss-logo ss-logo-stack">
+                                    <img class="ss-duotone" src="icons/icon.svg" alt="Slide Studio">
+                  <span>Slide Studio</span>
                 </div>
             </div>
             <div class="ss-about-info">
@@ -788,7 +441,7 @@
     <!-- Text Editor Modal (new, independent from the old Add Text editor).
          Text added here behaves like an image: drag, corner-resize, rotate,
          double-click to reopen this editor. -->
-    <div class="ss-text2-popup" id="ss-text2Popup" aria-hidden="true" role="dialog" aria-label="Text editor" aria-modal="true" style="display:none;">
+    <div class="ss-text2-popup ss-hidden" id="ss-text2Popup" aria-hidden="true" role="dialog" aria-label="Text editor" aria-modal="true">
         <div class="ss-text2-popup-overlay" id="ss-text2Overlay"></div>
         <div class="ss-text2-popup-content" role="document" tabindex="-1">
             <div class="ss-text2-header">
@@ -799,7 +452,7 @@
 
                 <!-- Slide navigation: with several slides you can jump between
                      the text boxes on each slide without closing the editor. -->
-                <div class="ss-text2-slidenav" id="ss-text2SlideNav" style="display:none;">
+                <div class="ss-text2-slidenav ss-hidden" id="ss-text2SlideNav">
                     <button type="button" class="ss-text2-slidenav-btn" id="ss-text2SlidePrev" title="Previous text" aria-label="Previous text">◀</button>
                     <span class="ss-text2-slidenav-label" id="ss-text2SlideLabel">Slide 1</span>
                     <button type="button" class="ss-text2-slidenav-btn" id="ss-text2SlideNext" title="Next text" aria-label="Next text">▶</button>
@@ -946,58 +599,7 @@
     </div>
 
     <script type="module" src="js/main.js"></script>
-    <script>
-// Register Service Worker
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-                console.log('SW registered: ', registration);
-            })
-            .catch(registrationError => {
-                console.log('SW registration failed: ', registrationError);
-            });
-    });
-}
-
-// Add to Home Screen prompt
-let deferredPrompt;
-const installButton = document.createElement('button');
-installButton.innerHTML = '📱 Install App';
-installButton.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #333;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    z-index: 1000;
-    font-size: 14px;
-`;
-installButton.style.display = 'none';
-
-installButton.addEventListener('click', async () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            installButton.style.display = 'none';
-        }
-        deferredPrompt = null;
-    }
-});
-
-document.body.appendChild(installButton);
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installButton.style.display = 'block';
-});
-</script>
+    <script type="module" src="js/pwa-install.js"></script>
 
 
 

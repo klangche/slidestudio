@@ -10,10 +10,37 @@ dependencies. It runs as a static site (PWA via a service worker). You can run i
 opening `index.html`, but some features (Service Worker, PWA install) need a local
 HTTP server — see [Running](#running).
 
+## Features
+
+- 1–20 slides of 1080 × 1920 on one canvas, added and removed one at a time.
+- Images: upload, move, scale, rotate, flip, crop and lock.
+- Rich text layers with web fonts, edited in place.
+- Snapping to canvas edges, slide borders and other layers, with guide overlays.
+- Undo / redo, zoom and pan, background color.
+- ZIP export of every slide as 9:16 Stories, 4:5 Post and 1:1 Square, plus the
+  full canvas.
+- JSON backups and named templates (stored in the browser).
+- Works offline and installs as a PWA.
+
+## Install
+
+Nothing to build or install. Clone the repository and serve it over HTTP (see
+[Running](#running)); Python 3 is the only requirement for the local server.
+To install it as an app, open it in the browser and use the browser's install
+option.
+
+## Platforms
+
+Modern desktop browsers. Installable as a PWA. Web fonts load from Google Fonts
+and cdnfonts.
+
 ---
 
 ## Table of contents
 
+- [Features](#features)
+- [Install](#install)
+- [Platforms](#platforms)
 - [Quick start](#running)
 - [Architecture overview](#architecture-overview)
 - [Module reference](#module-reference)
@@ -30,6 +57,7 @@ HTTP server — see [Running](#running).
 - [Key DOM ids](#key-dom-ids)
 - [Key CSS classes](#key-css-classes)
 - [Conventions & gotchas](#conventions--gotchas)
+- [License](#license)
 
 ---
 
@@ -43,6 +71,12 @@ powershell -File dev-server.ps1            # serves on http://localhost:8000
 powershell -File dev-server.ps1 -Port 8080 # pick another port if 8000 is busy
 ```
 
+Without PowerShell, run the server directly:
+
+```sh
+python dev-server.py --port 8000           # serves on http://localhost:8000
+```
+
 The project is also configured for Netlify (`netlify.toml`) and works fully offline
 once the service worker (`sw.js`) has cached the assets (`manifest.json` + `icons/`
 make it installable).
@@ -53,7 +87,8 @@ make it installable).
 
 Boot sequence:
 
-1. `index.html` loads `<script type="module" src="js/main.js">`.
+1. `index.html` loads `<script type="module" src="js/main.js">`, then
+   `js/pwa-install.js` (service worker registration, Install App button).
 2. `js/main.js` imports every module in dependency order (state first, selfcheck
    last). Import order matters because most modules rely on `window.*` bridges set
    up by earlier modules — `selfcheck.js` verifies them all at the end.
@@ -109,8 +144,9 @@ initializer functions of every feature module. Exposes the app entry points on
 Header/sidebar chrome: project name editing (max 50 chars), clear button,
 light/dark theme toggle (persisted to `localStorage['ss-theme']`, auto-detects
 system theme on first load), menu (show/hide sidebar), about popup, collapsible
-sections, and the **Export pages** button which calls
-`Designer.exportCanvasZip(name + '.zip')`.
+sections, the **Export pages** button which calls
+`Designer.exportCanvasZip(name + '.zip')`, and **Restore Defaults** (clears
+`localStorage`/`sessionStorage` after a confirm, then reloads).
 
 ### `js/zoom.js`
 Zoom slider, wheel and pinch gestures; applies `transform: scale()` to
@@ -164,10 +200,6 @@ bounds, applies magnet snapping per step, `saveState()` after each move.
 Full-canvas rendering, rich-text parsing for export, ZIP export, JSON backup and
 localStorage templates. See [Export](#export).
 
-### `js/designer.js` (already covered) and `js/backupexport.js`
-`backupexport.js` is a **legacy placeholder** — its buttons alert "will be
-implemented here". The real backup/export lives in `export.js`.
-
 ### `js/image-transform.js`
 The mathematically-correct canvas image system (IIFE exposing `window.SSImageTransform`,
 `window.SSImage`, `window.ImageTransform`). See
@@ -202,6 +234,11 @@ Shared DOM helpers (formerly missing, now the source of truth):
 `setupTextResizeHandlers` (corner resize scales the font proportionally so text
 behaves like an image), and `addTextElement` (fallback direct text creation).
 Also exposes `window.SSText.setupTextResizeHandlers`.
+
+### `js/pwa-install.js`
+Registers the service worker (`/sw.js`) on `load` and adds the floating
+"Install App" button (`.ss-install-button`), shown on `beforeinstallprompt`.
+Loaded by `index.html`, not imported by `main.js`.
 
 ### `js/selfcheck.js`
 On `DOMContentLoaded` verifies every `window.*` bridge in `REQUIRED_BRIDGES`
@@ -459,8 +496,7 @@ duplicateSelected, toggleLock`.
 2. `exportCanvasZip(filename)` — splits that single snapshot into:
    - `fullsize.png`,
    - `9-16 Stories/slide_N.png` (1080×1920),
-   - `3-4 Post/slide_N.png` (1080×1350, which is 4:5; the folder name says
-     3-4),
+   - `4-5 Post/slide_N.png` (1080×1350),
    - `1-1 Square/slide_N.png` (1080×1080),
    each cropped **centered vertically** within every 1080×1920 section, packaged
    with an in-file ZIP builder (`makeZip`). Returns
@@ -556,6 +592,7 @@ Misc: `ss-exportBtn`, `ss-backupBtn`, `ss-saveTemplateBtn`, `ss-loadBackupBtn`,
 | `.ss-dark-mode` | Body-level dark theme. |
 | `.ss-sidebar-visible` / `.ss-sidebar-hidden` | Sidebar visibility. |
 | `.ss-disabled` | Disabled control state. |
+| `.ss-hidden` | `display: none` initial state for popups and the canvas container; JS shows them by setting `style.display`. |
 
 ---
 
@@ -585,3 +622,11 @@ Misc: `ss-exportBtn`, `ss-backupBtn`, `ss-saveTemplateBtn`, `ss-loadBackupBtn`,
   boundaries.
 - **Save often.** Many handlers call `window.saveState()` after mutations; if you
   add a new mutation path, mirror that.
+
+---
+
+## License
+
+MIT, see [LICENSE](LICENSE).
+
+Contributors and AI agents follow AGENTS.md.
