@@ -10,10 +10,37 @@ dependencies. It runs as a static site (PWA via a service worker). You can run i
 opening `index.html`, but some features (Service Worker, PWA install) need a local
 HTTP server — see [Running](#running).
 
+## Features
+
+- 1–20 slides of 1080 × 1920 on one canvas, added and removed one at a time.
+- Images: upload, move, scale, rotate, flip, crop and lock.
+- Rich text layers with web fonts, edited in place.
+- Snapping to canvas edges, slide borders and other layers, with guide overlays.
+- Undo / redo, zoom and pan, background color.
+- ZIP export of every slide as 9:16 Stories, 4:5 Post and 1:1 Square, plus the
+  full canvas.
+- JSON backups and named templates (stored in the browser).
+- Works offline and installs as a PWA.
+
+## Install
+
+Nothing to build or install. Clone the repository and serve it over HTTP (see
+[Running](#running)); Python 3 is the only requirement for the local server.
+To install it as an app, open it in the browser and use the browser's install
+option.
+
+## Platforms
+
+Modern desktop browsers. Installable as a PWA. Web fonts load from Google Fonts
+and cdnfonts.
+
 ---
 
 ## Table of contents
 
+- [Features](#features)
+- [Install](#install)
+- [Platforms](#platforms)
 - [Quick start](#running)
 - [Architecture overview](#architecture-overview)
 - [Module reference](#module-reference)
@@ -30,6 +57,7 @@ HTTP server — see [Running](#running).
 - [Key DOM ids](#key-dom-ids)
 - [Key CSS classes](#key-css-classes)
 - [Conventions & gotchas](#conventions--gotchas)
+- [License](#license)
 
 ---
 
@@ -41,6 +69,12 @@ Service Worker can register):
 ```powershell
 powershell -File dev-server.ps1            # serves on http://localhost:8000
 powershell -File dev-server.ps1 -Port 8080 # pick another port if 8000 is busy
+```
+
+Without PowerShell, run the server directly:
+
+```sh
+python dev-server.py --port 8000           # serves on http://localhost:8000
 ```
 
 The project is also configured for Netlify (`netlify.toml`) and works fully offline
@@ -586,3 +620,11 @@ Misc: `ss-exportBtn`, `ss-backupBtn`, `ss-saveTemplateBtn`, `ss-loadBackupBtn`,
   boundaries.
 - **Save often.** Many handlers call `window.saveState()` after mutations; if you
   add a new mutation path, mirror that.
+
+---
+
+## License
+
+MIT, see [LICENSE](LICENSE).
+
+Contributors and AI agents follow AGENTS.md.
