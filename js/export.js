@@ -609,7 +609,7 @@ export async function exportCanvasZip(filename) {
 
     const formats = [
         { folder: '9-16 Stories', w: 1080, h: 1920 },
-        { folder: '3-4 Post', w: 1080, h: 1350 },
+        { folder: '4-5 Post', w: 1080, h: 1350 },
         { folder: '1-1 Square', w: 1080, h: 1080 }
     ];
     const sections = Math.max(1, canvasState.sections || 1);

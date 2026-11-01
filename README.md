@@ -460,8 +460,7 @@ duplicateSelected, toggleLock`.
 2. `exportCanvasZip(filename)` — splits that single snapshot into:
    - `fullsize.png`,
    - `9-16 Stories/slide_N.png` (1080×1920),
-   - `3-4 Post/slide_N.png` (1080×1350, which is 4:5; the folder name says
-     3-4),
+   - `4-5 Post/slide_N.png` (1080×1350),
    - `1-1 Square/slide_N.png` (1080×1080),
    each cropped **centered vertically** within every 1080×1920 section, packaged
    with an in-file ZIP builder (`makeZip`). Returns
