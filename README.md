@@ -144,8 +144,9 @@ initializer functions of every feature module. Exposes the app entry points on
 Header/sidebar chrome: project name editing (max 50 chars), clear button,
 light/dark theme toggle (persisted to `localStorage['ss-theme']`, auto-detects
 system theme on first load), menu (show/hide sidebar), about popup, collapsible
-sections, and the **Export pages** button which calls
-`Designer.exportCanvasZip(name + '.zip')`.
+sections, the **Export pages** button which calls
+`Designer.exportCanvasZip(name + '.zip')`, and **Restore Defaults** (clears
+`localStorage`/`sessionStorage` after a confirm, then reloads).
 
 ### `js/zoom.js`
 Zoom slider, wheel and pinch gestures; applies `transform: scale()` to
@@ -199,10 +200,6 @@ bounds, applies magnet snapping per step, `saveState()` after each move.
 ### `js/export.js`
 Full-canvas rendering, rich-text parsing for export, ZIP export, JSON backup and
 localStorage templates. See [Export](#export).
-
-### `js/designer.js` (already covered) and `js/backupexport.js`
-`backupexport.js` is a **legacy placeholder** — its buttons alert "will be
-implemented here". The real backup/export lives in `export.js`.
 
 ### `js/image-transform.js`
 The mathematically-correct canvas image system (IIFE exposing `window.SSImageTransform`,

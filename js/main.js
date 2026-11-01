@@ -11,7 +11,6 @@ import './export.js';
 import './designer.js';
 import './background-color.js';
 import './slidestudio.js';
-import './backupexport.js';
 import './text-editor2.js';
 import './text2-transform.js';
 import './image-transform.js';
