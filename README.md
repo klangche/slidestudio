@@ -192,8 +192,7 @@ DOM-layer operations wired to the sidebar tool buttons:
 - `updateImageToolButtons` (enables/disables buttons based on selection),
   `updateCanvasColor` (slide background color, used by `background-color.js`),
   `initializeUploadFunctionality` (Upload Images → `importImageToCanvas`),
-  `initializeTransparencySlider` (guides overlay opacity),
-  `cleanupImagesOutsideCanvas` (interval, every 5 s).
+  `initializeTransparencySlider` (guides overlay opacity).
 
 ### `js/keyboard.js`
 Arrow-key nudge (1 px, hold-to-repeat with acceleration state), clamps to canvas
