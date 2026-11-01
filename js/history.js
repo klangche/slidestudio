@@ -179,13 +179,14 @@ export function restoreState(state) {
     layerState.selectedLayer = null;
     layerState.nextZIndex = 10;
     
-    // Clear canvas
+    // Clear canvas, keeping the guidance overlay and the SSImageTransform canvas and handles
     if (designerCanvas) {
-        while (designerCanvas.firstChild) {
-            if (designerCanvas.firstChild.id !== 'ss-guidance-overlay') {
-                designerCanvas.removeChild(designerCanvas.firstChild);
+        const keep = ['ss-guidance-overlay', 'ss-image-canvas', 'ss-image-handles'];
+        Array.from(designerCanvas.childNodes).forEach(function(child) {
+            if (keep.indexOf(child.id) === -1) {
+                designerCanvas.removeChild(child);
             }
-        }
+        });
     }
     
     // Restore layers
