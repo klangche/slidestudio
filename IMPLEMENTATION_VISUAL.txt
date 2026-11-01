@@ -73,6 +73,3 @@ Files modified:
   1. index.html - Updated popup HTML structure
   2. style.css - Added canvas styles + dark mode
   3. text-editor.js - Added scaling logic with ResizeObserver
-
-Test file created:
-  test-text-editor.html - Standalone test page

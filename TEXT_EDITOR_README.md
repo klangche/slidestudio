@@ -60,8 +60,6 @@ canvas.style.transform = `scale(${scale})`;
 ```
 
 ## Testing
-A test file `test-text-editor.html` has been created to demonstrate the functionality independently.
-
 To test:
 1. Open `index.html` in a browser
 2. Click "Add Text" button in the sidebar
