@@ -560,8 +560,3 @@ Misc: `ss-exportBtn`, `ss-backupBtn`, `ss-saveTemplateBtn`, `ss-loadBackupBtn`,
   boundaries.
 - **Save often.** Many handlers call `window.saveState()` after mutations; if you
   add a new mutation path, mirror that.
-
----
-
-Related docs: `TEXT_EDITOR_README.md` (text editor deep-dive),
-`IMPLEMENTATION_VISUAL.txt` (implementation/visual notes).
