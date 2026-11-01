@@ -1,5 +1,5 @@
 // Layer manipulation, layer-order tools and designer UI initializers (color/upload/transparency).
-import { layerState, canvasState, guidanceState } from './state.js';
+import { layerState, guidanceState } from './state.js';
 import { saveState } from './history.js';
 import { updateSlideSeparatorColors, updateGuidanceTransparency } from './guidance.js';
 import { makeElementDraggable, makeElementSelectable, selectLayer, updateLayerOrderButtons } from './selection.js';
@@ -464,37 +464,4 @@ export function initializeTransparencySlider() {
         transparencyThumb.style.left = currentTransparency + '%';
         updateGuidanceTransparency();
     });
-}
-
-export function cleanupImagesOutsideCanvas() {
-    const designerCanvas = document.getElementById('ss-designer-canvas');
-    if (!designerCanvas) return;
-    
-    let removedCount = 0;
-    
-    layerState.layers.forEach(function(layer, index) {
-        if (layer.type === 'image') {
-            const rect = layer.element.getBoundingClientRect();
-            const canvasRect = designerCanvas.getBoundingClientRect();
-            const elementX = rect.left - canvasRect.left;
-            const elementY = rect.top - canvasRect.top;
-            
-            const isOutside = 
-                elementX + rect.width < -100 || 
-                elementX > canvasState.width + 100 ||
-                elementY + rect.height < -100 || 
-                elementY > canvasState.height + 100;
-            
-            if (isOutside) {
-                layer.element.remove();
-                layerState.layers.splice(index, 1);
-                removedCount++;
-            }
-        }
-    });
-    
-    if (removedCount > 0) {
-        console.log('Removed ' + removedCount + ' images outside canvas');
-        saveState();
-    }
 }
