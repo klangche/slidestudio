@@ -10,11 +10,11 @@ permissions:
 
 jobs:
   rules:
-    name: AGENTS.md and CLAUDE.md identical
+    name: CLAUDE.md points to AGENTS.md
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cmp AGENTS.md CLAUDE.md
+      - run: grep -qF 'Read and follow `AGENTS.md`' CLAUDE.md
 
   pr-format:
     name: Branch name and title
