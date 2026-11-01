@@ -124,6 +124,8 @@ import {
         initialized = true;
 
         popup = document.getElementById('ss-text2Popup');
+        // Inline display is what the open/closed checks below read.
+        popup.style.display = 'none';
         overlay = document.getElementById('ss-text2Overlay');
         closeBtn = document.getElementById('ss-text2Close');
         title = document.getElementById('ss-text2Title');
