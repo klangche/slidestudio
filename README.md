@@ -145,7 +145,9 @@ Header/sidebar chrome: project name editing (max 50 chars), clear button,
 light/dark theme toggle (persisted to `localStorage['ss-theme']`, auto-detects
 system theme on first load), menu (show/hide sidebar), about popup, collapsible
 sections, the **Export pages** button which calls
-`Designer.exportCanvasZip(name + '.zip')`, and **Restore Defaults** (clears
+`Designer.exportCanvasZip(name + '.zip')`, the **Backup** button
+(`Designer.downloadBackup(name + '_backup.json')`), **Load Backup / Template**
+(`Designer.openLoadBackupDialog()`), and **Restore Defaults** (clears
 `localStorage`/`sessionStorage` after a confirm, then reloads).
 
 ### `js/zoom.js`
@@ -501,8 +503,10 @@ duplicateSelected, toggleLock`.
    each cropped **centered vertically** within every 1080×1920 section, packaged
    with an in-file ZIP builder (`makeZip`). Returns
    `{ sections, files, filename }`.
-3. `downloadBackup(filename)` — full JSON of `canvasState` + layers (+ image
-   `data:` URLs when present) + history stacks.
+3. `downloadBackup(filename)` — JSON of `canvasState` + `layerState` layers
+   (+ image `data:` URLs for DOM image layers) + history stacks. Known gap:
+   images uploaded through the canvas path (`SSImageTransform`) are not in
+   `layerState`, so they are not in the backup.
 4. Templates — `saveTemplate(name)` / `listTemplates()` /
    `loadTemplateByName(name)` persist to `localStorage['ss_templates']`;
    `openLoadBackupDialog()` / `openLoadTemplateDialog()` restore from a JSON file.

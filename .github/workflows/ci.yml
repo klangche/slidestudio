@@ -57,3 +57,4 @@ jobs:
           npm run restore-state
           npm run save-state
           npm run keep-images
+          npm run backup
