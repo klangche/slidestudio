@@ -58,3 +58,32 @@ jobs:
           npm run save-state
           npm run keep-images
           npm run backup
+
+  lint:
+    name: Prettier and ESLint (changed files)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check changed files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git diff --name-only --diff-filter=ACMR "$BASE_SHA"...HEAD > changed.txt
+          cat changed.txt
+          ok=1
+          if [ -s changed.txt ]; then
+            xargs -d '\n' npx prettier --check --ignore-unknown < changed.txt || ok=0
+          fi
+          grep -E '\.(js|mjs)$' changed.txt > changed-js.txt || true
+          if [ -s changed-js.txt ]; then
+            xargs -d '\n' npx eslint --quiet --no-warn-ignored < changed-js.txt || ok=0
+          fi
+          [ "$ok" = 1 ]

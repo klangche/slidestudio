@@ -1,0 +1,9 @@
+node_modules/
+package-lock.json
+
+# Installed byte-for-byte by repo-starter and hashed in its lock file.
+.repo-starter.lock
+AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
+.claude/
