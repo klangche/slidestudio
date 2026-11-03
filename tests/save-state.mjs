@@ -8,7 +8,7 @@ const errors = [];
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
-page.on('pageerror', (err) => errors.push('page error: ' + err.message));
+page.on('pageerror', err => errors.push('page error: ' + err.message));
 
 await page.goto(url);
 await page.waitForFunction(() => document.getElementById('ss-designer-canvas'));
@@ -30,8 +30,14 @@ const result = await page.evaluate(async () => {
         element.appendChild(img);
         canvas.appendChild(element);
         layerState.layers.push({
-            id: 'ss-test-image-' + i, type: 'image', element: element, imageElement: img, src: src,
-            zIndex: 10 + i, position: { left: 0, top: 0 }, size: { width: 100, height: 100 }
+            id: 'ss-test-image-' + i,
+            type: 'image',
+            element: element,
+            imageElement: img,
+            src: src,
+            zIndex: 10 + i,
+            position: { left: 0, top: 0 },
+            size: { width: 100, height: 100 }
         });
     }
 
@@ -54,7 +60,8 @@ const result = await page.evaluate(async () => {
 
 await browser.close();
 
-if (result.median >= 50) errors.push('median saveState() took ' + result.median.toFixed(1) + ' ms, expected under 50 ms');
+if (result.median >= 50)
+    errors.push('median saveState() took ' + result.median.toFixed(1) + ' ms, expected under 50 ms');
 if (result.added !== 1) errors.push('two saves of an unchanged state added ' + result.added + ' snapshots, expected 1');
 if (errors.length) {
     console.error('Save state test failed:\n' + errors.join('\n'));

@@ -14,8 +14,8 @@ const page = await context.newPage();
 await page.goto(url);
 await page.evaluate(() => navigator.serviceWorker.ready);
 
-page.on('pageerror', (err) => errors.push('page error: ' + err.message));
-page.on('console', (msg) => {
+page.on('pageerror', err => errors.push('page error: ' + err.message));
+page.on('console', msg => {
     const text = msg.text();
     if (text.includes('[selfcheck] All module bridges present.')) selfcheckOk = true;
     if (text.includes('[selfcheck] MISSING')) errors.push(text);

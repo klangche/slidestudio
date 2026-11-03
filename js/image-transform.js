@@ -2,7 +2,7 @@
 import { layerState, magnetState } from './state.js';
 import { snapBox, snapReset } from './guidance.js';
 
-(function(window){
+(function (window) {
     if (!window) return;
 
     const BASE_CANVAS_WIDTH = 1080;
@@ -43,10 +43,10 @@ import { snapBox, snapReset } from './guidance.js';
     function localToWorld(img, pLocal) {
         const cos = Math.cos(img.rotation);
         const sin = Math.sin(img.rotation);
-        
+
         const scaledX = pLocal.x * img.scale;
         const scaledY = pLocal.y * img.scale;
-        
+
         return {
             x: img.position.x + (cos * scaledX - sin * scaledY),
             y: img.position.y + (sin * scaledX + cos * scaledY)
@@ -56,13 +56,13 @@ import { snapBox, snapReset } from './guidance.js';
     function worldToLocal(img, pWorld) {
         const dx = pWorld.x - img.position.x;
         const dy = pWorld.y - img.position.y;
-        
+
         const cos = Math.cos(img.rotation);
         const sin = Math.sin(img.rotation);
-        
+
         const rotatedX = dx * cos + dy * sin;
         const rotatedY = -dx * sin + dy * cos;
-        
+
         return {
             x: rotatedX / img.scale,
             y: rotatedY / img.scale
@@ -122,7 +122,7 @@ import { snapBox, snapReset } from './guidance.js';
             c.style.zIndex = '100';
             c.style.cursor = 'default';
             designerCanvas.appendChild(c);
-            
+
             c.addEventListener('mousedown', onCanvasMouseDown);
             c.addEventListener('mousemove', onCanvasMouseMove);
         } else {
@@ -139,7 +139,7 @@ import { snapBox, snapReset } from './guidance.js';
         state.canvasSteps = Math.max(1, Math.round(steps || 1));
         const designerCanvas = document.getElementById('ss-designer-canvas');
         if (designerCanvas) {
-            designerCanvas.style.width = (BASE_CANVAS_WIDTH * state.canvasSteps) + 'px';
+            designerCanvas.style.width = BASE_CANVAS_WIDTH * state.canvasSteps + 'px';
             designerCanvas.style.height = CANVAS_HEIGHT + 'px';
             designerCanvas.style.overflow = 'visible';
         }
@@ -156,7 +156,7 @@ import { snapBox, snapReset } from './guidance.js';
     function getSelectedImage() {
         return state.images.find(img => img.id === state.selectedImageId);
     }
-    
+
     function notifySelectionChange() {
         if (window.updateImageToolButtons) {
             window.updateImageToolButtons();
@@ -177,9 +177,9 @@ import { snapBox, snapReset } from './guidance.js';
     // sidePad/topPad are the white border around the photo, lipH is the bottom
     // writing strip that is always present on a real polaroid.
     const POLAROID_TYPES = {
-        wide:     { sidePad: 0.05, topPad: 0.05, lipH: 0.16 },  // Fuji Instax Wide
+        wide: { sidePad: 0.05, topPad: 0.05, lipH: 0.16 }, // Fuji Instax Wide
         portrait: { sidePad: 0.065, topPad: 0.06, lipH: 0.28 }, // Polaroid 600
-        square:   { sidePad: 0.07, topPad: 0.07, lipH: 0.17 }   // Instax Square
+        square: { sidePad: 0.07, topPad: 0.07, lipH: 0.17 } // Instax Square
     };
 
     // Photo transform helpers for framed photos.
@@ -194,7 +194,8 @@ import { snapBox, snapReset } from './guidance.js';
         const pol = im.polaroid || im;
         const ps = pol.photoScale || 1;
         const pr = pol.photoRot || 0;
-        const cos = Math.cos(pr), sin = Math.sin(pr);
+        const cos = Math.cos(pr),
+            sin = Math.sin(pr);
         return {
             x: (pol.photoX || 0) + (cos * p.x - sin * p.y) * ps,
             y: (pol.photoY || 0) + (sin * p.x + cos * p.y) * ps
@@ -205,7 +206,8 @@ import { snapBox, snapReset } from './guidance.js';
         const pol = im.polaroid || im;
         const ps = pol.photoScale || 1;
         const pr = pol.photoRot || 0;
-        const cos = Math.cos(pr), sin = Math.sin(pr);
+        const cos = Math.cos(pr),
+            sin = Math.sin(pr);
         const dx = q.x - (pol.photoX || 0);
         const dy = q.y - (pol.photoY || 0);
         return { x: (dx * cos + dy * sin) / ps, y: (-dx * sin + dy * cos) / ps };
@@ -214,8 +216,10 @@ import { snapBox, snapReset } from './guidance.js';
     // Inverse of photoSourceToFrame using a frozen snapshot of the photo
     // transform, so interactions track the mouse without a feedback loop.
     function inversePhotoTransform(sp, q) {
-        const cos = Math.cos(sp.photoRot), sin = Math.sin(sp.photoRot);
-        const dx = q.x - sp.photoX, dy = q.y - sp.photoY;
+        const cos = Math.cos(sp.photoRot),
+            sin = Math.sin(sp.photoRot);
+        const dx = q.x - sp.photoX,
+            dy = q.y - sp.photoY;
         return { x: (dx * cos + dy * sin) / sp.photoScale, y: (-dx * sin + dy * cos) / sp.photoScale };
     }
 
@@ -271,11 +275,14 @@ import { snapBox, snapReset } from './guidance.js';
     function polaroidTextLines(img) {
         const pol = img.polaroid;
         const payload = pol.textPayload;
-        const raw = (payload && payload.lines && payload.lines.length)
-            ? payload.lines
-            : (pol.text || '').split('\n').map(function (t) { return { text: t }; });
+        const raw =
+            payload && payload.lines && payload.lines.length
+                ? payload.lines
+                : (pol.text || '').split('\n').map(function (t) {
+                      return { text: t };
+                  });
         return raw.map(function (l) {
-            return (l && l.text !== undefined && l.text !== null) ? String(l.text) : '';
+            return l && l.text !== undefined && l.text !== null ? String(l.text) : '';
         });
     }
 
@@ -307,7 +314,7 @@ import { snapBox, snapReset } from './guidance.js';
             family: pol.textPayload.font || parseFontNameSafe(b.fontFamily) || 'Trebuchet MS',
             size: fs,
             color: b.color || '#121212',
-            weight: (b.fontWeight === 'bold' || parseFloat(b.fontWeight) >= 600) ? 'bold' : 'normal',
+            weight: b.fontWeight === 'bold' || parseFloat(b.fontWeight) >= 600 ? 'bold' : 'normal',
             style: b.fontStyle === 'italic' ? 'italic' : 'normal',
             decoration: b.textDecoration || 'none',
             transform: b.textTransform === 'uppercase' ? 'uppercase' : 'none',
@@ -331,8 +338,12 @@ import { snapBox, snapReset } from './guidance.js';
         const font = function (size) {
             return base.style + ' ' + base.weight + ' ' + size + 'px ' + base.family;
         };
-        const sizes = lines.map(function () { return base.size; });
-        const spacings = lines.map(function () { return base.spacing; });
+        const sizes = lines.map(function () {
+            return base.size;
+        });
+        const spacings = lines.map(function () {
+            return base.spacing;
+        });
 
         let contentW = 1;
         lines.forEach(function (l, i) {
@@ -342,7 +353,9 @@ import { snapBox, snapReset } from './guidance.js';
             if (spacings[i] && t.length > 1) w += (t.length - 1) * spacings[i];
             if (w > contentW) contentW = w;
         });
-        const contentH = lines.reduce(function (acc) { return acc + base.lineHeight; }, 0);
+        const contentH = lines.reduce(function (acc) {
+            return acc + base.lineHeight;
+        }, 0);
 
         const pad = 4;
         const maxW = Math.max(20, frame.width - pad * 2);
@@ -392,7 +405,7 @@ import { snapBox, snapReset } from './guidance.js';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = m.color;
         const caps = m.transform === 'uppercase';
-        let y = m.y + m.lineHeight * m.fit / 2;
+        let y = m.y + (m.lineHeight * m.fit) / 2;
         for (let i = 0; i < m.lines.length; i++) {
             const size = m.sizes[i] * m.fit;
             if (size <= 0) continue;
@@ -468,7 +481,12 @@ import { snapBox, snapReset } from './guidance.js';
         // Subtle inner edge around the photo.
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.10)';
         ctx.lineWidth = Math.max(0.5, 1 / img.scale);
-        ctx.strokeRect(vr.x + ctx.lineWidth / 2, vr.y + ctx.lineWidth / 2, vr.width - ctx.lineWidth, vr.height - ctx.lineWidth);
+        ctx.strokeRect(
+            vr.x + ctx.lineWidth / 2,
+            vr.y + ctx.lineWidth / 2,
+            vr.width - ctx.lineWidth,
+            vr.height - ctx.lineWidth
+        );
 
         // Faint tint on the writing lip.
         ctx.fillStyle = 'rgba(0, 0, 0, 0.015)';
@@ -577,7 +595,11 @@ import { snapBox, snapReset } from './guidance.js';
             if (img.locked && state.selectedImageId === img.id) {
                 const designerCanvas = document.getElementById('ss-designer-canvas');
                 let zoom = 1;
-                if (designerCanvas && designerCanvas.style.transform && designerCanvas.style.transform.includes('scale(')) {
+                if (
+                    designerCanvas &&
+                    designerCanvas.style.transform &&
+                    designerCanvas.style.transform.includes('scale(')
+                ) {
                     const m = designerCanvas.style.transform.match(/scale\(([^)]+)\)/);
                     if (m) {
                         const parsed = parseFloat(m[1]);
@@ -672,7 +694,12 @@ import { snapBox, snapReset } from './guidance.js';
                 { id: 'frame-scale-tr', type: 'frame-corner', localX: f.left + f.width, localY: f.top },
                 { id: 'frame-scale-bl', type: 'frame-corner', localX: f.left, localY: f.top + f.height },
                 { id: 'frame-scale-br', type: 'frame-corner', localX: f.left + f.width, localY: f.top + f.height },
-                { id: 'frame-rotate', type: 'frame-rotate', localX: f.left + f.width / 2, localY: f.top - 60 / img.scale }
+                {
+                    id: 'frame-rotate',
+                    type: 'frame-rotate',
+                    localX: f.left + f.width / 2,
+                    localY: f.top - 60 / img.scale
+                }
             );
         }
 
@@ -683,7 +710,7 @@ import { snapBox, snapReset } from './guidance.js';
         let hc = document.getElementById('ss-image-handles');
         const designerCanvas = document.getElementById('ss-designer-canvas');
         if (!designerCanvas) return;
-        
+
         if (!hc) {
             hc = document.createElement('div');
             hc.id = 'ss-image-handles';
@@ -718,8 +745,8 @@ import { snapBox, snapReset } from './guidance.js';
                 el.style.background = '#1976d2';
                 el.style.border = '2px solid #fff';
                 el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-                el.style.left = (worldPos.x - size / 2) + 'px';
-                el.style.top = (worldPos.y - size / 2) + 'px';
+                el.style.left = worldPos.x - size / 2 + 'px';
+                el.style.top = worldPos.y - size / 2 + 'px';
                 el.style.cursor = getCornerCursor(h.id);
             } else if (h.type === 'frame-corner') {
                 // Amber corner handles for scaling the frame itself
@@ -730,8 +757,8 @@ import { snapBox, snapReset } from './guidance.js';
                 el.style.background = '#ffb300';
                 el.style.border = '2px solid #fff';
                 el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-                el.style.left = (worldPos.x - size / 2) + 'px';
-                el.style.top = (worldPos.y - size / 2) + 'px';
+                el.style.left = worldPos.x - size / 2 + 'px';
+                el.style.top = worldPos.y - size / 2 + 'px';
                 el.style.cursor = getCornerCursor(h.id);
             } else if (h.type === 'crop') {
                 // Orange edge handles for cropping
@@ -744,10 +771,10 @@ import { snapBox, snapReset } from './guidance.js';
                 el.style.border = '2px solid #fff';
                 el.style.borderRadius = '9px';
                 el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-                el.style.left = (worldPos.x - w / 2) + 'px';
-                el.style.top = (worldPos.y - ht / 2) + 'px';
+                el.style.left = worldPos.x - w / 2 + 'px';
+                el.style.top = worldPos.y - ht / 2 + 'px';
                 // Rotate handle with the photo (frame + photo rotation)
-                const cropRot = img.rotation + (img.polaroid ? (img.polaroid.photoRot || 0) : 0);
+                const cropRot = img.rotation + (img.polaroid ? img.polaroid.photoRot || 0 : 0);
                 el.style.transform = `rotate(${cropRot}rad)`;
                 el.style.cursor = getCropCursor(h.id, cropRot);
             } else if (h.type === 'rotate') {
@@ -759,8 +786,8 @@ import { snapBox, snapReset } from './guidance.js';
                 el.style.background = '#00cc66';
                 el.style.border = '2px solid #fff';
                 el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-                el.style.left = (worldPos.x - size / 2) + 'px';
-                el.style.top = (worldPos.y - size / 2) + 'px';
+                el.style.left = worldPos.x - size / 2 + 'px';
+                el.style.top = worldPos.y - size / 2 + 'px';
                 el.style.cursor = 'grab';
             } else if (h.type === 'frame-rotate') {
                 // Amber diamond rotation handle for the frame
@@ -772,8 +799,8 @@ import { snapBox, snapReset } from './guidance.js';
                 el.style.border = '2px solid #fff';
                 el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
                 el.style.transform = `rotate(45deg)`;
-                el.style.left = (worldPos.x - size / 2) + 'px';
-                el.style.top = (worldPos.y - size / 2) + 'px';
+                el.style.left = worldPos.x - size / 2 + 'px';
+                el.style.top = worldPos.y - size / 2 + 'px';
                 el.style.cursor = 'grab';
             }
 
@@ -785,14 +812,18 @@ import { snapBox, snapReset } from './guidance.js';
         // photo transform for framed photos).
         const r0 = img.visibleRect;
         const ppts = img.polaroid
-            ? [photoSourceToFrame(img, { x: r0.x, y: r0.y }),
-               photoSourceToFrame(img, { x: r0.x + r0.width, y: r0.y }),
-               photoSourceToFrame(img, { x: r0.x + r0.width, y: r0.y + r0.height }),
-               photoSourceToFrame(img, { x: r0.x, y: r0.y + r0.height })]
-            : [{ x: r0.x, y: r0.y },
-               { x: r0.x + r0.width, y: r0.y },
-               { x: r0.x + r0.width, y: r0.y + r0.height },
-               { x: r0.x, y: r0.y + r0.height }];
+            ? [
+                  photoSourceToFrame(img, { x: r0.x, y: r0.y }),
+                  photoSourceToFrame(img, { x: r0.x + r0.width, y: r0.y }),
+                  photoSourceToFrame(img, { x: r0.x + r0.width, y: r0.y + r0.height }),
+                  photoSourceToFrame(img, { x: r0.x, y: r0.y + r0.height })
+              ]
+            : [
+                  { x: r0.x, y: r0.y },
+                  { x: r0.x + r0.width, y: r0.y },
+                  { x: r0.x + r0.width, y: r0.y + r0.height },
+                  { x: r0.x, y: r0.y + r0.height }
+              ];
         const corners = {
             tl: localToWorld(img, ppts[0]),
             tr: localToWorld(img, ppts[1]),
@@ -810,7 +841,10 @@ import { snapBox, snapReset } from './guidance.js';
         svg.style.pointerEvents = 'none';
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', `M ${corners.tl.x} ${corners.tl.y} L ${corners.tr.x} ${corners.tr.y} L ${corners.br.x} ${corners.br.y} L ${corners.bl.x} ${corners.bl.y} Z`);
+        path.setAttribute(
+            'd',
+            `M ${corners.tl.x} ${corners.tl.y} L ${corners.tr.x} ${corners.tr.y} L ${corners.br.x} ${corners.br.y} L ${corners.bl.x} ${corners.bl.y} Z`
+        );
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke', '#1976d2');
         path.setAttribute('stroke-width', '2');
@@ -826,7 +860,10 @@ import { snapBox, snapReset } from './guidance.js';
                 br: localToWorld(img, { x: f.left + f.width, y: f.top + f.height })
             };
             const fpath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            fpath.setAttribute('d', `M ${fc.tl.x} ${fc.tl.y} L ${fc.tr.x} ${fc.tr.y} L ${fc.br.x} ${fc.br.y} L ${fc.bl.x} ${fc.bl.y} Z`);
+            fpath.setAttribute(
+                'd',
+                `M ${fc.tl.x} ${fc.tl.y} L ${fc.tr.x} ${fc.tr.y} L ${fc.br.x} ${fc.br.y} L ${fc.bl.x} ${fc.bl.y} Z`
+            );
             fpath.setAttribute('fill', 'none');
             fpath.setAttribute('stroke', '#ffb300');
             fpath.setAttribute('stroke-width', '2');
@@ -847,11 +884,11 @@ import { snapBox, snapReset } from './guidance.js';
     function getCropCursor(id, rotation) {
         // Determine base direction
         const isHorizontal = id.includes('top') || id.includes('bottom');
-        
+
         // Convert rotation to degrees and normalize
-        const deg = (rotation * 180 / Math.PI) % 360;
+        const deg = ((rotation * 180) / Math.PI) % 360;
         const normalizedDeg = ((deg % 360) + 360) % 360;
-        
+
         // Determine cursor based on rotation
         if (isHorizontal) {
             // Top/bottom edges
@@ -875,13 +912,13 @@ import { snapBox, snapReset } from './guidance.js';
     function onHandleMouseDown(e) {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const img = getSelectedImage();
         if (!img || img.locked) return;
 
         const canvas = ensureCanvas();
         if (!canvas) return;
-        
+
         const rect = canvas.getBoundingClientRect();
         const designerCanvas = document.getElementById('ss-designer-canvas');
         // Account for CSS zoom scale applied to designer canvas
@@ -896,11 +933,11 @@ import { snapBox, snapReset } from './guidance.js';
 
         interaction.active = true;
         interaction.mode = e.target.dataset.handleId;
-        interaction.startMouse = { 
-            x: (e.clientX - rect.left) / canvasScale, 
-            y: (e.clientY - rect.top) / canvasScale 
+        interaction.startMouse = {
+            x: (e.clientX - rect.left) / canvasScale,
+            y: (e.clientY - rect.top) / canvasScale
         };
-        
+
         // Save initial state
         interaction.startImage = {
             position: { ...img.position },
@@ -910,13 +947,13 @@ import { snapBox, snapReset } from './guidance.js';
         interaction.startVisibleRect = { ...img.visibleRect };
         interaction.initialScale = img.scale;
         interaction.initialRotation = img.rotation;
-        
+
         // Setup for scale operations
         if (interaction.mode.startsWith('scale-')) {
             const corner = interaction.mode.split('-')[1];
-            
+
             let activeX, activeY, anchorX, anchorY;
-            
+
             if (corner === 'tl') {
                 activeX = img.visibleRect.x;
                 activeY = img.visibleRect.y;
@@ -932,13 +969,14 @@ import { snapBox, snapReset } from './guidance.js';
                 activeY = img.visibleRect.y + img.visibleRect.height;
                 anchorX = img.visibleRect.x + img.visibleRect.width;
                 anchorY = img.visibleRect.y;
-            } else { // 'br'
+            } else {
+                // 'br'
                 activeX = img.visibleRect.x + img.visibleRect.width;
                 activeY = img.visibleRect.y + img.visibleRect.height;
                 anchorX = img.visibleRect.x;
                 anchorY = img.visibleRect.y;
             }
-            
+
             interaction.initialActiveLocal = { x: activeX, y: activeY };
             interaction.anchorLocal = { x: anchorX, y: anchorY };
 
@@ -959,10 +997,11 @@ import { snapBox, snapReset } from './guidance.js';
         if (interaction.mode.startsWith('frame-scale-')) {
             const corner = interaction.mode.split('-')[2];
             const f = getPolaroidRects(img).frame;
-            const sx = f.left, sy = f.top;
-            
+            const sx = f.left,
+                sy = f.top;
+
             let activeX, activeY, anchorX, anchorY;
-            
+
             if (corner === 'tl') {
                 activeX = sx;
                 activeY = sy;
@@ -978,18 +1017,19 @@ import { snapBox, snapReset } from './guidance.js';
                 activeY = sy + f.height;
                 anchorX = sx + f.width;
                 anchorY = sy;
-            } else { // 'br'
+            } else {
+                // 'br'
                 activeX = sx + f.width;
                 activeY = sy + f.height;
                 anchorX = sx;
                 anchorY = sy;
             }
-            
+
             interaction.initialActiveLocal = { x: activeX, y: activeY };
             interaction.anchorLocal = { x: anchorX, y: anchorY };
             interaction.anchorWorld = localToWorld(img, interaction.anchorLocal);
         }
-        
+
         // Setup for rotation
         if (interaction.mode === 'rotate') {
             if (img.polaroid) {
@@ -1020,17 +1060,17 @@ import { snapBox, snapReset } from './guidance.js';
             interaction.centerLocal = centerLocal;
             interaction.rotationCenterWorld = localToWorld(img, centerLocal);
         }
-        
+
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
     }
 
     function onMouseMove(e) {
         if (!interaction.active) return;
-        
+
         const canvas = ensureCanvas();
         if (!canvas) return;
-        
+
         const rect = canvas.getBoundingClientRect();
         const designerCanvas = document.getElementById('ss-designer-canvas');
         // Account for CSS zoom scale applied to designer canvas
@@ -1042,10 +1082,10 @@ import { snapBox, snapReset } from './guidance.js';
                 if (!isNaN(parsed) && parsed > 0) canvasScale = parsed;
             }
         }
-        
-        const mouseWorld = { 
-            x: (e.clientX - rect.left) / canvasScale, 
-            y: (e.clientY - rect.top) / canvasScale 
+
+        const mouseWorld = {
+            x: (e.clientX - rect.left) / canvasScale,
+            y: (e.clientY - rect.top) / canvasScale
         };
         const img = getSelectedImage();
         if (!img) return;
@@ -1057,7 +1097,7 @@ import { snapBox, snapReset } from './guidance.js';
             const ddy = mouseWorld.y - interaction.startMouse.y;
             if (Math.abs(ddx) + Math.abs(ddy) > 3) interaction.moved = true;
         }
-        
+
         if (interaction.mode === 'drag') {
             handleDrag(img, mouseWorld);
         } else if (interaction.mode === 'photo-drag') {
@@ -1079,7 +1119,7 @@ import { snapBox, snapReset } from './guidance.js';
         } else if (interaction.mode === 'frame-rotate') {
             handleRotate(img, mouseWorld);
         }
-        
+
         draw();
         computeHandles();
     }
@@ -1091,10 +1131,10 @@ import { snapBox, snapReset } from './guidance.js';
         interaction.lipClickPending = false;
         interaction.moved = false;
         snapReset();
-        
+
         const canvas = ensureCanvas();
         if (canvas) canvas.style.cursor = 'default';
-        
+
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
         if (typeof window.refreshBackgroundPalette === 'function') {
@@ -1114,10 +1154,10 @@ import { snapBox, snapReset } from './guidance.js';
     function handleDrag(img, mouseWorld) {
         const dx = mouseWorld.x - interaction.startMouse.x;
         const dy = mouseWorld.y - interaction.startMouse.y;
-        
+
         img.position.x = interaction.startImage.position.x + dx;
         img.position.y = interaction.startImage.position.y + dy;
-        
+
         // Magnet snapping (rotation-aware bounding box)
         if (magnetState.active) {
             const aabb = getImageAABB(img);
@@ -1133,7 +1173,8 @@ import { snapBox, snapReset } from './guidance.js';
         const dx = mouseWorld.x - interaction.startMouse.x;
         const dy = mouseWorld.y - interaction.startMouse.y;
         // Convert the world delta into the frame's local space.
-        const cos = Math.cos(-img.rotation), sin = Math.sin(-img.rotation);
+        const cos = Math.cos(-img.rotation),
+            sin = Math.sin(-img.rotation);
         const ldx = (dx * cos - dy * sin) / img.scale;
         const ldy = (dx * sin + dy * cos) / img.scale;
 
@@ -1156,7 +1197,7 @@ import { snapBox, snapReset } from './guidance.js';
         // Cropping a framed photo edits the photo's source crop, never the
         // frozen frame window.
         if (img.polaroid) pLocal = photoFrameToSource(img, pLocal);
-        
+
         if (interaction.mode === 'crop-left') {
             // Store the right edge position
             const rightEdge = img.visibleRect.x + img.visibleRect.width;
@@ -1178,12 +1219,18 @@ import { snapBox, snapReset } from './guidance.js';
             const newBottom = Math.max(pLocal.y, img.visibleRect.y + MIN_SIZE);
             img.visibleRect.height = newBottom - img.visibleRect.y;
         }
-        
+
         // Clamp to image bounds
         img.visibleRect.x = Math.max(0, Math.min(img.visibleRect.x, img.originalWidth - MIN_SIZE));
         img.visibleRect.y = Math.max(0, Math.min(img.visibleRect.y, img.originalHeight - MIN_SIZE));
-        img.visibleRect.width = Math.max(MIN_SIZE, Math.min(img.visibleRect.width, img.originalWidth - img.visibleRect.x));
-        img.visibleRect.height = Math.max(MIN_SIZE, Math.min(img.visibleRect.height, img.originalHeight - img.visibleRect.y));
+        img.visibleRect.width = Math.max(
+            MIN_SIZE,
+            Math.min(img.visibleRect.width, img.originalWidth - img.visibleRect.x)
+        );
+        img.visibleRect.height = Math.max(
+            MIN_SIZE,
+            Math.min(img.visibleRect.height, img.originalHeight - img.visibleRect.y)
+        );
     }
 
     // ============================================================================
@@ -1307,7 +1354,10 @@ import { snapBox, snapReset } from './guidance.js';
         if (!centerWorld || !img.polaroid || !sp) return;
 
         const angle = Math.atan2(mouseWorld.y - centerWorld.y, mouseWorld.x - centerWorld.x);
-        const initialAngle = Math.atan2(interaction.startMouse.y - centerWorld.y, interaction.startMouse.x - centerWorld.x);
+        const initialAngle = Math.atan2(
+            interaction.startMouse.y - centerWorld.y,
+            interaction.startMouse.x - centerWorld.x
+        );
 
         const pr = sp.photoRot + (angle - initialAngle);
         img.polaroid.photoRot = pr;
@@ -1316,8 +1366,10 @@ import { snapBox, snapReset } from './guidance.js';
         const cos = Math.cos(pr);
         const sin = Math.sin(pr);
         const ps = img.polaroid.photoScale || sp.photoScale;
-        img.polaroid.photoX = interaction.centerFrame.x - (cos * interaction.centerSource.x * ps - sin * interaction.centerSource.y * ps);
-        img.polaroid.photoY = interaction.centerFrame.y - (sin * interaction.centerSource.x * ps + cos * interaction.centerSource.y * ps);
+        img.polaroid.photoX =
+            interaction.centerFrame.x - (cos * interaction.centerSource.x * ps - sin * interaction.centerSource.y * ps);
+        img.polaroid.photoY =
+            interaction.centerFrame.y - (sin * interaction.centerSource.x * ps + cos * interaction.centerSource.y * ps);
     }
 
     // ============================================================================
@@ -1326,52 +1378,56 @@ import { snapBox, snapReset } from './guidance.js';
 
     function handleRotate(img, mouseWorld) {
         const centerLocal = interaction.centerLocal;
-        
+
         const centerWorld = interaction.rotationCenterWorld;
-        
+
         // Calculate angle from center to mouse
         const dx = mouseWorld.x - centerWorld.x;
         const dy = mouseWorld.y - centerWorld.y;
         const angle = Math.atan2(dy, dx);
-        
+
         // Calculate initial angle
         const initialDx = interaction.startMouse.x - centerWorld.x;
         const initialDy = interaction.startMouse.y - centerWorld.y;
         const initialAngle = Math.atan2(initialDy, initialDx);
-        
+
         // Update rotation
         const deltaAngle = angle - initialAngle;
         let newRotation = interaction.initialRotation + deltaAngle;
-        
+
         // Snap to 0, 90, 180, 270 degrees if close (within 5 degrees)
-        const snapThreshold = 5 * Math.PI / 180; // 5 degrees in radians
-        const snapAngles = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2]; // 0, 90, 180, 270 degrees
-        
+        const snapThreshold = (5 * Math.PI) / 180; // 5 degrees in radians
+        const snapAngles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2]; // 0, 90, 180, 270 degrees
+
         // Normalize angle to 0-2π range
         const normalizedRotation = ((newRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-        
+
         // Check if close to any snap angle
         for (let snapAngle of snapAngles) {
             if (Math.abs(normalizedRotation - snapAngle) < snapThreshold) {
-                newRotation = interaction.initialRotation + (snapAngle - ((interaction.initialRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI));
+                newRotation =
+                    interaction.initialRotation +
+                    (snapAngle - (((interaction.initialRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)));
                 break;
             }
             // Also check wrap-around at 2π
             if (Math.abs(normalizedRotation - (snapAngle + 2 * Math.PI)) < snapThreshold) {
-                newRotation = interaction.initialRotation + (snapAngle - ((interaction.initialRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI));
+                newRotation =
+                    interaction.initialRotation +
+                    (snapAngle - (((interaction.initialRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)));
                 break;
             }
         }
-        
+
         img.rotation = newRotation;
-        
+
         // Adjust position so center stays in same world position
         const newCenterWorld = localToWorld(img, centerLocal);
         const delta = {
             x: centerWorld.x - newCenterWorld.x,
             y: centerWorld.y - newCenterWorld.y
         };
-        
+
         img.position.x += delta.x;
         img.position.y += delta.y;
     }
@@ -1383,7 +1439,7 @@ import { snapBox, snapReset } from './guidance.js';
     function onCanvasMouseDown(e) {
         const canvas = ensureCanvas();
         if (!canvas) return;
-        
+
         const rect = canvas.getBoundingClientRect();
         const designerCanvas = document.getElementById('ss-designer-canvas');
         // Account for CSS zoom scale applied to designer canvas
@@ -1395,12 +1451,12 @@ import { snapBox, snapReset } from './guidance.js';
                 if (!isNaN(parsed) && parsed > 0) canvasScale = parsed;
             }
         }
-        
-        const mouseWorld = { 
-            x: (e.clientX - rect.left) / canvasScale, 
-            y: (e.clientY - rect.top) / canvasScale 
+
+        const mouseWorld = {
+            x: (e.clientX - rect.left) / canvasScale,
+            y: (e.clientY - rect.top) / canvasScale
         };
-        
+
         // Check if clicking on an image
         let clickedOnImage = false;
         for (let i = state.images.length - 1; i >= 0; i--) {
@@ -1416,11 +1472,15 @@ import { snapBox, snapReset } from './guidance.js';
             let inPhoto;
             if (img.polaroid) {
                 const win = img.polaroid.baseWindow;
-                const inWin = pLocal.x >= win.x && pLocal.x <= win.x + win.width &&
-                    pLocal.y >= win.y && pLocal.y <= win.y + win.height;
+                const inWin =
+                    pLocal.x >= win.x &&
+                    pLocal.x <= win.x + win.width &&
+                    pLocal.y >= win.y &&
+                    pLocal.y <= win.y + win.height;
                 if (inWin) {
                     const pSrc = photoFrameToSource(img, pLocal);
-                    inPhoto = pSrc.x >= img.visibleRect.x &&
+                    inPhoto =
+                        pSrc.x >= img.visibleRect.x &&
                         pSrc.x <= img.visibleRect.x + img.visibleRect.width &&
                         pSrc.y >= img.visibleRect.y &&
                         pSrc.y <= img.visibleRect.y + img.visibleRect.height;
@@ -1428,7 +1488,8 @@ import { snapBox, snapReset } from './guidance.js';
                     inPhoto = false;
                 }
             } else {
-                inPhoto = pLocal.x >= img.visibleRect.x &&
+                inPhoto =
+                    pLocal.x >= img.visibleRect.x &&
                     pLocal.x <= img.visibleRect.x + img.visibleRect.width &&
                     pLocal.y >= img.visibleRect.y &&
                     pLocal.y <= img.visibleRect.y + img.visibleRect.height;
@@ -1440,21 +1501,26 @@ import { snapBox, snapReset } from './guidance.js';
             let inLipText = false;
             if (img.polaroid) {
                 const rects = getPolaroidRects(img);
-                inFrame = pLocal.x >= rects.frame.left && pLocal.x <= rects.frame.left + rects.frame.width &&
-                    pLocal.y >= rects.frame.top && pLocal.y <= rects.frame.top + rects.frame.height;
-                inLip = pLocal.x >= rects.lip.left && pLocal.x <= rects.lip.left + rects.lip.width &&
-                    pLocal.y >= rects.lip.top && pLocal.y <= rects.lip.top + rects.lip.height;
+                inFrame =
+                    pLocal.x >= rects.frame.left &&
+                    pLocal.x <= rects.frame.left + rects.frame.width &&
+                    pLocal.y >= rects.frame.top &&
+                    pLocal.y <= rects.frame.top + rects.frame.height;
+                inLip =
+                    pLocal.x >= rects.lip.left &&
+                    pLocal.x <= rects.lip.left + rects.lip.width &&
+                    pLocal.y >= rects.lip.top &&
+                    pLocal.y <= rects.lip.top + rects.lip.height;
                 const pol = img.polaroid;
                 const hasText = !!(pol.text || (pol.textPayload && pol.textPayload.text));
                 if (hasText) {
                     const t = getPolaroidTextMetrics(img);
-                    inLipText = pLocal.x >= t.x && pLocal.x <= t.x + t.width &&
-                        pLocal.y >= t.y && pLocal.y <= t.y + t.height;
+                    inLipText =
+                        pLocal.x >= t.x && pLocal.x <= t.x + t.width && pLocal.y >= t.y && pLocal.y <= t.y + t.height;
                 }
             }
 
             if (inPhoto || inFrame || inLipText) {
-
                 state.selectedImageId = img.id;
                 computeHandles();
                 draw();
@@ -1462,7 +1528,7 @@ import { snapBox, snapReset } from './guidance.js';
 
                 // Don't allow dragging if image is locked
                 if (!img.locked) {
-                    const startInteraction = function(mode) {
+                    const startInteraction = function (mode) {
                         interaction.active = true;
                         interaction.mode = mode;
                         interaction.moved = false;
@@ -1512,7 +1578,7 @@ import { snapBox, snapReset } from './guidance.js';
                 break;
             }
         }
-        
+
         // If clicked outside all images, deselect
         if (!clickedOnImage) {
             state.selectedImageId = null;
@@ -1539,11 +1605,11 @@ import { snapBox, snapReset } from './guidance.js';
             const lastSlideLeft = (numSlides - 1) * BASE_CANVAS_WIDTH;
             const centerX = lastSlideLeft + BASE_CANVAS_WIDTH / 2;
             const centerY = CANVAS_HEIGHT / 2;
-            
+
             // Position image so its center is at the slide center
-            const x = centerX - (img.width / 2);
-            const y = centerY - (img.height / 2);
-            
+            const x = centerX - img.width / 2;
+            const y = centerY - img.height / 2;
+
             const newImage = {
                 id: state.nextImageId++,
                 position: { x: x, y: y },
@@ -1555,7 +1621,7 @@ import { snapBox, snapReset } from './guidance.js';
                 visibleRect: { x: 0, y: 0, width: img.width, height: img.height },
                 domId: null
             };
-            
+
             state.images.push(newImage);
             state.selectedImageId = newImage.id;
             draw();
@@ -1572,42 +1638,42 @@ import { snapBox, snapReset } from './guidance.js';
     function createImageFromLayer(element, layer) {
         const existing = state.images.find(i => i.domId === element.id);
         if (existing) return existing;
-        
+
         const imgEl = element.querySelector('img');
         const src = (layer && layer.imageData) || (imgEl && imgEl.src);
         if (!src) return null;
-        
+
         const img = new Image();
-        img.onload = function() {
+        img.onload = function () {
             const posLeft = parseInt(element.style.left, 10) || (layer && layer.position && layer.position.left) || 0;
             const posTop = parseInt(element.style.top, 10) || (layer && layer.position && layer.position.top) || 0;
             const cw = parseInt(element.style.width) || (layer && layer.size && layer.size.width) || img.width;
             const ch = parseInt(element.style.height) || (layer && layer.size && layer.size.height) || img.height;
-            
+
             // Compute uniform scale to fit the container
             const scaleX = cw / img.width;
             const scaleY = ch / img.height;
             const scale = Math.min(scaleX, scaleY);
-            
+
             const newImage = {
                 id: state.nextImageId++,
                 domId: element.id,
                 position: { x: posLeft, y: posTop },
                 scale: scale || 1,
-                rotation: layer && (typeof layer.rotation === 'number') ? (layer.rotation * Math.PI / 180) : 0,
+                rotation: layer && typeof layer.rotation === 'number' ? (layer.rotation * Math.PI) / 180 : 0,
                 originalWidth: img.width,
                 originalHeight: img.height,
                 bitmap: img,
                 visibleRect: { x: 0, y: 0, width: img.width, height: img.height }
             };
-            
+
             state.images.push(newImage);
             state.selectedImageId = newImage.id;
             draw();
             computeHandles();
             notifySelectionChange();
         };
-        img.onerror = function() {
+        img.onerror = function () {
             console.warn('SSImage adapter failed to load image:', src);
         };
         img.src = src;
@@ -1623,8 +1689,8 @@ import { snapBox, snapReset } from './guidance.js';
     // ============================================================================
 
     window.ImageTransform = window.ImageTransform || {};
-    
-    window.ImageTransform.getState = function() {
+
+    window.ImageTransform.getState = function () {
         return {
             images: state.images.map(img => ({
                 id: img.id,
@@ -1639,73 +1705,76 @@ import { snapBox, snapReset } from './guidance.js';
         };
     };
 
-    window.ImageTransform.getSnapRegions = function(excludeImgId) {
+    window.ImageTransform.getSnapRegions = function (excludeImgId) {
         return state.images
             .filter(img => img.visible !== false && img.id !== excludeImgId)
             .map(img => getImageAABB(img));
     };
 
-    window.ImageTransform.importFromElement = function(element, layer) { 
-        return createImageFromLayer(element, layer); 
+    window.ImageTransform.importFromElement = function (element, layer) {
+        return createImageFromLayer(element, layer);
     };
 
     window.SSImage = window.SSImage || {};
-    
-    window.SSImage.setupImageResizeHandlers = function(element) {
+
+    window.SSImage.setupImageResizeHandlers = function (element) {
         if (!element) return;
-        
-const layer = layerState && layerState.layers ?
-    layerState.layers.find(l => l.element === element) : null;
+
+        const layer = layerState && layerState.layers ? layerState.layers.find(l => l.element === element) : null;
         const existing = findImageByDomId(element.id);
-        
+
         if (!existing) createImageFromLayer(element, layer);
-        
+
         try {
             const imgEl = element.querySelector('img');
             if (imgEl) imgEl.style.visibility = 'hidden';
         } catch (e) {}
-        
-        element.addEventListener('click', (ev) => {
-            const imgEntry = findImageByDomId(element.id);
-            if (imgEntry) {
-                state.selectedImageId = imgEntry.id;
-                computeHandles();
-                draw();
-                notifySelectionChange();
-            }
-        }, false);
+
+        element.addEventListener(
+            'click',
+            ev => {
+                const imgEntry = findImageByDomId(element.id);
+                if (imgEntry) {
+                    state.selectedImageId = imgEntry.id;
+                    computeHandles();
+                    draw();
+                    notifySelectionChange();
+                }
+            },
+            false
+        );
 
         try {
             const mo = new MutationObserver(muts => {
                 const imgEntry = findImageByDomId(element.id);
                 if (!imgEntry) return;
-                
+
                 const posLeft = parseInt(element.style.left, 10) || imgEntry.position.x;
                 const posTop = parseInt(element.style.top, 10) || imgEntry.position.y;
-                const cw = parseInt(element.style.width, 10) || (imgEntry.originalWidth * imgEntry.scale);
-                const ch = parseInt(element.style.height, 10) || (imgEntry.originalHeight * imgEntry.scale);
-                
+                const cw = parseInt(element.style.width, 10) || imgEntry.originalWidth * imgEntry.scale;
+                const ch = parseInt(element.style.height, 10) || imgEntry.originalHeight * imgEntry.scale;
+
                 imgEntry.position.x = posLeft;
                 imgEntry.position.y = posTop;
-                imgEntry.scale = (imgEntry.originalWidth > 0) ? (cw / imgEntry.originalWidth) : imgEntry.scale;
-                
+                imgEntry.scale = imgEntry.originalWidth > 0 ? cw / imgEntry.originalWidth : imgEntry.scale;
+
                 computeHandles();
                 draw();
             });
-            mo.observe(element, { attributes: true, attributeFilter: ['style','class'] });
+            mo.observe(element, { attributes: true, attributeFilter: ['style', 'class'] });
         } catch (e) {}
-        
+
         return true;
     };
 
-    window.SSImage.applyImageEffectsToElement = function(element, layer) {
+    window.SSImage.applyImageEffectsToElement = function (element, layer) {
         if (!element) return;
         const entry = findImageByDomId(element.id);
         if (!entry) {
             createImageFromLayer(element, layer);
             return;
         }
-        
+
         if (layer && layer.cropData) {
             const cd = layer.cropData;
             entry.visibleRect = {
@@ -1719,43 +1788,50 @@ const layer = layerState && layerState.layers ?
         }
     };
 
-    window.SSImage.getImageForElement = function(element) {
+    window.SSImage.getImageForElement = function (element) {
         return findImageByDomId(element.id);
     };
 
-    window.SSImage.updateLayerVisibleRect = function(layer, visibleLeft, visibleTop, visibleWidth, visibleHeight, imgOffset) {
+    window.SSImage.updateLayerVisibleRect = function (
+        layer,
+        visibleLeft,
+        visibleTop,
+        visibleWidth,
+        visibleHeight,
+        imgOffset
+    ) {
         const entry = state.images.find(i => i.id === (layer && layer.id));
         if (!entry) return;
-        
+
         if (typeof visibleLeft === 'number') entry.visibleRect.x = visibleLeft;
         if (typeof visibleTop === 'number') entry.visibleRect.y = visibleTop;
         if (typeof visibleWidth === 'number') entry.visibleRect.width = visibleWidth;
         if (typeof visibleHeight === 'number') entry.visibleRect.height = visibleHeight;
-        
+
         draw();
         computeHandles();
     };
 
-    window.SSImage.resetCrop = function(element) {
+    window.SSImage.resetCrop = function (element) {
         const entry = findImageByDomId(element.id);
         if (!entry) return;
-        
+
         entry.visibleRect = {
             x: 0,
             y: 0,
             width: entry.originalWidth,
             height: entry.originalHeight
         };
-        
+
         draw();
         computeHandles();
     };
 
-    window.SSImage.updateHandlePositions = function(container, cropData) {
+    window.SSImage.updateHandlePositions = function (container, cropData) {
         if (!container) return;
         const entry = findImageByDomId(container.id);
         if (!entry) return;
-        
+
         if (cropData) {
             entry.visibleRect = {
                 x: cropData.clipLeft || 0,
@@ -1764,40 +1840,58 @@ const layer = layerState && layerState.layers ?
                 height: entry.originalHeight - (cropData.clipTop || 0) - (cropData.clipBottom || 0)
             };
         }
-        
+
         draw();
         computeHandles();
     };
 
     // Global wrappers for backward compatibility
-    window.setupImageResizeHandlers = function(el) { 
-        try { return window.SSImage.setupImageResizeHandlers(el); } 
-        catch(e) { return null; } 
-    };
-    
-    window.applyImageEffectsToElement = function(el, layer) { 
-        try { return window.SSImage.applyImageEffectsToElement(el, layer); } 
-        catch(e) { return null; } 
-    };
-    
-    window.updateLayerVisibleRect = function(layer, left, top, w, h, imgOffset) { 
-        try { return window.SSImage.updateLayerVisibleRect(layer, left, top, w, h, imgOffset); } 
-        catch(e) { return null; } 
-    };
-    
-    window.resetCrop = function(el) { 
-        try { return window.SSImage.resetCrop(el); } 
-        catch(e) { return null; } 
-    };
-    
-    window.updateHandlePositions = function(container, cropData) { 
-        try { return window.SSImage.updateHandlePositions(container, cropData); } 
-        catch(e) { return null; } 
+    window.setupImageResizeHandlers = function (el) {
+        try {
+            return window.SSImage.setupImageResizeHandlers(el);
+        } catch (e) {
+            return null;
+        }
     };
 
-    window.importImageToCanvas = function(file) {
-        try { loadImageFromFile(file); } 
-        catch (e) { console.error('importImageToCanvas failed', e); }
+    window.applyImageEffectsToElement = function (el, layer) {
+        try {
+            return window.SSImage.applyImageEffectsToElement(el, layer);
+        } catch (e) {
+            return null;
+        }
+    };
+
+    window.updateLayerVisibleRect = function (layer, left, top, w, h, imgOffset) {
+        try {
+            return window.SSImage.updateLayerVisibleRect(layer, left, top, w, h, imgOffset);
+        } catch (e) {
+            return null;
+        }
+    };
+
+    window.resetCrop = function (el) {
+        try {
+            return window.SSImage.resetCrop(el);
+        } catch (e) {
+            return null;
+        }
+    };
+
+    window.updateHandlePositions = function (container, cropData) {
+        try {
+            return window.SSImage.updateHandlePositions(container, cropData);
+        } catch (e) {
+            return null;
+        }
+    };
+
+    window.importImageToCanvas = function (file) {
+        try {
+            loadImageFromFile(file);
+        } catch (e) {
+            console.error('importImageToCanvas failed', e);
+        }
     };
 
     // Image manipulation functions
@@ -1831,8 +1925,8 @@ const layer = layerState && layerState.layers ?
             x: img.visibleRect.x + img.visibleRect.width / 2,
             y: img.visibleRect.y + img.visibleRect.height / 2
         });
-        img.position.x -= (newCenter.x - oldCenter.x);
-        img.position.y -= (newCenter.y - oldCenter.y);
+        img.position.x -= newCenter.x - oldCenter.x;
+        img.position.y -= newCenter.y - oldCenter.y;
         img.flipX = !img.flipX;
         draw();
         computeHandles();
@@ -1851,8 +1945,8 @@ const layer = layerState && layerState.layers ?
             x: img.visibleRect.x + img.visibleRect.width / 2,
             y: img.visibleRect.y + img.visibleRect.height / 2
         });
-        img.position.x -= (newCenter.x - oldCenter.x);
-        img.position.y -= (newCenter.y - oldCenter.y);
+        img.position.x -= newCenter.x - oldCenter.x;
+        img.position.y -= newCenter.y - oldCenter.y;
         img.flipY = !img.flipY;
         draw();
         computeHandles();
@@ -1916,9 +2010,9 @@ const layer = layerState && layerState.layers ?
     function detectPolaroidType(width, height) {
         if (!width || !height) return 'square';
         const aspect = width / height;
-        if (aspect > 1.15) return 'wide';      // landscape -> Fuji Instax Wide
-        if (aspect < 0.87) return 'portrait';  // portrait  -> Polaroid 600
-        return 'square';                       // square    -> Instax Square
+        if (aspect > 1.15) return 'wide'; // landscape -> Fuji Instax Wide
+        if (aspect < 0.87) return 'portrait'; // portrait  -> Polaroid 600
+        return 'square'; // square    -> Instax Square
     }
 
     function togglePolaroid() {
@@ -1970,27 +2064,27 @@ const layer = layerState && layerState.layers ?
     function replaceImage(file) {
         const img = getSelectedImage();
         if (!img || !file) return;
-        
+
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             const imgEl = new Image();
-            imgEl.onload = function() {
+            imgEl.onload = function () {
                 createImageBitmap(imgEl).then(bitmap => {
                     const oldAspect = img.originalWidth / img.originalHeight;
                     const newAspect = bitmap.width / bitmap.height;
-                    
+
                     img.bitmap = bitmap;
                     img.originalWidth = bitmap.width;
                     img.originalHeight = bitmap.height;
                     // The new bitmap is a fresh, unflipped image.
                     img.flipX = false;
                     img.flipY = false;
-                    
+
                     // Re-pick the polaroid type for the new aspect ratio.
                     if (img.polaroid) {
                         img.polaroid.type = detectPolaroidType(img.originalWidth, img.originalHeight);
                     }
-                    
+
                     // Reset visible rect to full image
                     img.visibleRect = {
                         x: 0,
@@ -1998,7 +2092,7 @@ const layer = layerState && layerState.layers ?
                         width: bitmap.width,
                         height: bitmap.height
                     };
-                    
+
                     // Adjust scale to maintain similar visual size
                     if (Math.abs(newAspect - oldAspect) > 0.01) {
                         if (newAspect > oldAspect) {
@@ -2009,7 +2103,7 @@ const layer = layerState && layerState.layers ?
                             img.scale = img.scale * (newAspect / oldAspect);
                         }
                     }
-                    
+
                     draw();
                     computeHandles();
                 });
@@ -2048,10 +2142,12 @@ const layer = layerState && layerState.layers ?
         toggleGrayscale: toggleGrayscale,
         updatePolaroidText: openPolaroidTextEditor,
         replaceImage: replaceImage,
-        hasSelectedImage: function() { return !!getSelectedImage(); },
+        hasSelectedImage: function () {
+            return !!getSelectedImage();
+        },
         getSelectedImage: getSelectedImage,
         prepareSnapshot: prepareSnapshot,
-        getSnapRegions: function(excludeImgId) {
+        getSnapRegions: function (excludeImgId) {
             return state.images
                 .filter(img => img.visible !== false && img.id !== excludeImgId)
                 .map(img => getImageAABB(img));
@@ -2060,7 +2156,7 @@ const layer = layerState && layerState.layers ?
         // for color sampling. Sampling reads the bitmap directly at a fixed
         // resolution, so moving/scaling/rotating an image never changes the
         // palette - only cropping or moving it off-canvas does.
-        getSampleableImages: function() {
+        getSampleableImages: function () {
             return state.images
                 .filter(img => img.visible !== false && img.bitmap)
                 .map(img => ({
@@ -2084,9 +2180,12 @@ const layer = layerState && layerState.layers ?
         if (Array.isArray(window._pendingUploads) && window._pendingUploads.length) {
             const q = window._pendingUploads.slice();
             window._pendingUploads.length = 0;
-            q.forEach(f => { 
-                try { window.importImageToCanvas(f); } 
-                catch (e) { console.error('Failed handling queued upload', e); } 
+            q.forEach(f => {
+                try {
+                    window.importImageToCanvas(f);
+                } catch (e) {
+                    console.error('Failed handling queued upload', e);
+                }
             });
         }
     });

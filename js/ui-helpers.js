@@ -19,7 +19,7 @@ function replaceRotation(transform, deg) {
 export function createResizeHandles() {
     const handles = document.createElement('div');
     handles.className = 'ss-resize-handles';
-    ['nw', 'ne', 'sw', 'se'].forEach(function(corner) {
+    ['nw', 'ne', 'sw', 'se'].forEach(function (corner) {
         const handle = document.createElement('div');
         handle.className = 'ss-resize-handle';
         handle.style.cursor = corner + '-resize';
@@ -39,25 +39,27 @@ export function setupRotationHandler(element) {
     rotationHandle.className = 'ss-rotation-handle';
     element.appendChild(rotationHandle);
 
-    rotationHandle.addEventListener('pointerdown', function(e) {
+    rotationHandle.addEventListener('pointerdown', function (e) {
         e.preventDefault();
         e.stopPropagation();
         const rect = element.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-        const startAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180 / Math.PI;
+        const startAngle = (Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180) / Math.PI;
         const startTransform = element.style.transform || '';
         const startRotation = parseRotation(startTransform);
 
         function onMove(ev) {
-            const angle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX) * 180 / Math.PI;
+            const angle = (Math.atan2(ev.clientY - centerY, ev.clientX - centerX) * 180) / Math.PI;
             element.style.transform = replaceRotation(startTransform, startRotation + (angle - startAngle));
         }
         function onUp() {
             document.removeEventListener('pointermove', onMove);
             document.removeEventListener('pointerup', onUp);
             try {
-                const layerIndex = layerState.layers.findIndex(function(l) { return l.element === element; });
+                const layerIndex = layerState.layers.findIndex(function (l) {
+                    return l.element === element;
+                });
                 if (layerIndex !== -1) {
                     layerState.layers[layerIndex].rotation = parseRotation(element.style.transform);
                 }
@@ -97,8 +99,8 @@ export function setupTextResizeHandlers(element) {
     }
 
     const corners = handles.querySelectorAll('.ss-resize-handle');
-    Array.prototype.forEach.call(corners, function(handle) {
-        handle.addEventListener('pointerdown', function(e) {
+    Array.prototype.forEach.call(corners, function (handle) {
+        handle.addEventListener('pointerdown', function (e) {
             e.preventDefault();
             e.stopPropagation();
             startTextResize(element, handle, e);
@@ -128,7 +130,7 @@ function startTextResize(element, handle, e) {
         newH = Math.max(24, Math.round(newH));
 
         // Scale the font with the box width so proportions stay intact
-        const newFontSize = Math.max(6, Math.round((startFontSize * newW / startWidth) * 10) / 10);
+        const newFontSize = Math.max(6, Math.round(((startFontSize * newW) / startWidth) * 10) / 10);
         setTextFontSize(element, newFontSize);
 
         element.style.width = newW + 'px';
@@ -140,7 +142,9 @@ function startTextResize(element, handle, e) {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         try {
-            const layerIndex = layerState.layers.findIndex(function(l) { return l.element === element; });
+            const layerIndex = layerState.layers.findIndex(function (l) {
+                return l.element === element;
+            });
             if (layerIndex !== -1) {
                 layerState.layers[layerIndex].size = {
                     width: element.offsetWidth,
@@ -199,15 +203,18 @@ export function addTextElement() {
 
     if (typeof window.makeElementDraggable === 'function') window.makeElementDraggable(el);
     if (typeof window.makeElementSelectable === 'function') window.makeElementSelectable(el);
-    if (window.SSText && typeof window.SSText.setupTextResizeHandlers === 'function') window.SSText.setupTextResizeHandlers(el);
+    if (window.SSText && typeof window.SSText.setupTextResizeHandlers === 'function')
+        window.SSText.setupTextResizeHandlers(el);
     setupRotationHandler(el);
 
-    el.addEventListener('input', function() {
+    el.addEventListener('input', function () {
         adjustTextElementSize(el);
         if (typeof window.saveState === 'function') window.saveState();
     });
 
-    setTimeout(function() { adjustTextElementSize(el); }, 10);
+    setTimeout(function () {
+        adjustTextElementSize(el);
+    }, 10);
 }
 
 window.createResizeHandles = createResizeHandles;

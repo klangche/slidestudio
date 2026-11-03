@@ -5,7 +5,7 @@ import { setInitialZoom } from './zoom.js';
 
 export function addSection() {
     if (canvasState.sections >= canvasState.maxSections) return;
-    
+
     const canvasContainer = document.getElementById('ss-canvasContainer');
     if (canvasContainer) {
         canvasContainer.classList.add('ss-slide-animating', 'ss-slide-enter');
@@ -13,26 +13,26 @@ export function addSection() {
     if (typeof window.saveState === 'function') window.saveState();
     canvasState.width += 1080;
     canvasState.sections += 1;
-    
+
     const designerCanvas = document.getElementById('ss-designer-canvas');
     if (designerCanvas) {
         designerCanvas.style.width = canvasState.width + 'px';
     }
-    
+
     // Update image canvas width
     if (window.SSImageTransform && window.SSImageTransform.setCanvasSteps) {
         window.SSImageTransform.setCanvasSteps(canvasState.sections);
     }
-    
+
     updateSectionCount();
     updateResolutionDisplay();
     updateButtonStates();
     setInitialZoom();
-    
+
     if (guidanceState.active) {
         updateGuidanceOverlay();
     }
-    
+
     // Immediately reset background color palette to 'All Slides' when a new slide is added
     if (window.refreshBackgroundPalette) {
         window.refreshBackgroundPalette();
@@ -43,7 +43,7 @@ export function addSection() {
         // Force reflow then trigger activation class for transition
         void canvasContainer.offsetWidth;
         canvasContainer.classList.add('ss-activate');
-        const handler = function(e) {
+        const handler = function (e) {
             if (e.target && e.target.id === 'ss-designer-canvas') {
                 canvasContainer.classList.remove('ss-slide-animating', 'ss-slide-enter', 'ss-activate');
                 canvasContainer.removeEventListener('transitionend', handler);
@@ -55,7 +55,7 @@ export function addSection() {
 
 export function removeSection() {
     if (canvasState.sections <= canvasState.minSections) return;
-    
+
     const canvasContainer = document.getElementById('ss-canvasContainer');
     if (canvasContainer) {
         canvasContainer.classList.add('ss-slide-animating', 'ss-slide-exit');
@@ -63,22 +63,22 @@ export function removeSection() {
     if (typeof window.saveState === 'function') window.saveState();
     canvasState.width -= 1080;
     canvasState.sections -= 1;
-    
+
     const designerCanvas = document.getElementById('ss-designer-canvas');
     if (designerCanvas) {
         designerCanvas.style.width = canvasState.width + 'px';
     }
-    
+
     // Update image canvas width
     if (window.SSImageTransform && window.SSImageTransform.setCanvasSteps) {
         window.SSImageTransform.setCanvasSteps(canvasState.sections);
     }
-    
+
     updateSectionCount();
     updateResolutionDisplay();
     updateButtonStates();
     setInitialZoom();
-    
+
     if (guidanceState.active) {
         updateGuidanceOverlay();
     }
@@ -87,7 +87,7 @@ export function removeSection() {
     if (canvasContainer) {
         void canvasContainer.offsetWidth;
         canvasContainer.classList.add('ss-activate');
-        const handler = function(e) {
+        const handler = function (e) {
             if (e.target && e.target.id === 'ss-designer-canvas') {
                 canvasContainer.classList.remove('ss-slide-animating', 'ss-slide-exit', 'ss-activate');
                 canvasContainer.removeEventListener('transitionend', handler);
@@ -155,17 +155,17 @@ export function updateButtonStates() {
 
 export function initializeMagnetButton() {
     const magnetBtn = document.getElementById('ss-magnetBtn');
-    
+
     if (!magnetBtn) return;
-    
+
     // Start with magnet active by default
     magnetState.active = true;
     magnetBtn.classList.add('ss-active');
-    
-    magnetBtn.addEventListener('click', function() {
+
+    magnetBtn.addEventListener('click', function () {
         magnetState.active = !magnetState.active;
         this.classList.toggle('ss-active', magnetState.active);
-        
+
         // Visual feedback
         if (magnetState.active) {
             console.log('Magnet snapping enabled');
@@ -173,6 +173,6 @@ export function initializeMagnetButton() {
             console.log('Magnet snapping disabled');
         }
     });
-    
+
     console.log('Magnet button initialized - active by default');
 }

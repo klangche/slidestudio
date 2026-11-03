@@ -7,16 +7,16 @@ let zoomState = {
 
 export function initializeZoomFunctionality() {
     console.log('Initializing zoom functionality...');
-    
+
     const sliderThumb = document.getElementById('ss-sliderThumb');
     const sliderFill = document.getElementById('ss-sliderFill');
     const slider = document.getElementById('ss-slider');
-    
+
     if (!sliderThumb || !sliderFill || !slider) {
         console.error('Zoom slider elements not found');
         return;
     }
-    
+
     let zoomLevel = 0.5;
     updateZoomVisuals(zoomLevel);
     setupSliderInteraction(sliderThumb, sliderFill, slider, zoomLevel);
@@ -27,13 +27,13 @@ export function initializeZoomFunctionality() {
 function setupSliderInteraction(sliderThumb, sliderFill, slider, initialZoom) {
     let isDragging = false;
     let currentZoom = initialZoom;
-    
+
     sliderThumb.addEventListener('mousedown', startDrag);
-    sliderThumb.addEventListener('touchstart', function(e) {
+    sliderThumb.addEventListener('touchstart', function (e) {
         e.preventDefault();
         startDrag(e.touches[0]);
     });
-    
+
     function startDrag(e) {
         isDragging = true;
         document.addEventListener('mousemove', onDrag);
@@ -42,17 +42,17 @@ function setupSliderInteraction(sliderThumb, sliderFill, slider, initialZoom) {
         document.addEventListener('touchend', stopDrag);
         e.preventDefault();
     }
-    
+
     function onDrag(e) {
         if (!isDragging) return;
         updateZoomFromPosition(e.clientX);
     }
-    
+
     function onTouchDrag(e) {
         if (!isDragging) return;
         updateZoomFromPosition(e.touches[0].clientX);
     }
-    
+
     function stopDrag() {
         isDragging = false;
         document.removeEventListener('mousemove', onDrag);
@@ -60,28 +60,28 @@ function setupSliderInteraction(sliderThumb, sliderFill, slider, initialZoom) {
         document.removeEventListener('mouseup', stopDrag);
         document.removeEventListener('touchend', stopDrag);
     }
-    
+
     function updateZoomFromPosition(clientX) {
         const sliderRect = slider.getBoundingClientRect();
         let position = (clientX - sliderRect.left) / sliderRect.width;
         position = Math.max(0, Math.min(1, position));
         currentZoom = position;
-        sliderThumb.style.left = (position * 100) + '%';
-        sliderFill.style.width = (position * 100) + '%';
+        sliderThumb.style.left = position * 100 + '%';
+        sliderFill.style.width = position * 100 + '%';
         updateCanvasZoom();
     }
-    
-    slider.addEventListener('click', function(e) {
+
+    slider.addEventListener('click', function (e) {
         const sliderRect = slider.getBoundingClientRect();
         let position = (e.clientX - sliderRect.left) / sliderRect.width;
         position = Math.max(0, Math.min(1, position));
         currentZoom = position;
-        sliderThumb.style.left = (position * 100) + '%';
-        sliderFill.style.width = (position * 100) + '%';
+        sliderThumb.style.left = position * 100 + '%';
+        sliderFill.style.width = position * 100 + '%';
         updateCanvasZoom();
     });
-    
-    slider.addEventListener('wheel', function(e) {
+
+    slider.addEventListener('wheel', function (e) {
         e.preventDefault();
         e.stopPropagation();
         const zoomDelta = e.deltaY > 0 ? -0.05 : 0.05;
@@ -93,12 +93,12 @@ function setupSliderTicks(slider, currentZoom) {
     const sliderThumb = document.getElementById('ss-sliderThumb');
     const sliderFill = document.getElementById('ss-sliderFill');
     const ticks = slider.querySelectorAll('.ss-tick');
-    ticks.forEach(function(tick, index) {
-        tick.addEventListener('click', function(e) {
+    ticks.forEach(function (tick, index) {
+        tick.addEventListener('click', function (e) {
             e.stopPropagation();
             const position = index / (ticks.length - 1);
-            if (sliderThumb) sliderThumb.style.left = (position * 100) + '%';
-            if (sliderFill) sliderFill.style.width = (position * 100) + '%';
+            if (sliderThumb) sliderThumb.style.left = position * 100 + '%';
+            if (sliderFill) sliderFill.style.width = position * 100 + '%';
             updateCanvasZoom();
         });
     });
@@ -108,9 +108,9 @@ function updateZoomVisuals(scale) {
     const sliderThumb = document.getElementById('ss-sliderThumb');
     const sliderFill = document.getElementById('ss-sliderFill');
     const zoomValue = document.getElementById('ss-zoomValue');
-    
+
     if (!sliderThumb || !sliderFill) return;
-    
+
     // The slider track maps the 0.05..0.5 scale range; values above 0.5
     // (reachable via wheel) saturate the thumb at the right end.
     const minScale = 0.05;
@@ -119,11 +119,11 @@ function updateZoomVisuals(scale) {
     const thumbPosition = sliderPosition * 100;
     sliderThumb.style.left = thumbPosition + '%';
     sliderFill.style.width = thumbPosition + '%';
-    
+
     if (zoomValue) {
         const displayValue = Math.round(scale * 100);
         zoomValue.textContent = displayValue + '%';
-        
+
         const isOver50 = displayValue > 50;
         if (isOver50 !== zoomState.isOver50Percent) {
             zoomState.isOver50Percent = isOver50;
@@ -161,8 +161,8 @@ function updateCanvasTransform(scale) {
     designerCanvas.style.transform = 'scale(' + scale + ')';
     designerCanvas.style.setProperty('--ss-zoom', scale);
     if (scrollWrapper) {
-        scrollWrapper.style.width = (W * scale) + 'px';
-        scrollWrapper.style.height = (H * scale) + 'px';
+        scrollWrapper.style.width = W * scale + 'px';
+        scrollWrapper.style.height = H * scale + 'px';
     }
 }
 
@@ -179,10 +179,10 @@ function applyScale(scale, anchorX) {
         updateCanvasTransform(scale);
         return;
     }
-    
+
     const rect = canvasContainer.getBoundingClientRect();
     const ax = anchorX !== undefined ? anchorX : rect.width / 2;
-    
+
     if (currentScale > 0 && currentScale !== scale) {
         const factor = scale / currentScale;
         const px = ax + canvasContainer.scrollLeft;
@@ -197,7 +197,7 @@ function applyScale(scale, anchorX) {
         updateCanvasTransform(scale);
         centerCanvasHorizontal();
     }
-    
+
     centerCanvasVertical();
 }
 
@@ -216,12 +216,12 @@ function centerCanvasVertical() {
 function updateCanvasZoom() {
     const sliderThumb = document.getElementById('ss-sliderThumb');
     if (!sliderThumb) return;
-    
+
     const thumbPosition = parseFloat(sliderThumb.style.left) / 100;
     const minScale = 0.05;
     const maxScale = 0.5;
-    const scale = minScale + (thumbPosition * (maxScale - minScale));
-    
+    const scale = minScale + thumbPosition * (maxScale - minScale);
+
     applyScale(scale);
     updateZoomVisuals(scale);
 }
@@ -229,21 +229,21 @@ function updateCanvasZoom() {
 export function setInitialZoom() {
     const canvasContainer = document.getElementById('ss-canvasContainer');
     const designerCanvas = document.getElementById('ss-designer-canvas');
-    
+
     if (!canvasContainer || !designerCanvas) {
         console.error('Canvas container or designer canvas not found for zoom');
         return;
     }
-    
+
     const containerWidth = canvasContainer.clientWidth;
     const containerHeight = canvasContainer.clientHeight;
-    
+
     if (containerWidth === 0 || containerHeight === 0) {
         console.warn('Canvas container has zero dimensions, retrying...');
         setTimeout(setInitialZoom, 100);
         return;
     }
-    
+
     const canvasWidth = canvasState.width;
     const canvasHeight = canvasState.height;
     const padding = 40;
@@ -253,48 +253,52 @@ export function setInitialZoom() {
     const scaleY = availableHeight / canvasHeight;
     const initialScale = Math.min(scaleX, scaleY);
     const clampedScale = Math.max(0.05, Math.min(initialScale, 0.5));
-    
+
     updateZoomVisuals(clampedScale);
     updateCanvasTransform(clampedScale);
     canvasContainer.scrollLeft = 0;
     canvasContainer.scrollTop = 0;
-    
+
     console.log('Initial zoom set to:', clampedScale);
 }
 
 function initializeGestureZoom() {
     const canvasContainer = document.getElementById('ss-canvasContainer');
     const designerCanvas = document.getElementById('ss-designer-canvas');
-    
+
     if (!canvasContainer || !designerCanvas) return;
-    
+
     let initialDistance = null;
     let lastZoomLevel = getCurrentZoomLevel();
-    
+
     // Always zoom to pointer location on wheel when over canvas
-    [canvasContainer, designerCanvas].forEach(function(element) {
-        element.addEventListener('wheel', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            // Use a sensible delta and snap to slider range
-            const zoomDelta = e.deltaY > 0 ? -0.05 : 0.05;
-            const currentZoom = getCurrentZoomLevel();
-            const newZoom = Math.max(0.05, Math.min(1, currentZoom + zoomDelta));
-            // Zoom centered at mouse pointer
-            setZoomLevel(newZoom, e.clientX, e.clientY);
-        }, { passive: false });
+    [canvasContainer, designerCanvas].forEach(function (element) {
+        element.addEventListener(
+            'wheel',
+            function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                // Use a sensible delta and snap to slider range
+                const zoomDelta = e.deltaY > 0 ? -0.05 : 0.05;
+                const currentZoom = getCurrentZoomLevel();
+                const newZoom = Math.max(0.05, Math.min(1, currentZoom + zoomDelta));
+                // Zoom centered at mouse pointer
+                setZoomLevel(newZoom, e.clientX, e.clientY);
+            },
+            { passive: false }
+        );
     });
-    
-    [canvasContainer, designerCanvas].forEach(function(element) {
-        element.addEventListener('touchstart', function(e) {
+
+    [canvasContainer, designerCanvas].forEach(function (element) {
+        element.addEventListener('touchstart', function (e) {
             if (e.touches.length === 2) {
                 initialDistance = getTouchDistance(e.touches);
                 lastZoomLevel = getCurrentZoomLevel();
                 e.preventDefault();
             }
         });
-        
-        element.addEventListener('touchmove', function(e) {
+
+        element.addEventListener('touchmove', function (e) {
             if (e.touches.length === 2) {
                 const currentDistance = getTouchDistance(e.touches);
                 if (initialDistance !== null) {
@@ -309,26 +313,34 @@ function initializeGestureZoom() {
                 e.preventDefault();
             }
         });
-        
-        element.addEventListener('touchend', function(e) {
+
+        element.addEventListener('touchend', function (e) {
             if (e.touches.length < 2) {
                 initialDistance = null;
             }
         });
     });
-    
-    [canvasContainer, designerCanvas].forEach(function(element) {
-        element.addEventListener('touchstart', function(e) {
-            if (e.touches.length === 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-        
-        element.addEventListener('touchmove', function(e) {
-            if (e.touches.length === 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
+
+    [canvasContainer, designerCanvas].forEach(function (element) {
+        element.addEventListener(
+            'touchstart',
+            function (e) {
+                if (e.touches.length === 1) {
+                    e.preventDefault();
+                }
+            },
+            { passive: false }
+        );
+
+        element.addEventListener(
+            'touchmove',
+            function (e) {
+                if (e.touches.length === 1) {
+                    e.preventDefault();
+                }
+            },
+            { passive: false }
+        );
     });
 }
 
@@ -347,9 +359,9 @@ function getCurrentZoomLevel() {
 export function setZoomLevel(zoomLevel, mouseX, mouseY) {
     const canvasContainer = document.getElementById('ss-canvasContainer');
     if (!canvasContainer) return;
-    
+
     zoomLevel = Math.max(0.05, Math.min(1, zoomLevel));
-    
+
     const rect = canvasContainer.getBoundingClientRect();
     let anchorX;
     if (mouseX !== undefined && mouseY !== undefined) {
@@ -358,7 +370,7 @@ export function setZoomLevel(zoomLevel, mouseX, mouseY) {
     }
     // Vertical zoom anchor is always the vertical center of the canvas/viewport
     applyScale(zoomLevel, anchorX);
-    
+
     updateZoomVisuals(zoomLevel);
 }
 

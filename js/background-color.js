@@ -12,9 +12,17 @@
 import { canvasState } from './state.js';
 import { updateCanvasColor } from './layers.js';
 import {
-    normalizeHex, hexToRgb, rgbToHex, rgbToHsl, hslToHex,
-    hsvToHex, complementOf, colorDistHex, sampleCanvasColors,
-    MIN_PALETTE_SIZE, MAX_PALETTE_SIZE
+    normalizeHex,
+    hexToRgb,
+    rgbToHex,
+    rgbToHsl,
+    hslToHex,
+    hsvToHex,
+    complementOf,
+    colorDistHex,
+    sampleCanvasColors,
+    MIN_PALETTE_SIZE,
+    MAX_PALETTE_SIZE
 } from './color-utils.js';
 
 const CAROUSEL_PAGES = ['spectrum', 'grid', 'sliders'];
@@ -126,7 +134,12 @@ function buildPalette(slideIndex, k) {
         // Tolerate close-but-distinct steps so an all-white/all-black canvas
         // can still fill the row up to `want` (the gray ramp is inherently
         // fine-grained).
-        if (merged.some(function (p) { return colorDistHex(p, c) < 20; })) return;
+        if (
+            merged.some(function (p) {
+                return colorDistHex(p, c) < 20;
+            })
+        )
+            return;
         merged.push(c);
     });
     const top = merged.length ? merged : [bg];
@@ -143,9 +156,15 @@ function fillRow(container, colors) {
         sw.style.background = c;
         sw.title = c;
         sw.setAttribute('aria-label', c);
-        sw.addEventListener('mouseenter', function () { setColor(c, false); });
-        sw.addEventListener('mouseleave', function () { setColor(state.committed, false); });
-        sw.addEventListener('click', function () { setColor(c, true); });
+        sw.addEventListener('mouseenter', function () {
+            setColor(c, false);
+        });
+        sw.addEventListener('mouseleave', function () {
+            setColor(state.committed, false);
+        });
+        sw.addEventListener('click', function () {
+            setColor(c, true);
+        });
         container.appendChild(sw);
     });
 }
@@ -177,10 +196,13 @@ function renderCarousel() {
 function renderSpectrum() {
     if (!refs.spectrumSv) return;
     const hsl = currentHsl();
-    const h = hsl[0], s = hsl[1], l = hsl[2];
+    const h = hsl[0],
+        s = hsl[1],
+        l = hsl[2];
     const v = l + s * Math.min(l, 1 - l);
     refs.spectrumSv.style.backgroundColor = hslToHex(h, 1, 0.5);
-    refs.spectrumSv.style.backgroundImage = 'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0))';
+    refs.spectrumSv.style.backgroundImage =
+        'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0))';
     const sx = state.sv ? state.sv.s : s;
     const sv = state.sv ? state.sv.v : v;
     const sh = state.hue != null ? state.hue : h;
@@ -225,7 +247,9 @@ function bindSpectrum() {
     if (!refs.spectrumSv || !refs.spectrumHue) return;
     let svDrag = false;
     let hueDrag = false;
-    const svMove = function (e) { if (svDrag) svFromEvent(e); };
+    const svMove = function (e) {
+        if (svDrag) svFromEvent(e);
+    };
     const svUp = function () {
         if (!svDrag) return;
         svDrag = false;
@@ -233,7 +257,9 @@ function bindSpectrum() {
         document.removeEventListener('pointerup', svUp);
         commitCurrent();
     };
-    const hueMove = function (e) { if (hueDrag) hueFromEvent(e); };
+    const hueMove = function (e) {
+        if (hueDrag) hueFromEvent(e);
+    };
     const hueUp = function () {
         if (!hueDrag) return;
         hueDrag = false;
@@ -256,9 +282,15 @@ function bindSpectrum() {
 }
 
 function attachSwatchPreview(sw, c) {
-    sw.addEventListener('mouseenter', function () { setColor(c, false); });
-    sw.addEventListener('mouseleave', function () { setColor(state.committed, false); });
-    sw.addEventListener('click', function () { setColor(c, true); });
+    sw.addEventListener('mouseenter', function () {
+        setColor(c, false);
+    });
+    sw.addEventListener('mouseleave', function () {
+        setColor(state.committed, false);
+    });
+    sw.addEventListener('click', function () {
+        setColor(c, true);
+    });
 }
 
 function renderGrid() {
@@ -356,9 +388,12 @@ function pickScreenColor() {
     if (window.EyeDropper) {
         try {
             const dropper = new window.EyeDropper();
-            dropper.open().then(function (result) {
-                if (result && result.sRGBHex) setColor(normalizeHex(result.sRGBHex), true);
-            }).catch(function () {});
+            dropper
+                .open()
+                .then(function (result) {
+                    if (result && result.sRGBHex) setColor(normalizeHex(result.sRGBHex), true);
+                })
+                .catch(function () {});
             return;
         } catch (e) {}
     }
@@ -379,7 +414,13 @@ function bindHex() {
     refs.hex.addEventListener('blur', function () {
         let v = this.value.replace('#', '');
         if (v === '') v = 'ffffff';
-        else if (v.length === 3) v = v.split('').map(function (ch) { return ch + ch; }).join('');
+        else if (v.length === 3)
+            v = v
+                .split('')
+                .map(function (ch) {
+                    return ch + ch;
+                })
+                .join('');
         else if (v.length !== 6) v = v.padEnd(6, '0').substring(0, 6);
         this.value = v;
         setColor('#' + v, true);
@@ -456,9 +497,7 @@ export function initializeBackgroundColorPicker() {
     initialized = true;
 
     const designerCanvas = document.getElementById('ss-designer-canvas');
-    state.color = state.committed = normalizeHex(
-        (designerCanvas && designerCanvas.style.backgroundColor) || '#ffffff'
-    );
+    state.color = state.committed = normalizeHex((designerCanvas && designerCanvas.style.backgroundColor) || '#ffffff');
 
     refs = {
         panel: document.getElementById('ss-bgColorPanel'),

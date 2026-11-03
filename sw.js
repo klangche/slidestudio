@@ -34,14 +34,11 @@ const urlsToCache = [
 // Install
 self.addEventListener('install', event => {
   console.log('Service Worker installing...');
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
   self.skipWaiting();
 });
 
-// Activate  
+// Activate
 self.addEventListener('activate', event => {
   console.log('Service Worker activated!');
   event.waitUntil(
@@ -76,25 +73,23 @@ self.addEventListener('fetch', event => {
 
         // Cache successful responses for offline use
         const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME)
-          .then(cache => {
-            cache.put(event.request, responseToCache);
-          });
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache);
+        });
 
         return networkResponse;
       })
       .catch(error => {
         console.log('Fetch failed; returning cached fallback:', error);
-        return caches.match(event.request)
-          .then(cachedResponse => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            // If it's a page request, return the cached homepage
-            if (event.request.destination === 'document') {
-              return caches.match('/');
-            }
-          });
+        return caches.match(event.request).then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // If it's a page request, return the cached homepage
+          if (event.request.destination === 'document') {
+            return caches.match('/');
+          }
+        });
       })
   );
 });

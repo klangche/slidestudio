@@ -12,9 +12,9 @@ export function saveState() {
         layers: [],
         timestamp: Date.now()
     };
-    
+
     // Save all layers including their complete state
-    state.layers = layerState.layers.map(function(layer) {
+    state.layers = layerState.layers.map(function (layer) {
         const layerCopy = {
             id: layer.id,
             type: layer.type,
@@ -27,7 +27,7 @@ export function saveState() {
             visible: layer.element.style.display !== 'none',
             disabled: layer.element.style.pointerEvents === 'none'
         };
-        
+
         if (layer.type === 'image') {
             layerCopy.size = {
                 width: parseInt(layer.element.style.width) || layer.size.width,
@@ -35,25 +35,30 @@ export function saveState() {
             };
             layerCopy.src = layer.src;
             layerCopy.naturalSize = JSON.parse(JSON.stringify(layer.naturalSize || layerCopy.size));
-            layerCopy.aspectRatio = layer.aspectRatio || (layerCopy.size.width / layerCopy.size.height);
+            layerCopy.aspectRatio = layer.aspectRatio || layerCopy.size.width / layerCopy.size.height;
             layerCopy.transform = layer.element.style.transform;
-            
+
             // Store crop data if present
             if (layer.cropData) {
                 layerCopy.cropData = JSON.parse(JSON.stringify(layer.cropData));
             }
-            
+
             // Store the actual image data for proper restoration
             const imgElement = layer.imageElement || layer.element.querySelector('img');
             if (imgElement && imgElement.src) {
                 layerCopy.imageData = imgElement.src;
             }
         }
-        
+
         if (layer.type === 'text') {
-            const contentEl = (layer.element.querySelector && layer.element.querySelector('.ss-text-content')) || layer.element;
+            const contentEl =
+                (layer.element.querySelector && layer.element.querySelector('.ss-text-content')) || layer.element;
             layerCopy.textContent = contentEl.textContent || 'Text';
-            layerCopy.fontSize = parseFloat(contentEl.style.fontSize) || parseFloat(layer.element.style.fontSize) || layer.fontSize || 24;
+            layerCopy.fontSize =
+                parseFloat(contentEl.style.fontSize) ||
+                parseFloat(layer.element.style.fontSize) ||
+                layer.fontSize ||
+                24;
             layerCopy.transform = layer.element.style.transform;
             const rotMatch = /rotate\(([-.\d]+)deg\)/.exec(layer.element.style.transform || '');
             if (rotMatch) layerCopy.rotation = parseFloat(rotMatch[1]);
@@ -65,7 +70,8 @@ export function saveState() {
                 fontStyle: contentEl.style.fontStyle || layer.element.style.fontStyle || 'normal',
                 textDecoration: contentEl.style.textDecoration || layer.element.style.textDecoration || 'none',
                 textAlign: contentEl.style.textAlign || layer.element.style.textAlign || 'left',
-                backgroundColor: contentEl.style.backgroundColor || layer.element.style.backgroundColor || 'transparent',
+                backgroundColor:
+                    contentEl.style.backgroundColor || layer.element.style.backgroundColor || 'transparent',
                 letterSpacing: contentEl.style.letterSpacing || layer.element.style.letterSpacing || '0px',
                 textTransform: contentEl.style.textTransform || layer.element.style.textTransform || 'none',
                 lineHeight: contentEl.style.lineHeight || layer.element.style.lineHeight || '1.2'
@@ -86,28 +92,29 @@ export function saveState() {
                 height: layer.element.offsetHeight || layer.size?.height || 40
             };
         }
-        
+
         return layerCopy;
     });
-    
+
     // Only save if state has actually changed. Image data URLs are compared
     // with === per layer instead of being serialized; timestamp is ignored.
     const lastState = historyState.undoStack[historyState.undoStack.length - 1];
-    const skipKeys = function(key, value) {
-        return (key === 'timestamp' || key === 'src' || key === 'imageData') ? undefined : value;
+    const skipKeys = function (key, value) {
+        return key === 'timestamp' || key === 'src' || key === 'imageData' ? undefined : value;
     };
-    const unchanged = lastState &&
+    const unchanged =
+        lastState &&
         JSON.stringify(state, skipKeys) === JSON.stringify(lastState, skipKeys) &&
-        state.layers.every(function(layer, i) {
+        state.layers.every(function (layer, i) {
             return layer.src === lastState.layers[i].src && layer.imageData === lastState.layers[i].imageData;
         });
     if (!unchanged) {
         historyState.undoStack.push(state);
-        
+
         if (historyState.undoStack.length > historyState.maxHistory) {
             historyState.undoStack.shift();
         }
-        
+
         historyState.redoStack = [];
         updateUndoRedoButtons();
     }
@@ -118,7 +125,7 @@ window.saveState = saveState;
 
 export function undo() {
     if (historyState.undoStack.length < 2) return;
-    
+
     const currentState = historyState.undoStack.pop();
     historyState.redoStack.push(currentState);
     const previousState = historyState.undoStack[historyState.undoStack.length - 1];
@@ -128,7 +135,7 @@ export function undo() {
 
 export function redo() {
     if (historyState.redoStack.length === 0) return;
-    
+
     const nextState = historyState.redoStack.pop();
     historyState.undoStack.push(nextState);
     restoreState(nextState);
@@ -138,7 +145,7 @@ export function redo() {
 export function updateUndoRedoButtons() {
     const undoBtn = document.getElementById('ss-undoBtn');
     const redoBtn = document.getElementById('ss-redoBtn');
-    
+
     if (undoBtn) {
         if (historyState.undoStack.length > 1) {
             undoBtn.disabled = false;
@@ -150,7 +157,7 @@ export function updateUndoRedoButtons() {
             undoBtn.style.cursor = 'not-allowed';
         }
     }
-    
+
     if (redoBtn) {
         if (historyState.redoStack.length > 0) {
             redoBtn.disabled = false;
@@ -167,40 +174,42 @@ export function updateUndoRedoButtons() {
 // ENHANCED: Complete state restoration function
 export function restoreState(state) {
     if (!state) return;
-    
+
     // Restore canvas dimensions
     const parsedCanvasState = JSON.parse(JSON.stringify(state.canvasState));
-    Object.keys(canvasState).forEach(function(key) { delete canvasState[key]; });
+    Object.keys(canvasState).forEach(function (key) {
+        delete canvasState[key];
+    });
     Object.assign(canvasState, parsedCanvasState);
-    
+
     updateSectionCount();
     updateResolutionDisplay();
     updateButtonStates();
-    
+
     const designerCanvas = document.getElementById('ss-designer-canvas');
     if (designerCanvas) {
         designerCanvas.style.width = canvasState.width + 'px';
         designerCanvas.style.height = canvasState.height + 'px';
     }
-    
+
     // Clear current layers
     layerState.layers = [];
     layerState.selectedLayer = null;
     layerState.nextZIndex = 10;
-    
+
     // Clear canvas, keeping the guidance overlay and the SSImageTransform canvas and handles
     if (designerCanvas) {
         const keep = ['ss-guidance-overlay', 'ss-image-canvas', 'ss-image-handles'];
-        Array.from(designerCanvas.childNodes).forEach(function(child) {
+        Array.from(designerCanvas.childNodes).forEach(function (child) {
             if (keep.indexOf(child.id) === -1) {
                 designerCanvas.removeChild(child);
             }
         });
     }
-    
+
     // Restore layers
     if (state.layers && state.layers.length > 0) {
-        state.layers.forEach(function(layerData) {
+        state.layers.forEach(function (layerData) {
             if (layerData.type === 'image') {
                 restoreImageLayer(layerData);
             } else if (layerData.type === 'text') {
@@ -208,10 +217,10 @@ export function restoreState(state) {
             }
         });
     }
-    
+
     setInitialZoom();
     updateUndoRedoButtons();
-    
+
     // Restore guidance if it was active
     if (guidanceState.active) {
         updateGuidanceOverlay();
@@ -220,11 +229,11 @@ export function restoreState(state) {
 
 function restoreImageLayer(layerData) {
     const img = new Image();
-    img.onload = function() {
+    img.onload = function () {
         const imageContainer = document.createElement('div');
         imageContainer.className = 'ss-image-element';
         imageContainer.id = layerData.id;
-        
+
         imageContainer.style.position = 'absolute';
         imageContainer.style.left = layerData.position.left + 'px';
         imageContainer.style.top = layerData.position.top + 'px';
@@ -235,7 +244,7 @@ function restoreImageLayer(layerData) {
         imageContainer.style.transformOrigin = 'center center';
         imageContainer.style.cursor = 'grab';
         imageContainer.style.overflow = 'visible';
-        
+
         // Handle visibility and disabled state
         if (!layerData.visible) {
             imageContainer.style.display = 'none';
@@ -243,7 +252,7 @@ function restoreImageLayer(layerData) {
         if (layerData.disabled) {
             imageContainer.style.pointerEvents = 'none';
         }
-        
+
         const imageElement = document.createElement('img');
         imageElement.src = layerData.imageData || layerData.src;
         imageElement.style.width = '100%';
@@ -254,17 +263,17 @@ function restoreImageLayer(layerData) {
         imageElement.style.position = 'absolute';
         imageElement.style.top = '0';
         imageElement.style.left = '0';
-        
+
         const resizeHandles = createResizeHandles();
-        
+
         imageContainer.appendChild(imageElement);
         imageContainer.appendChild(resizeHandles);
-        
+
         const designerCanvas = document.getElementById('ss-designer-canvas');
         if (designerCanvas) {
             designerCanvas.appendChild(imageContainer);
         }
-        
+
         const layer = {
             id: layerData.id,
             element: imageContainer,
@@ -281,31 +290,31 @@ function restoreImageLayer(layerData) {
             disabled: layerData.disabled,
             cropData: layerData.cropData ? JSON.parse(JSON.stringify(layerData.cropData)) : null
         };
-        
+
         layerState.layers.push(layer);
-        
+
         if (typeof window.makeElementDraggable === 'function') window.makeElementDraggable(imageContainer);
         if (typeof window.makeElementSelectable === 'function') window.makeElementSelectable(imageContainer);
         setupImageResizeHandlers(imageContainer);
         setupRotationHandler(imageContainer);
-        
+
         // Apply crop data if present using SSImage utility
         if (typeof SSImage !== 'undefined' && SSImage.applyImageEffectsToElement) {
             SSImage.applyImageEffectsToElement(imageContainer, layer);
         }
-        
+
         // Update nextZIndex if needed
         if (layerData.zIndex >= layerState.nextZIndex) {
             layerState.nextZIndex = layerData.zIndex + 1;
         }
     };
-    
-    img.onerror = function() {
+
+    img.onerror = function () {
         console.warn('Failed to load image for layer:', layerData.id);
         // Create a placeholder if image fails to load
         createImagePlaceholder(layerData);
     };
-    
+
     img.src = layerData.imageData || layerData.src;
 }
 
@@ -313,7 +322,7 @@ function createImagePlaceholder(layerData) {
     const placeholder = document.createElement('div');
     placeholder.className = 'ss-image-element ss-image-placeholder';
     placeholder.id = layerData.id;
-    
+
     placeholder.style.position = 'absolute';
     placeholder.style.left = layerData.position.left + 'px';
     placeholder.style.top = layerData.position.top + 'px';
@@ -329,15 +338,15 @@ function createImagePlaceholder(layerData) {
     placeholder.style.fontSize = '12px';
     placeholder.style.textAlign = 'center';
     placeholder.innerHTML = 'Image<br>Not Found';
-    
+
     const resizeHandles = createResizeHandles();
     placeholder.appendChild(resizeHandles);
-    
+
     const designerCanvas = document.getElementById('ss-designer-canvas');
     if (designerCanvas) {
         designerCanvas.appendChild(placeholder);
     }
-    
+
     const layer = {
         id: layerData.id,
         element: placeholder,
@@ -349,9 +358,9 @@ function createImagePlaceholder(layerData) {
         visible: layerData.visible,
         disabled: layerData.disabled
     };
-    
+
     layerState.layers.push(layer);
-    
+
     if (typeof window.makeElementDraggable === 'function') window.makeElementDraggable(placeholder);
     if (typeof window.makeElementSelectable === 'function') window.makeElementSelectable(placeholder);
     setupImageResizeHandlers(placeholder);
@@ -387,8 +396,8 @@ function parseText2Crop(cropStr, baseW, baseH) {
     const w = parseFloat(m[3]);
     const h = parseFloat(m[4]);
     if (!isFinite(x) || !isFinite(y) || !isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) return null;
-    const bw = (isFinite(baseW) && baseW > 0) ? baseW : (x + w);
-    const bh = (isFinite(baseH) && baseH > 0) ? baseH : (y + h);
+    const bw = isFinite(baseW) && baseW > 0 ? baseW : x + w;
+    const bh = isFinite(baseH) && baseH > 0 ? baseH : y + h;
     return {
         x: Math.max(0, Math.min(x, bw - 20)),
         y: Math.max(0, Math.min(y, bh - 20)),
@@ -406,19 +415,27 @@ function parseText2Lines(linesStr, textContent) {
         } catch (e) {}
     }
     if (!parsed.length) {
-        parsed = String(textContent || '').split('\n').map(function (t) { return { text: t }; });
+        parsed = String(textContent || '')
+            .split('\n')
+            .map(function (t) {
+                return { text: t };
+            });
     }
     return parsed.map(function (l, i) {
-        const item = (l && typeof l === 'object') ? l : {};
+        const item = l && typeof l === 'object' ? l : {};
         return {
-            text: (item.text !== undefined && item.text !== null) ? String(item.text) : (parsed[i] && parsed[i].text) || '',
-            fontSize: (item.fontSize !== undefined && item.fontSize !== null && item.fontSize !== '') ? parseFloat(item.fontSize) : null,
+            text:
+                item.text !== undefined && item.text !== null ? String(item.text) : (parsed[i] && parsed[i].text) || '',
+            fontSize:
+                item.fontSize !== undefined && item.fontSize !== null && item.fontSize !== ''
+                    ? parseFloat(item.fontSize)
+                    : null,
             color: item.color || null,
-            bold: (item.bold !== undefined && item.bold !== null) ? !!item.bold : null,
-            italic: (item.italic !== undefined && item.italic !== null) ? !!item.italic : null,
-            underline: (item.underline !== undefined && item.underline !== null) ? !!item.underline : null,
-            strike: (item.strike !== undefined && item.strike !== null) ? !!item.strike : null,
-            caps: (item.caps !== undefined && item.caps !== null) ? !!item.caps : null,
+            bold: item.bold !== undefined && item.bold !== null ? !!item.bold : null,
+            italic: item.italic !== undefined && item.italic !== null ? !!item.italic : null,
+            underline: item.underline !== undefined && item.underline !== null ? !!item.underline : null,
+            strike: item.strike !== undefined && item.strike !== null ? !!item.strike : null,
+            caps: item.caps !== undefined && item.caps !== null ? !!item.caps : null,
             align: item.align || null
         };
     });
@@ -483,7 +500,9 @@ function restoreTextLayer(layerData) {
         };
         const state = { boxW: size.width, boxH: size.height };
         const scale = parseText2Scale(layerData.text2Scale);
-        if (scale) { state.scale = scale.x; }
+        if (scale) {
+            state.scale = scale.x;
+        }
         const crop = parseText2Crop(layerData.text2Crop, layerData.text2BaseW, layerData.text2BaseH);
         if (crop) state.crop = crop;
         if (layerData.text2BaseW) state.baseW = layerData.text2BaseW;
@@ -575,7 +594,7 @@ function restoreTextLayer(layerData) {
     if (isText2) return;
 
     // Add input listener for text changes (inline editing is text2's job)
-    textElement.addEventListener('input', function() {
+    textElement.addEventListener('input', function () {
         adjustTextElementSize(textElement);
         saveState();
     });

@@ -1,7 +1,8 @@
 // Register Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker
+            .register('/sw.js')
             .then(registration => {
                 console.log('SW registered: ', registration);
             })
@@ -30,7 +31,7 @@ installButton.addEventListener('click', async () => {
 
 document.body.appendChild(installButton);
 
-window.addEventListener('beforeinstallprompt', (e) => {
+window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
     installButton.style.display = 'block';
