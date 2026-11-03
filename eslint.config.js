@@ -15,8 +15,8 @@ module.exports = [
                 SSText: 'readonly',
                 setupImageResizeHandlers: 'readonly',
                 setupTextResizeHandlers: 'readonly',
-                // Optional globals: never defined today; every call is behind a typeof guard.
                 importImageToCanvas: 'readonly',
+                // Optional globals: never defined today; every call is behind a typeof guard.
                 selectAllText: 'readonly',
                 updateFontSizeInputForSelectedText: 'readonly'
             }
