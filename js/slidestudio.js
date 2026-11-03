@@ -197,6 +197,20 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('Template saved successfully!');
     });
 
+    // Backup button: downloads the current project as a JSON file
+    const backupBtn = document.getElementById('ss-backupBtn');
+    backupBtn.addEventListener('click', function() {
+        let name = (projectName.textContent || '').trim() || 'slide_backup';
+        name = name.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_');
+        window.Designer.downloadBackup(name + '_backup.json');
+    });
+
+    // Load Backup / Template button: restores a project from a JSON file
+    const loadBackupBtn = document.getElementById('ss-loadBackupBtn');
+    loadBackupBtn.addEventListener('click', function() {
+        window.Designer.openLoadBackupDialog();
+    });
+
     // Restore Defaults button: clears all locally stored data and reloads
     const restoreDefaultsBtn = document.getElementById('ss-restoreDefaultsBtn');
     restoreDefaultsBtn.addEventListener('click', function() {
