@@ -1,34 +1,64 @@
 // Designer Canvas Core - workspace bootstrap, canvas creation and event wiring.
 import { canvasState, guidanceState, magnetState, layerState, historyState } from './state.js';
 import { initializeZoomFunctionality, setInitialZoom } from './zoom.js';
-import { updateSectionCount, updateResolutionDisplay, updateButtonStates, addSection, removeSection, initializeMagnetButton } from './sections.js';
-import { initializeUploadFunctionality, initializeTransparencySlider, moveLayerToTop, moveLayerUp, moveLayerDown, moveLayerToBottom, updateImageToolButtons } from './layers.js';
+import {
+    updateSectionCount,
+    updateResolutionDisplay,
+    updateButtonStates,
+    addSection,
+    removeSection,
+    initializeMagnetButton
+} from './sections.js';
+import {
+    initializeUploadFunctionality,
+    initializeTransparencySlider,
+    moveLayerToTop,
+    moveLayerUp,
+    moveLayerDown,
+    moveLayerToBottom,
+    updateImageToolButtons
+} from './layers.js';
 import { updateUndoRedoButtons, undo, redo, saveState } from './history.js';
-import { initializeGlobalClickHandler, toggleFreeMove, updateLayerOrderButtons, updateImageToolUIForSelection, initializeFreeMoveShortcuts } from './selection.js';
+import {
+    initializeGlobalClickHandler,
+    toggleFreeMove,
+    updateLayerOrderButtons,
+    updateImageToolUIForSelection,
+    initializeFreeMoveShortcuts
+} from './selection.js';
 import { toggleGuidance, createEnhancedGuidanceOverlay } from './guidance.js';
 import { initializeKeyboardMovement } from './keyboard.js';
-import { exportCanvasZip, downloadBackup, saveTemplate, listTemplates, loadTemplateByName, loadBackupFromFile, openLoadBackupDialog, openLoadTemplateDialog } from './export.js';
+import {
+    exportCanvasZip,
+    downloadBackup,
+    saveTemplate,
+    listTemplates,
+    loadTemplateByName,
+    loadBackupFromFile,
+    openLoadBackupDialog,
+    openLoadTemplateDialog
+} from './export.js';
 import { initializeBackgroundColorPicker } from './background-color.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeDesignerWorkspace();
 });
 
 function initializeDesignerWorkspace() {
     console.log('Initializing designer workspace...');
-    
+
     const workspace = document.getElementById('ss-workspace');
     const workspacePlaceholder = document.getElementById('ss-workspacePlaceholder');
     const canvasContainer = document.getElementById('ss-canvasContainer');
-    
+
     if (!workspace || !workspacePlaceholder || !canvasContainer) {
         console.error('Required DOM elements not found');
         return;
     }
-    
+
     workspacePlaceholder.style.display = 'none';
     canvasContainer.style.display = 'flex';
-    
+
     createDesignerCanvas();
     initializeZoomFunctionality();
     initializeDesignerEventListeners();
@@ -44,47 +74,49 @@ function initializeDesignerWorkspace() {
     initializeKeyboardMovement();
     initializeGlobalClickHandler();
     initializeFreeMoveShortcuts();
-    
+
     // So-Me Guides and Snap are enabled by default on page load
     const guidanceBtn = document.getElementById('ss-guidanceBtn');
     if (guidanceBtn) guidanceBtn.classList.add('ss-active');
     guidanceState.active = true;
     createEnhancedGuidanceOverlay();
-    
+
     // Enable transparency slider (guides are active by default)
-    const transparencySliderContainer = document.querySelector('#ss-transparencySlider').closest('.ss-slider-container');
+    const transparencySliderContainer = document
+        .querySelector('#ss-transparencySlider')
+        .closest('.ss-slider-container');
     if (transparencySliderContainer) {
         transparencySliderContainer.classList.remove('ss-disabled');
     }
-    
+
     saveState();
-    
+
     console.log('Designer workspace initialized successfully');
 }
 
 function createDesignerCanvas() {
     const canvasContainer = document.getElementById('ss-canvasContainer');
-    
+
     if (!canvasContainer) {
         console.error('Canvas container not found');
         return;
     }
-    
+
     const existingCanvas = document.getElementById('ss-designer-canvas');
     if (existingCanvas) {
         existingCanvas.remove();
     }
-    
+
     const scrollWrapper = document.createElement('div');
     scrollWrapper.id = 'ss-canvasScroll';
     scrollWrapper.className = 'ss-canvas-scroll';
     scrollWrapper.style.width = canvasState.width + 'px';
     scrollWrapper.style.height = canvasState.height + 'px';
-    
+
     const designerCanvas = document.createElement('div');
     designerCanvas.id = 'ss-designer-canvas';
     designerCanvas.className = 'ss-designer-canvas';
-    
+
     designerCanvas.style.width = canvasState.width + 'px';
     designerCanvas.style.height = canvasState.height + 'px';
     designerCanvas.style.backgroundColor = '#ffffff';
@@ -96,7 +128,7 @@ function createDesignerCanvas() {
     designerCanvas.style.transformOrigin = 'top left';
     designerCanvas.style.zIndex = '1';
     designerCanvas.style.overflow = 'hidden';
-    
+
     canvasContainer.appendChild(scrollWrapper);
     scrollWrapper.appendChild(designerCanvas);
     console.log('Designer canvas created with dimensions:', canvasState.width, 'x', canvasState.height);
@@ -106,66 +138,66 @@ function createDesignerCanvas() {
 
 function initializeDesignerEventListeners() {
     console.log('Initializing designer event listeners...');
-    
+
     const fitAllBtn = document.getElementById('ss-fitAllBtn');
     if (fitAllBtn) {
-        fitAllBtn.addEventListener('click', function() {
+        fitAllBtn.addEventListener('click', function () {
             setInitialZoom();
         });
     }
-    
+
     const freeMoveBtn = document.getElementById('ss-freeMoveBtn');
     if (freeMoveBtn) {
-        freeMoveBtn.addEventListener('click', function() {
+        freeMoveBtn.addEventListener('click', function () {
             toggleFreeMove();
         });
     }
-    
+
     const addSectionBtn = document.getElementById('ss-addSection');
     if (addSectionBtn) {
-        addSectionBtn.addEventListener('click', function() {
+        addSectionBtn.addEventListener('click', function () {
             if (!this.classList.contains('ss-disabled')) {
                 addSection();
             }
         });
     }
-    
+
     const removeSectionBtn = document.getElementById('ss-removeSection');
     if (removeSectionBtn) {
-        removeSectionBtn.addEventListener('click', function() {
+        removeSectionBtn.addEventListener('click', function () {
             if (!this.classList.contains('ss-disabled')) {
                 removeSection();
             }
         });
     }
-    
+
     const guidanceBtn = document.getElementById('ss-guidanceBtn');
     if (guidanceBtn) {
-        guidanceBtn.addEventListener('click', function() {
+        guidanceBtn.addEventListener('click', function () {
             toggleGuidance();
         });
     }
-    
+
     const moveToTopBtn = document.getElementById('ss-moveToTopBtn');
     const moveUpBtn = document.getElementById('ss-moveUpBtn');
     const moveDownBtn = document.getElementById('ss-moveDownBtn');
     const moveToBottomBtn = document.getElementById('ss-moveToBottomBtn');
-    
+
     if (moveToTopBtn) moveToTopBtn.addEventListener('click', moveLayerToTop);
     if (moveUpBtn) moveUpBtn.addEventListener('click', moveLayerUp);
     if (moveDownBtn) moveDownBtn.addEventListener('click', moveLayerDown);
     if (moveToBottomBtn) moveToBottomBtn.addEventListener('click', moveLayerToBottom);
-    
+
     // Initialize image tool and layer-order buttons state
     updateImageToolButtons();
     if (typeof updateLayerOrderButtons === 'function') updateLayerOrderButtons();
-    
+
     const undoBtn = document.getElementById('ss-undoBtn');
     const redoBtn = document.getElementById('ss-redoBtn');
-    
+
     if (undoBtn) undoBtn.addEventListener('click', undo);
     if (redoBtn) redoBtn.addEventListener('click', redo);
-    
+
     const deleteImageBtn = document.getElementById('ss-deleteImageBtn');
     const duplicateImageBtn = document.getElementById('ss-duplicateImageBtn');
     const flipHorizontalBtn = document.getElementById('ss-flipHorizontalBtn');
@@ -175,7 +207,7 @@ function initializeDesignerEventListeners() {
     const polaroidFrameBtn = document.getElementById('ss-polaroidFrameBtn');
     const dropShadowBtn = document.getElementById('ss-dropShadowBtn');
     const grayscaleBtn = document.getElementById('ss-grayscaleBtn');
-    
+
     // All sidebar tools act only on the actively selected object. When a text2
     // box is selected the shared tools (delete/duplicate/lock) route to the
     // standalone text2-transform module instead of image-transform.
@@ -183,89 +215,100 @@ function initializeDesignerEventListeners() {
         const sel = layerState.selectedLayer;
         return !!(sel && sel.classList && sel.classList.contains('ss-text2-element'));
     }
-    
-    if (deleteImageBtn) deleteImageBtn.addEventListener('click', function() {
-        if (activeText2Selected()) {
-            if (window.SSText2Transform && window.SSText2Transform.deleteSelected) window.SSText2Transform.deleteSelected();
-            return;
-        }
-        if (window.SSImageTransform && window.SSImageTransform.deleteImage) {
-            window.SSImageTransform.deleteImage();
-        }
-    });
-    if (duplicateImageBtn) duplicateImageBtn.addEventListener('click', function() {
-        if (activeText2Selected()) {
-            if (window.SSText2Transform && window.SSText2Transform.duplicateSelected) window.SSText2Transform.duplicateSelected();
-            return;
-        }
-        if (window.SSImageTransform && window.SSImageTransform.duplicateImage) {
-            window.SSImageTransform.duplicateImage();
-        }
-    });
-    if (flipHorizontalBtn) flipHorizontalBtn.addEventListener('click', function() {
-        if (activeText2Selected()) return;
-        if (window.SSImageTransform && window.SSImageTransform.flipHorizontal) {
-            window.SSImageTransform.flipHorizontal();
-        }
-    });
-    if (flipVerticalBtn) flipVerticalBtn.addEventListener('click', function() {
-        if (activeText2Selected()) return;
-        if (window.SSImageTransform && window.SSImageTransform.flipVertical) {
-            window.SSImageTransform.flipVertical();
-        }
-    });
-    if (replaceImageBtn) replaceImageBtn.addEventListener('click', function() {
-        if (activeText2Selected()) return;
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/*';
-        fileInput.style.display = 'none';
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files && e.target.files[0];
-            if (file && window.SSImageTransform && window.SSImageTransform.replaceImage) {
-                window.SSImageTransform.replaceImage(file);
+
+    if (deleteImageBtn)
+        deleteImageBtn.addEventListener('click', function () {
+            if (activeText2Selected()) {
+                if (window.SSText2Transform && window.SSText2Transform.deleteSelected)
+                    window.SSText2Transform.deleteSelected();
+                return;
             }
-            document.body.removeChild(fileInput);
+            if (window.SSImageTransform && window.SSImageTransform.deleteImage) {
+                window.SSImageTransform.deleteImage();
+            }
         });
-        document.body.appendChild(fileInput);
-        fileInput.click();
-    });
-    if (lockImageBtn) lockImageBtn.addEventListener('click', function() {
-        if (activeText2Selected()) {
-            if (window.SSText2Transform && window.SSText2Transform.toggleLock) window.SSText2Transform.toggleLock();
-            return;
-        }
-        if (window.SSImageTransform && window.SSImageTransform.toggleLock) {
-            window.SSImageTransform.toggleLock();
-            updateImageToolUIForSelection();
-        }
-    });
-    if (polaroidFrameBtn) polaroidFrameBtn.addEventListener('click', function() {
-        if (activeText2Selected()) return;
-        if (window.SSImageTransform && window.SSImageTransform.togglePolaroid) {
-            window.SSImageTransform.togglePolaroid();
-            updateImageToolUIForSelection();
-        }
-    });
-    if (dropShadowBtn) dropShadowBtn.addEventListener('click', function() {
-        if (window.SSImageTransform && window.SSImageTransform.toggleShadow) {
-            window.SSImageTransform.toggleShadow();
-        }
-    });
-    if (grayscaleBtn) grayscaleBtn.addEventListener('click', function() {
-        if (window.SSImageTransform && window.SSImageTransform.toggleGrayscale) {
-            window.SSImageTransform.toggleGrayscale();
-        }
-    });
-    
+    if (duplicateImageBtn)
+        duplicateImageBtn.addEventListener('click', function () {
+            if (activeText2Selected()) {
+                if (window.SSText2Transform && window.SSText2Transform.duplicateSelected)
+                    window.SSText2Transform.duplicateSelected();
+                return;
+            }
+            if (window.SSImageTransform && window.SSImageTransform.duplicateImage) {
+                window.SSImageTransform.duplicateImage();
+            }
+        });
+    if (flipHorizontalBtn)
+        flipHorizontalBtn.addEventListener('click', function () {
+            if (activeText2Selected()) return;
+            if (window.SSImageTransform && window.SSImageTransform.flipHorizontal) {
+                window.SSImageTransform.flipHorizontal();
+            }
+        });
+    if (flipVerticalBtn)
+        flipVerticalBtn.addEventListener('click', function () {
+            if (activeText2Selected()) return;
+            if (window.SSImageTransform && window.SSImageTransform.flipVertical) {
+                window.SSImageTransform.flipVertical();
+            }
+        });
+    if (replaceImageBtn)
+        replaceImageBtn.addEventListener('click', function () {
+            if (activeText2Selected()) return;
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            fileInput.addEventListener('change', function (e) {
+                const file = e.target.files && e.target.files[0];
+                if (file && window.SSImageTransform && window.SSImageTransform.replaceImage) {
+                    window.SSImageTransform.replaceImage(file);
+                }
+                document.body.removeChild(fileInput);
+            });
+            document.body.appendChild(fileInput);
+            fileInput.click();
+        });
+    if (lockImageBtn)
+        lockImageBtn.addEventListener('click', function () {
+            if (activeText2Selected()) {
+                if (window.SSText2Transform && window.SSText2Transform.toggleLock) window.SSText2Transform.toggleLock();
+                return;
+            }
+            if (window.SSImageTransform && window.SSImageTransform.toggleLock) {
+                window.SSImageTransform.toggleLock();
+                updateImageToolUIForSelection();
+            }
+        });
+    if (polaroidFrameBtn)
+        polaroidFrameBtn.addEventListener('click', function () {
+            if (activeText2Selected()) return;
+            if (window.SSImageTransform && window.SSImageTransform.togglePolaroid) {
+                window.SSImageTransform.togglePolaroid();
+                updateImageToolUIForSelection();
+            }
+        });
+    if (dropShadowBtn)
+        dropShadowBtn.addEventListener('click', function () {
+            if (window.SSImageTransform && window.SSImageTransform.toggleShadow) {
+                window.SSImageTransform.toggleShadow();
+            }
+        });
+    if (grayscaleBtn)
+        grayscaleBtn.addEventListener('click', function () {
+            if (window.SSImageTransform && window.SSImageTransform.toggleGrayscale) {
+                window.SSImageTransform.toggleGrayscale();
+            }
+        });
+
     let resizeTimeout;
-    window.addEventListener('resize', function() {
+    window.addEventListener('resize', function () {
         clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function() {
+        resizeTimeout = setTimeout(function () {
             setInitialZoom();
         }, 250);
     });
-    
+
     console.log('Designer event listeners initialized successfully');
 }
 
@@ -278,11 +321,21 @@ window.Designer = {
     updateResolutionDisplay: updateResolutionDisplay,
     updateButtonStates: updateButtonStates,
     toggleGuidance: toggleGuidance,
-    getCanvasState: function() { return canvasState; },
-    getGuidanceState: function() { return guidanceState; },
-    getMagnetState: function() { return magnetState; },
-    getLayerState: function() { return layerState; },
-    getHistoryState: function() { return historyState; }
+    getCanvasState: function () {
+        return canvasState;
+    },
+    getGuidanceState: function () {
+        return guidanceState;
+    },
+    getMagnetState: function () {
+        return magnetState;
+    },
+    getLayerState: function () {
+        return layerState;
+    },
+    getHistoryState: function () {
+        return historyState;
+    }
 };
 // Expose export/backup/template functions
 window.Designer.exportCanvasZip = exportCanvasZip;

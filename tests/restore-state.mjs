@@ -9,7 +9,7 @@ const errors = [];
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
-page.on('pageerror', (err) => errors.push('page error: ' + err.message));
+page.on('pageerror', err => errors.push('page error: ' + err.message));
 
 await page.goto(url);
 await page.waitForFunction(() => document.getElementById('ss-guidance-overlay'));
@@ -21,16 +21,16 @@ const run = page.evaluate(async () => {
     const stale = document.createElement('div');
     stale.id = 'ss-test-stale';
     canvas.appendChild(stale);
-    const owned = ['ss-image-canvas', 'ss-image-handles'].filter((id) => document.getElementById(id));
+    const owned = ['ss-image-canvas', 'ss-image-handles'].filter(id => document.getElementById(id));
     history.saveState();
     history.restoreState(historyState.undoStack[historyState.undoStack.length - 1]);
     return {
         overlay: !!document.getElementById('ss-guidance-overlay'),
         stale: !!document.getElementById('ss-test-stale'),
-        lostOwned: owned.filter((id) => !document.getElementById(id))
+        lostOwned: owned.filter(id => !document.getElementById(id))
     };
 });
-const timeout = new Promise((resolve) => setTimeout(() => resolve('timeout'), 2000));
+const timeout = new Promise(resolve => setTimeout(() => resolve('timeout'), 2000));
 const result = await Promise.race([run, timeout]);
 
 if (result === 'timeout') {
@@ -42,7 +42,7 @@ if (result === 'timeout') {
 }
 
 // A hung page can block a clean close; do not wait on it forever.
-await Promise.race([browser.close(), new Promise((r) => setTimeout(r, 2000))]);
+await Promise.race([browser.close(), new Promise(r => setTimeout(r, 2000))]);
 
 if (errors.length) {
     console.error('Restore state test failed:\n' + errors.join('\n'));

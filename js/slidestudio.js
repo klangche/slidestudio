@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Header elements
     const projectName = document.getElementById('ss-projectName');
     const exportBtn = document.getElementById('ss-exportBtn');
@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuToggle = document.getElementById('ss-menuToggle');
     const clearButton = document.getElementById('ss-clearButton');
     const body = document.body;
-    
+
     // About popup elements
     const logoHeader = document.getElementById('ss-logoHeader');
     const aboutPopup = document.getElementById('ss-aboutPopup');
@@ -27,14 +27,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Collapsible sections functionality
     const collapsibleHeaders = document.querySelectorAll('.ss-collapsible-header');
     collapsibleHeaders.forEach(header => {
-        header.addEventListener('click', function() {
+        header.addEventListener('click', function () {
             const section = this.parentElement;
             section.classList.toggle('ss-collapsed');
         });
     });
 
     // About popup functionality
-    logoHeader.addEventListener('click', function(e) {
+    logoHeader.addEventListener('click', function (e) {
         // Only open the About popup when clicking the logo itself (or its children),
         // not when clicking nearby controls like the theme toggle.
         if (e.target.closest && e.target.closest('.ss-logo')) {
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle clicks on the icon clone in header-right (small screens)
     const headerRight = document.querySelector('.ss-header-right');
     if (headerRight) {
-        headerRight.addEventListener('click', function(e) {
+        headerRight.addEventListener('click', function (e) {
             // Check if click is on the ::before pseudo-element area (icon clone)
             // by checking if it's not on the theme toggle button
             if (!e.target.closest('.ss-theme-toggle') && window.innerWidth <= 900) {
@@ -59,11 +59,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    aboutClose.addEventListener('click', function() {
+    aboutClose.addEventListener('click', function () {
         aboutPopup.style.display = 'none';
     });
 
-    aboutPopup.addEventListener('click', function(e) {
+    aboutPopup.addEventListener('click', function (e) {
         if (e.target === aboutPopup) {
             aboutPopup.style.display = 'none';
         }
@@ -71,15 +71,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update clear button visibility
     function updateClearButton() {
-        const hasContent = projectName.textContent.trim() !== '' && 
-                         projectName.textContent !== defaultProjectName;
+        const hasContent = projectName.textContent.trim() !== '' && projectName.textContent !== defaultProjectName;
         if (hasContent) {
             clearButton.classList.add('ss-visible');
         } else {
             clearButton.classList.remove('ss-visible');
         }
     }
-
 
     // Function to truncate text to max length
     function truncateText(text, maxLength) {
@@ -90,14 +88,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Function to edit project name
-    projectName.addEventListener('click', function() {
+    projectName.addEventListener('click', function () {
         if (this.textContent === defaultProjectName) {
             this.textContent = '';
             updateClearButton();
         }
     });
 
-    projectName.addEventListener('input', function() {
+    projectName.addEventListener('input', function () {
         if (this.textContent.length > MAX_PROJECT_NAME_LENGTH) {
             this.textContent = truncateText(this.textContent, MAX_PROJECT_NAME_LENGTH);
             const selection = window.getSelection();
@@ -107,12 +105,12 @@ document.addEventListener('DOMContentLoaded', function() {
             selection.removeAllRanges();
             selection.addRange(range);
         }
-        
+
         updateClearButton();
         isProjectNameChanged = this.textContent !== defaultProjectName && this.textContent.trim() !== '';
     });
 
-    projectName.addEventListener('blur', function() {
+    projectName.addEventListener('blur', function () {
         if (this.textContent.trim() === '') {
             this.textContent = defaultProjectName;
         } else if (this.textContent !== defaultProjectName) {
@@ -121,25 +119,28 @@ document.addEventListener('DOMContentLoaded', function() {
         updateClearButton();
     });
 
-    projectName.addEventListener('keydown', function(e) {
+    projectName.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             this.blur();
         }
-        
+
         if (e.key === 'Enter') {
             e.preventDefault();
         }
-        
-        if (this.textContent.length >= MAX_PROJECT_NAME_LENGTH && 
-            !e.ctrlKey && !e.metaKey && 
-            e.key.length === 1 && 
-            !e.key.match(/^(Backspace|Delete|ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Tab|Escape)$/)) {
+
+        if (
+            this.textContent.length >= MAX_PROJECT_NAME_LENGTH &&
+            !e.ctrlKey &&
+            !e.metaKey &&
+            e.key.length === 1 &&
+            !e.key.match(/^(Backspace|Delete|ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Tab|Escape)$/)
+        ) {
             e.preventDefault();
         }
     });
 
-    projectName.addEventListener('paste', function(e) {
+    projectName.addEventListener('paste', function (e) {
         e.preventDefault();
         const text = e.clipboardData.getData('text/plain').replace(/[\r\n]+/g, ' ');
         const truncatedText = truncateText(text, MAX_PROJECT_NAME_LENGTH - this.textContent.length);
@@ -148,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Clear button functionality
-    clearButton.addEventListener('click', function(e) {
+    clearButton.addEventListener('click', function (e) {
         e.stopPropagation();
         projectName.textContent = '';
         projectName.focus();
@@ -157,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Theme toggle functionality
-    themeToggle.addEventListener('click', function(e) {
+    themeToggle.addEventListener('click', function (e) {
         // Prevent the theme toggle click from bubbling up to the logo container
         // which would open the About popup.
         e.stopPropagation();
@@ -166,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Menu toggle functionality
-    menuToggle.addEventListener('click', function() {
+    menuToggle.addEventListener('click', function () {
         const isVisible = body.classList.contains('ss-sidebar-visible');
         if (isVisible) {
             body.classList.remove('ss-sidebar-visible');
@@ -178,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Export button functionality
-    exportBtn.addEventListener('click', async function() {
+    exportBtn.addEventListener('click', async function () {
         if (this.disabled) return;
         try {
             let name = (projectName.textContent || '').trim() || 'slide_export';
@@ -193,13 +194,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Save Template button functionality
     const saveTemplateBtn = document.getElementById('ss-saveTemplateBtn');
-    saveTemplateBtn.addEventListener('click', function() {
+    saveTemplateBtn.addEventListener('click', function () {
         alert('Template saved successfully!');
     });
 
     // Backup button: downloads the current project as a JSON file
     const backupBtn = document.getElementById('ss-backupBtn');
-    backupBtn.addEventListener('click', function() {
+    backupBtn.addEventListener('click', function () {
         let name = (projectName.textContent || '').trim() || 'slide_backup';
         name = name.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_');
         window.Designer.downloadBackup(name + '_backup.json');
@@ -207,20 +208,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load Backup / Template button: restores a project from a JSON file
     const loadBackupBtn = document.getElementById('ss-loadBackupBtn');
-    loadBackupBtn.addEventListener('click', function() {
+    loadBackupBtn.addEventListener('click', function () {
         window.Designer.openLoadBackupDialog();
     });
 
     // Restore Defaults button: clears all locally stored data and reloads
     const restoreDefaultsBtn = document.getElementById('ss-restoreDefaultsBtn');
-    restoreDefaultsBtn.addEventListener('click', function() {
+    restoreDefaultsBtn.addEventListener('click', function () {
         try {
-            const confirmed = confirm('This will clear all locally stored data for SlideStudio (including templates and preferences). Continue?');
+            const confirmed = confirm(
+                'This will clear all locally stored data for SlideStudio (including templates and preferences). Continue?'
+            );
             if (!confirmed) return;
             // Clear localStorage keys for this origin
             localStorage.clear();
             // Optionally, also clear sessionStorage
-            try { sessionStorage.clear(); } catch (e) {}
+            try {
+                sessionStorage.clear();
+            } catch (e) {}
             // Reload to reinitialize app state
             window.location.reload();
         } catch (e) {

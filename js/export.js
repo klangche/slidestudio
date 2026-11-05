@@ -17,10 +17,15 @@ function downloadBlob(blob, filename) {
 }
 
 function canvasToBytes(canvas) {
-    return new Promise(function(resolve, reject) {
-        canvas.toBlob(function(blob) {
-            if (!blob) { reject(new Error('Canvas conversion failed')); return; }
-            blob.arrayBuffer().then(function(buf) { resolve(new Uint8Array(buf)); }, reject);
+    return new Promise(function (resolve, reject) {
+        canvas.toBlob(function (blob) {
+            if (!blob) {
+                reject(new Error('Canvas conversion failed'));
+                return;
+            }
+            blob.arrayBuffer().then(function (buf) {
+                resolve(new Uint8Array(buf));
+            }, reject);
         }, 'image/png');
     });
 }
@@ -32,7 +37,7 @@ function canvasToBytes(canvas) {
 function parseRotateRad(transform) {
     if (!transform) return 0;
     const m = /rotate\(\s*([-+\d.]+)deg\s*\)/.exec(transform);
-    return m ? parseFloat(m[1]) * Math.PI / 180 : 0;
+    return m ? (parseFloat(m[1]) * Math.PI) / 180 : 0;
 }
 
 function renderFullCanvasSync() {
@@ -46,7 +51,8 @@ function renderFullCanvasSync() {
 
     // Background
     const designerCanvas = document.getElementById('ss-designer-canvas');
-    const bg = (designerCanvas && designerCanvas.style.backgroundColor) ? designerCanvas.style.backgroundColor : '#ffffff';
+    const bg =
+        designerCanvas && designerCanvas.style.backgroundColor ? designerCanvas.style.backgroundColor : '#ffffff';
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
@@ -66,8 +72,12 @@ function renderFullCanvasSync() {
 
     // Text layers in z-index order (text boxes render above the image canvas)
     const textLayers = layerState.layers
-        .filter(function(l) { return l.type === 'text' && l.element && l.element.style.display !== 'none'; })
-        .sort(function(a, b) { return (a.zIndex || 0) - (b.zIndex || 0); });
+        .filter(function (l) {
+            return l.type === 'text' && l.element && l.element.style.display !== 'none';
+        })
+        .sort(function (a, b) {
+            return (a.zIndex || 0) - (b.zIndex || 0);
+        });
     for (let i = 0; i < textLayers.length; i++) {
         renderTextBox(ctx, textLayers[i]);
     }
@@ -94,13 +104,13 @@ async function renderFullCanvas() {
 // ============================================================================
 
 var TAG_STYLES = {
-    'B': { fontWeight: 'bold' },
-    'STRONG': { fontWeight: 'bold' },
-    'I': { fontStyle: 'italic' },
-    'EM': { fontStyle: 'italic' },
-    'U': { textDecoration: 'underline' },
-    'S': { textDecoration: 'line-through' },
-    'STRIKE': { textDecoration: 'line-through' }
+    B: { fontWeight: 'bold' },
+    STRONG: { fontWeight: 'bold' },
+    I: { fontStyle: 'italic' },
+    EM: { fontStyle: 'italic' },
+    U: { textDecoration: 'underline' },
+    S: { textDecoration: 'line-through' },
+    STRIKE: { textDecoration: 'line-through' }
 };
 
 function mergeRunStyle(base, overrides) {
@@ -112,7 +122,10 @@ function mergeRunStyle(base, overrides) {
         fontStyle: overrides.fontStyle || base.fontStyle,
         textDecoration: overrides.textDecoration || base.textDecoration,
         color: overrides.color || base.color,
-        letterSpacing: (overrides.letterSpacing === undefined || overrides.letterSpacing === null) ? base.letterSpacing : overrides.letterSpacing,
+        letterSpacing:
+            overrides.letterSpacing === undefined || overrides.letterSpacing === null
+                ? base.letterSpacing
+                : overrides.letterSpacing,
         textTransform: base.textTransform
     };
 }
@@ -120,7 +133,8 @@ function mergeRunStyle(base, overrides) {
 function collectRuns(root, base) {
     const runs = [];
     function walk(node, style) {
-        if (node.nodeType === 3) { // TEXT_NODE
+        if (node.nodeType === 3) {
+            // TEXT_NODE
             let text = node.nodeValue;
             if (text) {
                 if (style.textTransform === 'uppercase') text = text.toUpperCase();
@@ -141,7 +155,10 @@ function collectRuns(root, base) {
             if (inline.fontStyle) o.fontStyle = inline.fontStyle;
             if (inline.textDecoration) o.textDecoration = inline.textDecoration;
             if (inline.color) o.color = inline.color;
-            if (inline.fontSize) { const f = parseFloat(inline.fontSize); if (!isNaN(f)) o.fontSize = f; }
+            if (inline.fontSize) {
+                const f = parseFloat(inline.fontSize);
+                if (!isNaN(f)) o.fontSize = f;
+            }
             if (inline.fontFamily) o.fontFamily = inline.fontFamily;
             overrides = mergeRunStyle(overrides || {}, o);
         }
@@ -157,7 +174,12 @@ function collectRuns(root, base) {
 function splitRunsByLine(runs) {
     const lines = [];
     let current = [];
-    const flush = function() { if (current.length) { lines.push(current); current = []; } };
+    const flush = function () {
+        if (current.length) {
+            lines.push(current);
+            current = [];
+        }
+    };
     for (let r = 0; r < runs.length; r++) {
         const segments = String(runs[r].text).split('\n');
         for (let i = 0; i < segments.length; i++) {
@@ -178,7 +200,9 @@ function setFont(ctx, style) {
     ctx.font = font;
     ctx.fillStyle = style.color || '#000000';
     if (typeof ctx.letterSpacing === 'string' || 'letterSpacing' in ctx) {
-        try { ctx.letterSpacing = (style.letterSpacing || 0) + 'px'; } catch (e) {}
+        try {
+            ctx.letterSpacing = (style.letterSpacing || 0) + 'px';
+        } catch (e) {}
     }
 }
 
@@ -200,7 +224,13 @@ function wrapRuns(runs, maxWidth, ctx) {
     const lines = [];
     let current = [];
     let currentWidth = 0;
-    const flush = function() { if (current.length) { lines.push(current); current = []; currentWidth = 0; } };
+    const flush = function () {
+        if (current.length) {
+            lines.push(current);
+            current = [];
+            currentWidth = 0;
+        }
+    };
     for (let t = 0; t < tokens.length; t++) {
         const token = tokens[t];
         const w = measureToken(ctx, token);
@@ -236,7 +266,12 @@ function drawWrappedLine(ctx, tokens, lineX, maxWidth, align, y) {
     if (effectiveAlign === 'center') x = lineX + (maxWidth - totalWidth) / 2;
     else if (effectiveAlign === 'right') x = lineX + maxWidth - totalWidth;
 
-    const spaces = effectiveAlign === 'justify' ? visible.filter(function(t) { return t.space; }).length : 0;
+    const spaces =
+        effectiveAlign === 'justify'
+            ? visible.filter(function (t) {
+                  return t.space;
+              }).length
+            : 0;
     const extra = spaces > 0 ? (maxWidth - totalWidth) / spaces : 0;
 
     for (let i = 0; i < visible.length; i++) {
@@ -307,7 +342,9 @@ function renderTextBox2(ctx, layer) {
     relTop += padTop;
     let groupRotate = 0;
     if (layer.parentGroup) {
-        const groupLayer = layerState.layers.find(function(l) { return l.id === layer.parentGroup; });
+        const groupLayer = layerState.layers.find(function (l) {
+            return l.id === layer.parentGroup;
+        });
         if (groupLayer && groupLayer.element) {
             relLeft += parseInt(groupLayer.element.style.left) || 0;
             relTop += parseInt(groupLayer.element.style.top) || 0;
@@ -359,9 +396,7 @@ function renderTextBox2(ctx, layer) {
         // Poster rows must stay on a single line so every row is exactly as
         // wide as the others (font-scaled or letter-spaced); wrapping would
         // break the equal-width poster look.
-        const visualLines = el.dataset.text2Equal === '1'
-            ? [runs]
-            : wrapRuns(runs, contentW, octx);
+        const visualLines = el.dataset.text2Equal === '1' ? [runs] : wrapRuns(runs, contentW, octx);
         if (!visualLines.length) {
             cursor += lineHeight * fontSize;
             continue;
@@ -369,7 +404,7 @@ function renderTextBox2(ctx, layer) {
         let baseline = cursor + Math.round(fontSize * 0.8);
         for (let vi = 0; vi < visualLines.length; vi++) {
             const lastLine = vi === visualLines.length - 1;
-            const effAlign = (lastLine && align === 'justify') ? 'left' : align;
+            const effAlign = lastLine && align === 'justify' ? 'left' : align;
             drawWrappedLine(octx, visualLines[vi], 0, contentW, effAlign, baseline);
             baseline += lineHeight * fontSize;
         }
@@ -412,7 +447,8 @@ function renderTextBox(ctx, layer) {
         renderTextBox2(ctx, layer);
         return;
     }
-    const contentEl = (el.querySelector && el.querySelector('.ss-text-content')) ? el.querySelector('.ss-text-content') : el;
+    const contentEl =
+        el.querySelector && el.querySelector('.ss-text-content') ? el.querySelector('.ss-text-content') : el;
     const cs = window.getComputedStyle(contentEl);
     const fontSize = parseFloat(cs.fontSize) || 24;
 
@@ -437,13 +473,17 @@ function renderTextBox(ctx, layer) {
 
     let relLeft = parseInt(el.style.left) || (layer.position && layer.position.left) || 0;
     let relTop = parseInt(el.style.top) || (layer.position && layer.position.top) || 0;
-    const padLeft = el === contentEl ? (parseFloat(cs.paddingLeft) || 0) : (parseFloat(window.getComputedStyle(el).paddingLeft) || 0);
-    const padTop = el === contentEl ? (parseFloat(cs.paddingTop) || 0) : (parseFloat(window.getComputedStyle(el).paddingTop) || 0);
+    const padLeft =
+        el === contentEl ? parseFloat(cs.paddingLeft) || 0 : parseFloat(window.getComputedStyle(el).paddingLeft) || 0;
+    const padTop =
+        el === contentEl ? parseFloat(cs.paddingTop) || 0 : parseFloat(window.getComputedStyle(el).paddingTop) || 0;
     relLeft += padLeft;
     relTop += padTop;
     let groupRotate = 0;
     if (layer.parentGroup) {
-        const groupLayer = layerState.layers.find(function(l) { return l.id === layer.parentGroup; });
+        const groupLayer = layerState.layers.find(function (l) {
+            return l.id === layer.parentGroup;
+        });
         if (groupLayer && groupLayer.element) {
             relLeft += parseInt(groupLayer.element.style.left) || 0;
             relTop += parseInt(groupLayer.element.style.top) || 0;
@@ -468,14 +508,14 @@ function renderTextBox(ctx, layer) {
     for (let li = 0; li < logicalLines.length; li++) {
         const visualLines = wrapRuns(logicalLines[li], boxWidth, ctx);
         for (let vi = 0; vi < visualLines.length; vi++) {
-            const lastLine = (li === logicalLines.length - 1) && (vi === visualLines.length - 1);
+            const lastLine = li === logicalLines.length - 1 && vi === visualLines.length - 1;
             ctx.save();
             if (ownRotate) {
                 ctx.translate(centerX, centerY);
                 ctx.rotate(ownRotate);
                 ctx.translate(-centerX, -centerY);
             }
-            const effectiveAlign = (lastLine && align === 'justify') ? 'left' : align;
+            const effectiveAlign = lastLine && align === 'justify' ? 'left' : align;
             drawWrappedLine(ctx, visualLines[vi], relLeft, boxWidth, effectiveAlign, y);
             ctx.restore();
             y += lineHeight;
@@ -488,12 +528,12 @@ function renderTextBox(ctx, layer) {
 // ZIP WRITER (Stored, no compression, UTF-8 names)
 // ============================================================================
 
-var CRC_TABLE = (function() {
+var CRC_TABLE = (function () {
     const table = new Uint32Array(256);
     for (let n = 0; n < 256; n++) {
         let c = n;
         for (let k = 0; k < 8; k++) {
-            c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
         }
         table[n] = c >>> 0;
     }
@@ -501,17 +541,17 @@ var CRC_TABLE = (function() {
 })();
 
 function crc32(bytes) {
-    let crc = 0xFFFFFFFF;
+    let crc = 0xffffffff;
     for (let i = 0; i < bytes.length; i++) {
-        crc = CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+        crc = CRC_TABLE[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
     }
-    return (crc ^ 0xFFFFFFFF) >>> 0;
+    return (crc ^ 0xffffffff) >>> 0;
 }
 
 function dosDateTime(date) {
     const year = Math.max(1980, date.getFullYear());
-    const time = (((date.getHours() << 11) | (date.getMinutes() << 5) | (date.getSeconds() >> 1)) & 0xFFFF);
-    const dateBits = ((((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()) & 0xFFFF);
+    const time = ((date.getHours() << 11) | (date.getMinutes() << 5) | (date.getSeconds() >> 1)) & 0xffff;
+    const dateBits = (((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()) & 0xffff;
     return { time: time, date: dateBits };
 }
 
@@ -533,8 +573,8 @@ function makeZip(files) {
         const local = new DataView(new ArrayBuffer(30));
         local.setUint32(0, 0x04034b50, true);
         local.setUint16(4, 20, true);
-        local.setUint16(6, 0x0800, true);   // UTF-8 flag
-        local.setUint16(8, 0, true);        // stored
+        local.setUint16(6, 0x0800, true); // UTF-8 flag
+        local.setUint16(8, 0, true); // stored
         local.setUint16(10, dt.time, true);
         local.setUint16(12, dt.date, true);
         local.setUint32(14, crc, true);
@@ -601,7 +641,7 @@ function makeZip(files) {
 // ============================================================================
 
 export async function exportCanvasZip(filename) {
-    filename = filename || ('slide_export_' + Date.now() + '.zip');
+    filename = filename || 'slide_export_' + Date.now() + '.zip';
 
     // Render the whole canvas once, then crop from that snapshot so content
     // overlapping section borders is split exactly as it appears.
@@ -640,18 +680,22 @@ export async function exportCanvasZip(filename) {
 
 // Backup: download JSON of current state (includes image src data URLs when available)
 export function downloadBackup(filename) {
-    filename = filename || ('slide_backup_' + Date.now() + '.json');
+    filename = filename || 'slide_backup_' + Date.now() + '.json';
     const exportState = {
         canvasState: canvasState,
-        layers: layerState.layers.map(function(l) {
+        layers: layerState.layers.map(function (l) {
             const copy = Object.assign({}, l);
             // include element-specific state and image data if available
             copy.elementState = {
                 left: l.element ? parseInt(l.element.style.left) || 0 : (l.position && l.position.left) || 0,
                 top: l.element ? parseInt(l.element.style.top) || 0 : (l.position && l.position.top) || 0,
-                width: l.element ? (l.element.offsetWidth || parseInt(l.element.style.width) || 0) : (l.size && l.size.width) || 0,
-                height: l.element ? (l.element.offsetHeight || parseInt(l.element.style.height) || 0) : (l.size && l.size.height) || 0,
-                display: l.element ? (l.element.style.display || '') : ''
+                width: l.element
+                    ? l.element.offsetWidth || parseInt(l.element.style.width) || 0
+                    : (l.size && l.size.width) || 0,
+                height: l.element
+                    ? l.element.offsetHeight || parseInt(l.element.style.height) || 0
+                    : (l.size && l.size.height) || 0,
+                display: l.element ? l.element.style.display || '' : ''
             };
             if (l.imageElement && l.imageElement.src) copy.imageData = l.imageElement.src;
             return copy;
@@ -676,16 +720,20 @@ export function saveTemplate(name) {
     const templates = JSON.parse(localStorage.getItem('ss_templates') || '[]');
     const exportState = {
         canvasState: canvasState,
-        layers: layerState.layers.map(function(l) {
+        layers: layerState.layers.map(function (l) {
             const copy = Object.assign({}, l);
             if (l.imageElement && l.imageElement.src) copy.imageData = l.imageElement.src;
             // persist element style/visibility
             copy.elementState = {
                 left: l.element ? parseInt(l.element.style.left) || 0 : (l.position && l.position.left) || 0,
                 top: l.element ? parseInt(l.element.style.top) || 0 : (l.position && l.position.top) || 0,
-                width: l.element ? (l.element.offsetWidth || parseInt(l.element.style.width) || 0) : (l.size && l.size.width) || 0,
-                height: l.element ? (l.element.offsetHeight || parseInt(l.element.style.height) || 0) : (l.size && l.size.height) || 0,
-                display: l.element ? (l.element.style.display || '') : ''
+                width: l.element
+                    ? l.element.offsetWidth || parseInt(l.element.style.width) || 0
+                    : (l.size && l.size.width) || 0,
+                height: l.element
+                    ? l.element.offsetHeight || parseInt(l.element.style.height) || 0
+                    : (l.size && l.size.height) || 0,
+                display: l.element ? l.element.style.display || '' : ''
             };
             return copy;
         })
@@ -707,14 +755,16 @@ export function loadTemplateByName(name) {
 }
 
 export function loadBackupFromFile(file) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         const reader = new FileReader();
-        reader.onload = function(ev) {
+        reader.onload = function (ev) {
             try {
                 const json = JSON.parse(ev.target.result);
                 restoreState(json);
                 resolve();
-            } catch (err) { reject(err); }
+            } catch (err) {
+                reject(err);
+            }
         };
         reader.onerror = reject;
         reader.readAsText(file);
@@ -726,14 +776,16 @@ export function openLoadBackupDialog() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json';
-    input.addEventListener('change', function(e) {
+    input.addEventListener('change', function (e) {
         const file = input.files && input.files[0];
         if (!file) return;
-        loadBackupFromFile(file).then(function() {
-            console.log('Backup loaded');
-        }).catch(function(err) {
-            console.error('Failed to load backup', err);
-        });
+        loadBackupFromFile(file)
+            .then(function () {
+                console.log('Backup loaded');
+            })
+            .catch(function (err) {
+                console.error('Failed to load backup', err);
+            });
     });
     input.click();
 }
@@ -743,14 +795,16 @@ export function openLoadTemplateDialog() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json';
-    input.addEventListener('change', function(e) {
+    input.addEventListener('change', function (e) {
         const file = input.files && input.files[0];
         if (!file) return;
-        loadBackupFromFile(file).then(function() {
-            console.log('Template loaded');
-        }).catch(function(err) {
-            console.error('Failed to load template', err);
-        });
+        loadBackupFromFile(file)
+            .then(function () {
+                console.log('Template loaded');
+            })
+            .catch(function (err) {
+                console.error('Failed to load template', err);
+            });
     });
     input.click();
 }

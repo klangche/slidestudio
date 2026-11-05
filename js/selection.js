@@ -36,9 +36,11 @@ function handleDragMove(e) {
             if (!isNaN(a) && a !== 0) canvasScale = a;
             else if (!isNaN(d) && d !== 0) canvasScale = d;
         }
-    } catch (err) { canvasScale = 1; }
-    let newX = dragState.elementStartX + (deltaX / canvasScale);
-    let newY = dragState.elementStartY + (deltaY / canvasScale);
+    } catch (err) {
+        canvasScale = 1;
+    }
+    let newX = dragState.elementStartX + deltaX / canvasScale;
+    let newY = dragState.elementStartY + deltaY / canvasScale;
     if (magnetState.active) {
         const snapped = snapElementAt(newX, newY, dragState.dragElement);
         newX = snapped.x;
@@ -46,7 +48,9 @@ function handleDragMove(e) {
     }
     dragState.dragElement.style.left = newX + 'px';
     dragState.dragElement.style.top = newY + 'px';
-    const layerIndex = layerState.layers.findIndex(function(layer) { return layer.element === dragState.dragElement; });
+    const layerIndex = layerState.layers.findIndex(function (layer) {
+        return layer.element === dragState.dragElement;
+    });
     if (layerIndex !== -1) {
         const layer = layerState.layers[layerIndex];
         if (layer.parentPolaroid) {
@@ -83,7 +87,7 @@ function handleDragMove(e) {
         try {
             if (layer && layer.type === 'group' && Array.isArray(layer.children)) {
                 layerState.layers[layerIndex].position = { left: newX, top: newY };
-                layer.children.forEach(function(childId) {
+                layer.children.forEach(function (childId) {
                     const cIdx = layerState.layers.findIndex(l => l.id === childId);
                     if (cIdx === -1) return;
                     const childLayer = layerState.layers[cIdx];
@@ -112,7 +116,9 @@ function handleDragEnd(e) {
         const snapped = snapElementAt(currentX, currentY, element);
         element.style.left = snapped.x + 'px';
         element.style.top = snapped.y + 'px';
-        const layerIndex = layerState.layers.findIndex(function(layer) { return layer.element === element; });
+        const layerIndex = layerState.layers.findIndex(function (layer) {
+            return layer.element === element;
+        });
         if (layerIndex !== -1) layerState.layers[layerIndex].position = { left: snapped.x, top: snapped.y };
     }
     if (dragState.dragElement) {
@@ -122,7 +128,10 @@ function handleDragEnd(e) {
             const resizeHandles = getResizeHandlesForElement(dragState.dragElement);
             if (resizeHandles) resizeHandles.style.display = 'block';
         }
-        try { if (e && typeof e.pointerId !== 'undefined') dragState.dragElement.releasePointerCapture && dragState.dragElement.releasePointerCapture(e.pointerId); } catch (err) {}
+        try {
+            if (e && typeof e.pointerId !== 'undefined')
+                dragState.dragElement.releasePointerCapture && dragState.dragElement.releasePointerCapture(e.pointerId);
+        } catch (err) {}
     }
     dragState.isDragging = false;
     dragState.dragElement = null;
@@ -138,13 +147,23 @@ function handleDragEnd(e) {
 }
 
 export function makeElementDraggable(element) {
-    element.addEventListener('pointerdown', function(e) {
+    element.addEventListener('pointerdown', function (e) {
         if (freeMoveState.active) return;
         // Locked text2 boxes can be selected but not dragged.
-        if (element.classList && element.classList.contains('ss-text2-element') && element.dataset && element.dataset.text2Locked === '1') {
+        if (
+            element.classList &&
+            element.classList.contains('ss-text2-element') &&
+            element.dataset &&
+            element.dataset.text2Locked === '1'
+        ) {
             return;
         }
-        if (e.target.classList && (e.target.classList.contains('ss-resize-handle') || e.target.classList.contains('ss-rotation-handle') || (e.target.parentElement && e.target.parentElement.classList.contains('ss-resize-handles')))) {
+        if (
+            e.target.classList &&
+            (e.target.classList.contains('ss-resize-handle') ||
+                e.target.classList.contains('ss-rotation-handle') ||
+                (e.target.parentElement && e.target.parentElement.classList.contains('ss-resize-handles')))
+        ) {
             return;
         }
         e.preventDefault();
@@ -179,7 +198,9 @@ export function makeElementDraggable(element) {
         element.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
 
         // Use pointer events where available to ensure proper pointer capture
-        try { element.setPointerCapture && element.setPointerCapture(e.pointerId); } catch (err) {}
+        try {
+            element.setPointerCapture && element.setPointerCapture(e.pointerId);
+        } catch (err) {}
         document.addEventListener('pointermove', handleDragMove);
         document.addEventListener('pointerup', handleDragEnd);
         document.addEventListener('pointercancel', handleDragEnd);
@@ -191,9 +212,16 @@ export function makeElementDraggable(element) {
 }
 
 export function makeElementSelectable(element) {
-    element.addEventListener('click', function(e) {
+    element.addEventListener('click', function (e) {
         if (freeMoveState.active) return;
-        if (e.target.classList && (e.target.classList.contains('ss-resize-handle') || e.target.classList.contains('ss-rotation-handle') || (e.target.parentElement && e.target.parentElement.classList && e.target.parentElement.classList.contains('ss-resize-handles')))) {
+        if (
+            e.target.classList &&
+            (e.target.classList.contains('ss-resize-handle') ||
+                e.target.classList.contains('ss-rotation-handle') ||
+                (e.target.parentElement &&
+                    e.target.parentElement.classList &&
+                    e.target.parentElement.classList.contains('ss-resize-handles')))
+        ) {
             return;
         }
         e.stopPropagation();
@@ -201,7 +229,9 @@ export function makeElementSelectable(element) {
             const already = multiSelectState.selected.indexOf(element) !== -1;
             if (already) {
                 element.classList.remove('multi-selected');
-                multiSelectState.selected = multiSelectState.selected.filter(function(el) { return el !== element; });
+                multiSelectState.selected = multiSelectState.selected.filter(function (el) {
+                    return el !== element;
+                });
             } else {
                 element.classList.add('multi-selected');
                 multiSelectState.selected.push(element);
@@ -232,7 +262,7 @@ export function selectLayer(element) {
     if (!element) return;
     const currentLeft = parseInt(element.style.left) || 0;
     const currentTop = parseInt(element.style.top) || 0;
-    document.querySelectorAll('.ss-image-element, .ss-text-element').forEach(function(el) {
+    document.querySelectorAll('.ss-image-element, .ss-text-element').forEach(function (el) {
         el.classList.remove('selected');
         const resizeHandles = getResizeHandlesForElement(el);
         if (resizeHandles) resizeHandles.style.display = 'none';
@@ -241,7 +271,8 @@ export function selectLayer(element) {
     const resizeHandles = getResizeHandlesForElement(element);
     if (resizeHandles) resizeHandles.style.display = 'block';
     layerState.selectedLayer = element;
-    if (window.SSTextEditor2 && typeof window.SSTextEditor2.updateAddTextButton === 'function') window.SSTextEditor2.updateAddTextButton();
+    if (window.SSTextEditor2 && typeof window.SSTextEditor2.updateAddTextButton === 'function')
+        window.SSTextEditor2.updateAddTextButton();
     element.style.left = currentLeft + 'px';
     element.style.top = currentTop + 'px';
     if (typeof updateFontSizeInputForSelectedText === 'function') setTimeout(updateFontSizeInputForSelectedText, 10);
@@ -255,27 +286,45 @@ export function selectLayer(element) {
     } else if (window.SSText2Transform && typeof window.SSText2Transform.deselectAll === 'function') {
         window.SSText2Transform.deselectAll();
     }
-    if (typeof window.updateImageToolUIForSelection === 'function') window.updateImageToolUIForSelection(); else try { updateImageToolUIForSelection(); } catch (e) {}
+    if (typeof window.updateImageToolUIForSelection === 'function') window.updateImageToolUIForSelection();
+    else
+        try {
+            updateImageToolUIForSelection();
+        } catch (e) {}
 }
 window.selectLayer = selectLayer;
 
 export function updateImageToolUIForSelection() {
-    const btnIds = ['ss-flipHorizontalBtn','ss-flipVerticalBtn','ss-duplicateImageBtn','ss-deleteImageBtn','ss-replaceImageBtn','ss-lockImageBtn','ss-dropShadowBtn','ss-grayscaleBtn'];
-    const isImageSelected = (window.SSImageTransform && window.SSImageTransform.hasSelectedImage && window.SSImageTransform.hasSelectedImage()) || (!!layerState.selectedLayer && layerState.selectedLayer.classList.contains('ss-image-element'));
+    const btnIds = [
+        'ss-flipHorizontalBtn',
+        'ss-flipVerticalBtn',
+        'ss-duplicateImageBtn',
+        'ss-deleteImageBtn',
+        'ss-replaceImageBtn',
+        'ss-lockImageBtn',
+        'ss-dropShadowBtn',
+        'ss-grayscaleBtn'
+    ];
+    const isImageSelected =
+        (window.SSImageTransform &&
+            window.SSImageTransform.hasSelectedImage &&
+            window.SSImageTransform.hasSelectedImage()) ||
+        (!!layerState.selectedLayer && layerState.selectedLayer.classList.contains('ss-image-element'));
     const sel = layerState.selectedLayer;
     const isText2Selected = !!(sel && sel.classList && sel.classList.contains('ss-text2-element'));
     const isText2Locked = isText2Selected && sel.dataset && sel.dataset.text2Locked === '1';
     const text2Allowed = ['ss-duplicateImageBtn', 'ss-deleteImageBtn', 'ss-lockImageBtn'];
-    btnIds.forEach(function(id){
+    btnIds.forEach(function (id) {
         const btn = document.getElementById(id);
         if (btn) {
-            const enabled = isImageSelected ||
+            const enabled =
+                isImageSelected ||
                 (isText2Selected && id === 'ss-lockImageBtn') ||
                 (isText2Selected && !isText2Locked && text2Allowed.indexOf(id) !== -1);
             btn.disabled = !enabled;
         }
     });
-    
+
     // Update lock button visual state based on current lock status
     const lockBtn = document.getElementById('ss-lockImageBtn');
     if (lockBtn) {
@@ -302,7 +351,9 @@ export function toggleMultiSelectMode() {
     const btn = document.getElementById('ss-selectMultipleBtn');
     if (btn) btn.classList.toggle('ss-active', multiSelectState.active);
     if (!multiSelectState.active) {
-        multiSelectState.selected.forEach(function(el) { el.classList.remove('multi-selected'); });
+        multiSelectState.selected.forEach(function (el) {
+            el.classList.remove('multi-selected');
+        });
         multiSelectState.selected = [];
     }
 }
@@ -312,8 +363,11 @@ window.toggleMultiSelectMode = toggleMultiSelectMode;
 export function groupElements(elements) {
     const canvas = document.getElementById('ss-designer-canvas');
     if (!canvas) return;
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    elements.forEach(function(el) {
+    let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+    elements.forEach(function (el) {
         const left = parseInt(el.style.left) || 0;
         const top = parseInt(el.style.top) || 0;
         minX = Math.min(minX, left);
@@ -326,12 +380,12 @@ export function groupElements(elements) {
     group.style.position = 'absolute';
     group.style.left = minX + 'px';
     group.style.top = minY + 'px';
-    group.style.width = (maxX - minX) + 'px';
-    group.style.height = (maxY - minY) + 'px';
+    group.style.width = maxX - minX + 'px';
+    group.style.height = maxY - minY + 'px';
     group.style.zIndex = layerState.nextZIndex++;
-    const groupId = 'group_' + Date.now() + '_' + Math.random().toString(36).substr(2,9);
+    const groupId = 'group_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     const childIds = [];
-    elements.forEach(function(el) {
+    elements.forEach(function (el) {
         const idx = layerState.layers.findIndex(l => l.element === el);
         if (idx === -1) return;
         const layer = layerState.layers[idx];
@@ -353,14 +407,20 @@ export function groupElements(elements) {
         position: { left: minX, top: minY },
         size: { width: maxX - minX, height: maxY - minY },
         children: childIds,
-        baseChildren: (function() {
+        baseChildren: (function () {
             const arr = [];
-            elements.forEach(function(el) {
-                const w = el.offsetWidth || (parseInt(el.style.width) || 0);
-                const h = el.offsetHeight || (parseInt(el.style.height) || 0);
+            elements.forEach(function (el) {
+                const w = el.offsetWidth || parseInt(el.style.width) || 0;
+                const h = el.offsetHeight || parseInt(el.style.height) || 0;
                 const left = parseInt(el.style.left) || 0;
                 const top = parseInt(el.style.top) || 0;
-                arr.push({ id: (layerState.layers.find(l => l.element === el) || {}).id, left: left, top: top, width: w, height: h });
+                arr.push({
+                    id: (layerState.layers.find(l => l.element === el) || {}).id,
+                    left: left,
+                    top: top,
+                    width: w,
+                    height: h
+                });
             });
             return arr;
         })(),
@@ -369,10 +429,14 @@ export function groupElements(elements) {
     layerState.layers.push(groupLayer);
     makeElementDraggable(group);
     makeElementSelectable(group);
-    if (typeof SSImage !== 'undefined' && typeof SSImage.setupImageResizeHandlers === 'function') SSImage.setupImageResizeHandlers(group); else if (typeof setupImageResizeHandlers === 'function') setupImageResizeHandlers(group);
+    if (typeof SSImage !== 'undefined' && typeof SSImage.setupImageResizeHandlers === 'function')
+        SSImage.setupImageResizeHandlers(group);
+    else if (typeof setupImageResizeHandlers === 'function') setupImageResizeHandlers(group);
     const groupBtn = document.getElementById('ss-groupBtn');
     if (groupBtn) groupBtn.classList.add('ss-locked');
-    elements.forEach(function(el) { el.classList.remove('multi-selected'); });
+    elements.forEach(function (el) {
+        el.classList.remove('multi-selected');
+    });
     multiSelectState.selected = [];
     multiSelectState.active = false;
     const selBtn = document.getElementById('ss-selectMultipleBtn');
@@ -388,15 +452,21 @@ export function ungroupLayer(groupLayer) {
     const canvas = document.getElementById('ss-designer-canvas');
     if (!canvas) return;
     const childIds = groupLayer.children || [];
-    childIds.forEach(function(cid) {
+    childIds.forEach(function (cid) {
         const child = layerState.layers.find(l => l.id === cid);
         if (!child) return;
         const childEl = child.element;
         if (!childEl) return;
         const relLeft = parseInt(childEl.style.left) || 0;
         const relTop = parseInt(childEl.style.top) || 0;
-        const absLeft = (groupLayer.position && groupLayer.position.left ? groupLayer.position.left : parseInt(groupEl.style.left) || 0) + relLeft;
-        const absTop = (groupLayer.position && groupLayer.position.top ? groupLayer.position.top : parseInt(groupEl.style.top) || 0) + relTop;
+        const absLeft =
+            (groupLayer.position && groupLayer.position.left
+                ? groupLayer.position.left
+                : parseInt(groupEl.style.left) || 0) + relLeft;
+        const absTop =
+            (groupLayer.position && groupLayer.position.top
+                ? groupLayer.position.top
+                : parseInt(groupEl.style.top) || 0) + relTop;
         childEl.style.left = absLeft + 'px';
         childEl.style.top = absTop + 'px';
         canvas.appendChild(childEl);
@@ -405,7 +475,9 @@ export function ungroupLayer(groupLayer) {
         const idx = layerState.layers.findIndex(l => l.id === cid);
         if (idx !== -1) layerState.layers[idx] = child;
     });
-    try { groupEl.remove(); } catch (e) {}
+    try {
+        groupEl.remove();
+    } catch (e) {}
     const gidx = layerState.layers.findIndex(l => l.id === groupLayer.id);
     if (gidx !== -1) layerState.layers.splice(gidx, 1);
     const groupBtn = document.getElementById('ss-groupBtn');
@@ -464,7 +536,7 @@ function clearFreeMoveAutoOffTimer() {
 // free move has no timer; it ends when the key is released.
 function scheduleFreeMoveAutoOff() {
     clearFreeMoveAutoOffTimer();
-    freeMoveAutoOffTimer = setTimeout(function() {
+    freeMoveAutoOffTimer = setTimeout(function () {
         freeMoveAutoOffTimer = null;
         if (freeMoveState.active) disableFreeMove();
     }, 5000);
@@ -495,38 +567,39 @@ export function disableFreeMove() {
 }
 
 export function toggleFreeMove() {
-    if (freeMoveState.active) disableFreeMove(); else enableFreeMove('button');
+    if (freeMoveState.active) disableFreeMove();
+    else enableFreeMove('button');
 }
 
 function startFreeMove(e) {
     if (!freeMoveState.active) return;
     if (e.button !== 0) return; // left button only; middle button has its own pan
-    
+
     const canvasContainer = document.getElementById('ss-canvasContainer');
     if (!canvasContainer) return;
-    
+
     freeMoveState.isMoving = true;
     freeMoveState.startX = e.clientX;
     freeMoveState.startY = e.clientY;
     freeMoveState.startScrollLeft = canvasContainer.scrollLeft;
     freeMoveState.startScrollTop = canvasContainer.scrollTop;
-    
+
     canvasContainer.style.cursor = 'grabbing';
     document.addEventListener('mousemove', doFreeMove);
 }
 
 function doFreeMove(e) {
     if (!freeMoveState.active || !freeMoveState.isMoving) return;
-    
+
     // The canvas was actually moved, so keep free move on
     clearFreeMoveAutoOffTimer();
-    
+
     const canvasContainer = document.getElementById('ss-canvasContainer');
     if (!canvasContainer) return;
-    
+
     const dx = e.clientX - freeMoveState.startX;
     const dy = e.clientY - freeMoveState.startY;
-    
+
     canvasContainer.scrollLeft = freeMoveState.startScrollLeft - dx;
     canvasContainer.scrollTop = freeMoveState.startScrollTop - dy;
 }
@@ -561,7 +634,12 @@ function isTypingTarget(target) {
 
 function hasSelection() {
     if (layerState.selectedLayer) return true;
-    if (window.SSImageTransform && typeof window.SSImageTransform.hasSelectedImage === 'function' && window.SSImageTransform.hasSelectedImage()) return true;
+    if (
+        window.SSImageTransform &&
+        typeof window.SSImageTransform.hasSelectedImage === 'function' &&
+        window.SSImageTransform.hasSelectedImage()
+    )
+        return true;
     const textPopup = document.getElementById('ss-text2Popup');
     if (textPopup && textPopup.style.display !== 'none') return true;
     return false;
@@ -571,7 +649,7 @@ export function initializeFreeMoveShortcuts() {
     const canvasContainer = document.getElementById('ss-canvasContainer');
 
     // Space (hold) to temporarily enable free move when nothing is selected.
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.code !== 'Space') return;
         if (isTypingTarget(e.target)) return;
         if (e.target.tagName === 'BUTTON') return; // let space activate buttons
@@ -584,7 +662,7 @@ export function initializeFreeMoveShortcuts() {
         }
     });
 
-    document.addEventListener('keyup', function(e) {
+    document.addEventListener('keyup', function (e) {
         if (e.code !== 'Space') return;
         if (spacePanActive) {
             spacePanActive = false;
@@ -595,19 +673,23 @@ export function initializeFreeMoveShortcuts() {
     // Middle mouse button (button 1) pans the canvas without activating free move.
     // Capture phase so it wins over image/text drag handlers.
     if (canvasContainer) {
-        canvasContainer.addEventListener('mousedown', function(e) {
-            if (e.button !== 1) return;
-            e.preventDefault();
-            e.stopPropagation();
-            middlePan.active = true;
-            middlePan.startX = e.clientX;
-            middlePan.startY = e.clientY;
-            middlePan.startScrollLeft = canvasContainer.scrollLeft;
-            middlePan.startScrollTop = canvasContainer.scrollTop;
-            canvasContainer.style.cursor = 'grabbing';
-            document.addEventListener('mousemove', onMiddlePanMove);
-            document.addEventListener('mouseup', onMiddlePanUp);
-        }, true);
+        canvasContainer.addEventListener(
+            'mousedown',
+            function (e) {
+                if (e.button !== 1) return;
+                e.preventDefault();
+                e.stopPropagation();
+                middlePan.active = true;
+                middlePan.startX = e.clientX;
+                middlePan.startY = e.clientY;
+                middlePan.startScrollLeft = canvasContainer.scrollLeft;
+                middlePan.startScrollTop = canvasContainer.scrollTop;
+                canvasContainer.style.cursor = 'grabbing';
+                document.addEventListener('mousemove', onMiddlePanMove);
+                document.addEventListener('mouseup', onMiddlePanUp);
+            },
+            true
+        );
 
         document.addEventListener('mouseup', onMiddlePanUp);
 
@@ -616,29 +698,33 @@ export function initializeFreeMoveShortcuts() {
         // resized, selected or edited. Panning is handled in the mousedown gate
         // (the compatibility mousedown still fires because pointerdown is only
         // stopped, not prevented, for mouse pointers).
-        ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function(type) {
-            canvasContainer.addEventListener(type, function(e) {
-                if (!freeMoveState.active) return;
-                if (type !== 'touchstart' && e.button !== 0) return;
-                e.stopPropagation();
-                if (type === 'pointerdown') {
-                    if (e.pointerType === 'touch') e.preventDefault();
-                    return; // let the following mousedown start the pan
-                }
-                if (type === 'touchstart') {
+        ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (type) {
+            canvasContainer.addEventListener(
+                type,
+                function (e) {
+                    if (!freeMoveState.active) return;
+                    if (type !== 'touchstart' && e.button !== 0) return;
+                    e.stopPropagation();
+                    if (type === 'pointerdown') {
+                        if (e.pointerType === 'touch') e.preventDefault();
+                        return; // let the following mousedown start the pan
+                    }
+                    if (type === 'touchstart') {
+                        e.preventDefault();
+                        return;
+                    }
+                    if (type === 'click') {
+                        e.preventDefault();
+                        return;
+                    }
                     e.preventDefault();
-                    return;
-                }
-                if (type === 'click') {
-                    e.preventDefault();
-                    return;
-                }
-                e.preventDefault();
-                startFreeMove(e);
-            }, true);
+                    startFreeMove(e);
+                },
+                true
+            );
         });
 
-        document.addEventListener('mouseup', function(e) {
+        document.addEventListener('mouseup', function (e) {
             if (freeMoveState.active) stopFreeMove();
         });
     }
@@ -664,12 +750,12 @@ function onMiddlePanUp() {
 }
 
 export function initializeGlobalClickHandler() {
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const designerCanvas = document.getElementById('ss-designer-canvas');
         const sidebar = document.getElementById('ss-sidebar');
-        
+
         if (!designerCanvas || !sidebar) return;
-        
+
         const isClickOnCanvas = designerCanvas.contains(e.target);
         const isClickOnSidebar = sidebar.contains(e.target);
         // The image canvas covers the whole slide area. Clicking it (empty
@@ -677,7 +763,7 @@ export function initializeGlobalClickHandler() {
         // selection (text2 boxes etc.). Image selection itself is owned by
         // ImageTransform and is NOT cleared here.
         const isClickOnCanvasBackground = e.target === designerCanvas || e.target.id === 'ss-image-canvas';
-        
+
         if (!isClickOnCanvas && !isClickOnSidebar) {
             deselectAllLayers();
         } else if (isClickOnCanvasBackground) {
@@ -691,7 +777,7 @@ export function deselectAllLayers() {
     if (window.SSText2Transform && typeof window.SSText2Transform.deselectAll === 'function') {
         window.SSText2Transform.deselectAll();
     }
-    document.querySelectorAll('.ss-image-element, .ss-text-element').forEach(function(el) {
+    document.querySelectorAll('.ss-image-element, .ss-text-element').forEach(function (el) {
         el.classList.remove('selected');
         const resizeHandles = getResizeHandlesForElement(el);
         if (resizeHandles) {
@@ -699,16 +785,21 @@ export function deselectAllLayers() {
         }
     });
     // Also clear multi-select mode when global deselect happens
-    try { clearMultiSelectMode(); } catch (err) {}
+    try {
+        clearMultiSelectMode();
+    } catch (err) {}
     layerState.selectedLayer = null;
-    if (window.SSTextEditor2 && typeof window.SSTextEditor2.updateAddTextButton === 'function') window.SSTextEditor2.updateAddTextButton();
+    if (window.SSTextEditor2 && typeof window.SSTextEditor2.updateAddTextButton === 'function')
+        window.SSTextEditor2.updateAddTextButton();
     updateLayerOrderButtons();
 }
 
 // Ensure multi-select mode is cleared when clicking outside or deselecting
 export function clearMultiSelectMode() {
     if (typeof multiSelectState !== 'undefined' && multiSelectState && multiSelectState.active) {
-        multiSelectState.selected.forEach(function(el) { el.classList.remove('multi-selected'); });
+        multiSelectState.selected.forEach(function (el) {
+            el.classList.remove('multi-selected');
+        });
         multiSelectState.selected = [];
         multiSelectState.active = false;
         const selBtn = document.getElementById('ss-selectMultipleBtn');
@@ -721,9 +812,9 @@ export function updateLayerOrderButtons() {
     const moveUpBtn = document.getElementById('ss-moveUpBtn');
     const moveDownBtn = document.getElementById('ss-moveDownBtn');
     const moveToBottomBtn = document.getElementById('ss-moveToBottomBtn');
-    
+
     if (!layerState.selectedLayer) {
-        [moveToTopBtn, moveUpBtn, moveDownBtn, moveToBottomBtn].forEach(function(btn) {
+        [moveToTopBtn, moveUpBtn, moveDownBtn, moveToBottomBtn].forEach(function (btn) {
             if (btn) {
                 btn.disabled = true;
                 btn.style.opacity = '0.3';
@@ -732,8 +823,8 @@ export function updateLayerOrderButtons() {
         });
         return;
     }
-    
-    [moveToTopBtn, moveUpBtn, moveDownBtn, moveToBottomBtn].forEach(function(btn) {
+
+    [moveToTopBtn, moveUpBtn, moveDownBtn, moveToBottomBtn].forEach(function (btn) {
         if (btn) {
             btn.disabled = false;
             btn.style.opacity = '0.7';

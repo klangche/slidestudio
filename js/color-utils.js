@@ -21,9 +21,15 @@ export function normalizeHex(color) {
     }
     const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
     if (m) {
-        return '#' + [1, 2, 3].map(function (i) {
-            return parseInt(m[i], 10).toString(16).padStart(2, '0');
-        }).join('').toLowerCase();
+        return (
+            '#' +
+            [1, 2, 3]
+                .map(function (i) {
+                    return parseInt(m[i], 10).toString(16).padStart(2, '0');
+                })
+                .join('')
+                .toLowerCase()
+        );
     }
     return '#000000';
 }
@@ -34,29 +40,40 @@ export function hexToRgb(hex) {
 }
 
 export function rgbToHex(r, g, b) {
-    return '#' + [r, g, b].map(function (v) {
-        return Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
-    }).join('');
+    return (
+        '#' +
+        [r, g, b]
+            .map(function (v) {
+                return Math.max(0, Math.min(255, Math.round(v)))
+                    .toString(16)
+                    .padStart(2, '0');
+            })
+            .join('')
+    );
 }
 
 export function rgbToHsl(r, g, b) {
-    r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h = 0, s = 0;
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    const max = Math.max(r, g, b),
+        min = Math.min(r, g, b);
+    let h = 0,
+        s = 0;
     const l = (max + min) / 2;
     if (max !== min) {
         const d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        if (max === r) h = ((g - b) / d + (g < b ? 6 : 0));
-        else if (max === g) h = ((b - r) / d + 2);
-        else h = ((r - g) / d + 4);
+        if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+        else if (max === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
         h /= 6;
     }
     return [h * 360, s, l];
 }
 
 export function hslToRgb(h, s, l) {
-    h = ((h % 360) + 360) % 360 / 360;
+    h = (((h % 360) + 360) % 360) / 360;
     if (s === 0) {
         const v = Math.round(l * 255);
         return [v, v, v];
@@ -114,7 +131,8 @@ export function complementOf(hex) {
 }
 
 export function colorDistHex(a, b) {
-    const ca = hexToRgb(a), cb = hexToRgb(b);
+    const ca = hexToRgb(a),
+        cb = hexToRgb(b);
     return Math.sqrt(Math.pow(ca[0] - cb[0], 2) + Math.pow(ca[1] - cb[1], 2) + Math.pow(ca[2] - cb[2], 2));
 }
 
@@ -131,12 +149,9 @@ export function rgbStringToHex(cssColor) {
 
 // Midpoint blend between two hex colors (t = 0 -> a, 1 -> b).
 export function blendHex(a, b, t) {
-    const ca = hexToRgb(a), cb = hexToRgb(b);
-    return rgbToHex(
-        ca[0] + (cb[0] - ca[0]) * t,
-        ca[1] + (cb[1] - ca[1]) * t,
-        ca[2] + (cb[2] - ca[2]) * t
-    );
+    const ca = hexToRgb(a),
+        cb = hexToRgb(b);
+    return rgbToHex(ca[0] + (cb[0] - ca[0]) * t, ca[1] + (cb[1] - ca[1]) * t, ca[2] + (cb[2] - ca[2]) * t);
 }
 
 // A lighter (positive shift) or darker (negative shift) version of a color.
@@ -160,7 +175,12 @@ export function expandPalette(unique, want) {
     const NEAR = 20;
     const addIfNew = function (c) {
         if (out.length >= want) return true;
-        if (out.some(function (p) { return colorDistHex(p, c) < NEAR; })) return false;
+        if (
+            out.some(function (p) {
+                return colorDistHex(p, c) < NEAR;
+            })
+        )
+            return false;
         out.push(c);
         return out.length >= want;
     };
@@ -173,16 +193,22 @@ export function expandPalette(unique, want) {
             addIfNew(blendHex(unique[i], unique[(i + 1) % unique.length], 0.75));
         }
     }
-    const shifts = [0.4, -0.4, 0.24, -0.24, 0.12, -0.12, 0.5, -0.5,
-                    0.75, -0.75, 0.88, -0.88, 0.62, -0.62, 0.16, -0.16,
-                    0.96, -0.96, 0.32, -0.32];
+    const shifts = [
+        0.4, -0.4, 0.24, -0.24, 0.12, -0.12, 0.5, -0.5, 0.75, -0.75, 0.88, -0.88, 0.62, -0.62, 0.16, -0.16, 0.96, -0.96,
+        0.32, -0.32
+    ];
     let progress = true;
     while (out.length < want && progress) {
         progress = false;
         for (let i = 0; i < unique.length && out.length < want; i++) {
             for (let s = 0; s < shifts.length && out.length < want; s++) {
                 const c = tintShadeHex(unique[i], shifts[s]);
-                if (out.some(function (p) { return colorDistHex(p, c) < NEAR; })) continue;
+                if (
+                    out.some(function (p) {
+                        return colorDistHex(p, c) < NEAR;
+                    })
+                )
+                    continue;
                 out.push(c);
                 progress = true;
             }
@@ -191,14 +217,22 @@ export function expandPalette(unique, want) {
     // A purely achromatic palette (white/black/gray canvas) has few naturally
     // distinct gray levels, so the tint ladder above can stall below `want`.
     // Fill the remainder with an even black-to-white ramp to always reach it.
-    if (out.length < want && out.every(function (c) {
-        const rgb = hexToRgb(c);
-        return Math.abs(rgb[0] - rgb[1]) < 12 && Math.abs(rgb[1] - rgb[2]) < 12;
-    })) {
+    if (
+        out.length < want &&
+        out.every(function (c) {
+            const rgb = hexToRgb(c);
+            return Math.abs(rgb[0] - rgb[1]) < 12 && Math.abs(rgb[1] - rgb[2]) < 12;
+        })
+    ) {
         for (let i = 0; i < want && out.length < want; i++) {
             const v = Math.round((i / Math.max(1, want - 1)) * 255);
             const rampColor = rgbToHex(v, v, v);
-            if (out.some(function (p) { return colorDistHex(p, rampColor) < NEAR; })) continue;
+            if (
+                out.some(function (p) {
+                    return colorDistHex(p, rampColor) < NEAR;
+                })
+            )
+                continue;
             out.push(rampColor);
         }
     }
@@ -221,7 +255,12 @@ export function padPalette(result, k) {
             const v = Math.round((rgb[0] + rgb[1] + rgb[2]) / 3);
             c = rgbToHex(v, v, v);
         }
-        if (!unique.some(function (u) { return colorDistHex(u, c) < 45; })) unique.push(c);
+        if (
+            !unique.some(function (u) {
+                return colorDistHex(u, c) < 45;
+            })
+        )
+            unique.push(c);
     });
     return expandPalette(unique.length ? unique : DEFAULT_PALETTE.slice(), want);
 }
@@ -232,15 +271,22 @@ export function kmeansTopK(samples, k) {
     const K = Math.min(want, samples.length);
     const centroids = [];
     for (let c = 0; c < K; c++) {
-        centroids.push(samples[Math.floor(c * (samples.length - 1) / Math.max(1, K - 1))].slice());
+        centroids.push(samples[Math.floor((c * (samples.length - 1)) / Math.max(1, K - 1))].slice());
     }
     const assign = new Array(samples.length).fill(0);
     for (let iter = 0; iter < 8; iter++) {
         for (let i = 0; i < samples.length; i++) {
-            let best = 0, bd = Infinity;
+            let best = 0,
+                bd = Infinity;
             for (let c = 0; c < K; c++) {
-                const d = Math.pow(samples[i][0] - centroids[c][0], 2) + Math.pow(samples[i][1] - centroids[c][1], 2) + Math.pow(samples[i][2] - centroids[c][2], 2);
-                if (d < bd) { bd = d; best = c; }
+                const d =
+                    Math.pow(samples[i][0] - centroids[c][0], 2) +
+                    Math.pow(samples[i][1] - centroids[c][1], 2) +
+                    Math.pow(samples[i][2] - centroids[c][2], 2);
+                if (d < bd) {
+                    bd = d;
+                    best = c;
+                }
             }
             assign[i] = best;
         }
@@ -263,12 +309,19 @@ export function kmeansTopK(samples, k) {
     for (let i = 0; i < assign.length; i++) finalCounts[assign[i]]++;
     const order = [];
     for (let c = 0; c < K; c++) order.push(c);
-    order.sort(function (a, b) { return finalCounts[b] - finalCounts[a]; });
+    order.sort(function (a, b) {
+        return finalCounts[b] - finalCounts[a];
+    });
 
     const result = [];
     order.forEach(function (c) {
         const col = rgbToHex(centroids[c][0], centroids[c][1], centroids[c][2]);
-        if (result.some(function (p) { return colorDistHex(p, col) < 45; })) return;
+        if (
+            result.some(function (p) {
+                return colorDistHex(p, col) < 45;
+            })
+        )
+            return;
         result.push(col);
     });
     return result.length ? padPalette(result, want) : padPalette(DEFAULT_PALETTE.slice(), want);
@@ -293,16 +346,20 @@ function addImageColorSamples(samples, regionLeft, regionRight, canvasH) {
         const aabb = img.aabb;
         const right = aabb ? aabb.left + aabb.width : 0;
         const bottom = aabb ? aabb.top + aabb.height : 0;
-        if (!aabb || right <= regionLeft || aabb.left >= regionRight ||
-            bottom <= 0 || aabb.top >= canvasH) continue;
+        if (!aabb || right <= regionLeft || aabb.left >= regionRight || bottom <= 0 || aabb.top >= canvasH) continue;
         const r = img.visibleRect;
         if (!r || !img.bitmap || r.width <= 0 || r.height <= 0) continue;
         // Fixed-resolution grid over the visible crop - independent of the
         // on-canvas scale/position, so resize/move never changes the samples.
         const ratio = r.width / r.height;
         let bw, bh;
-        if (ratio >= 1) { bw = 48; bh = Math.max(1, Math.round(48 / ratio)); }
-        else { bh = 48; bw = Math.max(1, Math.round(48 * ratio)); }
+        if (ratio >= 1) {
+            bw = 48;
+            bh = Math.max(1, Math.round(48 / ratio));
+        } else {
+            bh = 48;
+            bw = Math.max(1, Math.round(48 * ratio));
+        }
         let c;
         try {
             c = document.createElement('canvas');
@@ -310,13 +367,20 @@ function addImageColorSamples(samples, regionLeft, regionRight, canvasH) {
             c.height = bh;
             const ctx = c.getContext('2d');
             ctx.drawImage(img.bitmap, r.x, r.y, r.width, r.height, 0, 0, bw, bh);
-        } catch (e) { continue; }
+        } catch (e) {
+            continue;
+        }
         let data;
-        try { data = c.getContext('2d').getImageData(0, 0, bw, bh).data; }
-        catch (e) { continue; }
+        try {
+            data = c.getContext('2d').getImageData(0, 0, bw, bh).data;
+        } catch (e) {
+            continue;
+        }
         for (let p = 0; p < data.length; p += 4) {
             if (data[p + 3] <= 40) continue;
-            let rr = data[p], gg = data[p + 1], bb = data[p + 2];
+            let rr = data[p],
+                gg = data[p + 1],
+                bb = data[p + 2];
             if (img.grayscale) {
                 const gv = Math.round(0.299 * rr + 0.587 * gg + 0.114 * bb);
                 rr = gg = bb = gv;
@@ -357,8 +421,8 @@ function addTextColorSamples(samples, slideIndex, slideW, slideH) {
         const boxH = parseFloat(box.style.height) || 0;
         if (boxW <= 0 || boxH <= 0) continue;
         // Skip boxes fully outside the visible slide region.
-        if (left + boxW <= regionLeft || left >= regionRight ||
-            top + boxH <= regionTop || top >= regionBottom) continue;
+        if (left + boxW <= regionLeft || left >= regionRight || top + boxH <= regionTop || top >= regionBottom)
+            continue;
         const rgb = hexToRgb(hex);
         for (let j = 0; j < perBox; j++) samples.push(rgb.slice());
     }

@@ -111,17 +111,17 @@ called through `window` so they never throw if a module is missing.
 
 ### Layering inside `#ss-designer-canvas`
 
-| z-index | Layer |
-| --- | --- |
-| `1` | the designer canvas itself |
-| `100` | `#ss-image-canvas` (canvas-drawn images, handles) |
-| `200+` | DOM layers: `.ss-image-element`, `.ss-text-element` (text starts at 200) |
-| `100000` | `#ss-guidance-overlay` (separators, center lines, SoMe guides, labels) |
-| `100001` | guide lines / separators, `100002` their labels |
-| `1001+` | resize/rotation handles on selected elements |
+| z-index  | Layer                                                                    |
+| -------- | ------------------------------------------------------------------------ |
+| `1`      | the designer canvas itself                                               |
+| `100`    | `#ss-image-canvas` (canvas-drawn images, handles)                        |
+| `200+`   | DOM layers: `.ss-image-element`, `.ss-text-element` (text starts at 200) |
+| `100000` | `#ss-guidance-overlay` (separators, center lines, SoMe guides, labels)   |
+| `100001` | guide lines / separators, `100002` their labels                          |
+| `1001+`  | resize/rotation handles on selected elements                             |
 
 The whole designer canvas is scaled with `transform: scale(...)` by the zoom
-module, and `#ss-canvasScroll` is resized to the *scaled* size so scrolling always
+module, and `#ss-canvasScroll` is resized to the _scaled_ size so scrolling always
 matches the visible edges.
 
 ---
@@ -129,18 +129,22 @@ matches the visible edges.
 ## Module reference
 
 ### `js/main.js`
+
 Entry point. Imports all modules in order. Contains no logic.
 
 ### `js/state.js`
+
 Declares and exports the six shared state objects (see
 [Global state](#global-state)) and mirrors each onto `window`.
 
 ### `js/designer.js`
+
 Workspace bootstrap. Creates the canvas DOM, wires tool/sidebar buttons, calls the
 initializer functions of every feature module. Exposes the app entry points on
 `window.Designer` (e.g. `Designer.exportCanvasZip`, `Designer.getCanvasState()`).
 
 ### `js/slidestudio.js`
+
 Header/sidebar chrome: project name editing (max 50 chars), clear button,
 light/dark theme toggle (persisted to `localStorage['ss-theme']`, auto-detects
 system theme on first load), menu (show/hide sidebar), about popup, collapsible
@@ -151,14 +155,17 @@ sections, the **Export pages** button which calls
 `localStorage`/`sessionStorage` after a confirm, then reloads).
 
 ### `js/zoom.js`
+
 Zoom slider, wheel and pinch gestures; applies `transform: scale()` to
 `#ss-designer-canvas`. See [Zoom model](#zoom-model).
 
 ### `js/guidance.js`
+
 SoMe guide overlays, slide separators, center lines and the magnet snapping
 engine. See [Snapping engine](#snapping-engine).
 
 ### `js/sections.js`
+
 Add/remove slides: `addSection()`/`removeSection()` grow/shrink
 `canvasState.width` by 1080 and call `SSImageTransform.setCanvasSteps(...)` so the
 image canvas matches. Also: `updateSectionCount`, `updateResolutionDisplay`,
@@ -166,7 +173,9 @@ image canvas matches. Also: `updateSectionCount`, `updateResolutionDisplay`,
 `initializeMagnetButton` (magnet on by default, toggles `magnetState.active`).
 
 ### `js/selection.js`
+
 DOM-layer selection and dragging:
+
 - `makeElementDraggable(el)` — pointer drag with magnet snapping
   (`snapElementAt`), `snapReset()` on pointerdown and on drag end, updates
   `layer.position` and `saveState()`.
@@ -179,11 +188,14 @@ DOM-layer selection and dragging:
   `updateLayerOrderButtons`.
 
 ### `js/history.js`
+
 `saveState()`, `undo()`, `redo()`, `restoreState()`, `updateUndoRedoButtons()`
 plus layer restore helpers. See [History](#history).
 
 ### `js/layers.js`
+
 DOM-layer operations wired to the sidebar tool buttons:
+
 - `deleteSelectedLayer`, `duplicateSelectedImageLayer`,
   `flipSelectedImageHorizontal/Vertical`, `replaceSelectedImage`,
   `toggleLockSelectedImage` (toggles `.ss-locked` + `layer.locked` +
@@ -195,41 +207,49 @@ DOM-layer operations wired to the sidebar tool buttons:
   `initializeTransparencySlider` (guides overlay opacity).
 
 ### `js/keyboard.js`
+
 Arrow-key nudge (1 px, hold-to-repeat with acceleration state), clamps to canvas
 bounds, applies magnet snapping per step, `saveState()` after each move.
 
 ### `js/export.js`
+
 Full-canvas rendering, rich-text parsing for export, ZIP export, JSON backup and
 localStorage templates. See [Export](#export).
 
 ### `js/image-transform.js`
+
 The mathematically-correct canvas image system (IIFE exposing `window.SSImageTransform`,
 `window.SSImage`, `window.ImageTransform`). See
 [Image transform model](#image-transform-model).
 
 ### `js/text-editor2.js`
+
 Modal text editor (`#ss-text2Popup`) with a live preview. Wires the
 **Add Text** sidebar button and double-click on a text box. Exposes
 `window.SSTextEditor2`; applying creates or updates a `.ss-text2-element` and
 registers it with `text2-transform.js`. See [Text editor](#text-editor).
 
 ### `js/text2-transform.js`
+
 Rotate/crop/resize handles for text boxes (corner scale, edge crop, rotation,
 outline in `#ss-text2-handles`). Independent of `image-transform.js`. Exposes
 `window.SSText2Transform`.
 
 ### `js/color-utils.js`
+
 Pure color math and canvas palette sampling (`normalizeHex`, `hexToRgb`,
 `complementOf`, `sampleCanvasColors`, ...), imported by `text-editor2.js` and
 `background-color.js`. No `window` bridge.
 
 ### `js/background-color.js`
+
 Slide background color panel in the Slide Management section (`#ss-bgColorPanel`):
 canvas palette with complements, Spectrum/Grid/Sliders, hex input
 (`#ss-bgColorHex`) and eyedropper. Applies colors through
 `updateCanvasColor`. Exposes `window.refreshBackgroundPalette`.
 
 ### `js/ui-helpers.js`
+
 Shared DOM helpers (formerly missing, now the source of truth):
 `createResizeHandles`, `getResizeHandlesForElement`, `setupRotationHandler`
 (persists rotation to the layer + `saveState()`), `adjustTextElementSize`,
@@ -238,11 +258,13 @@ behaves like an image), and `addTextElement` (fallback direct text creation).
 Also exposes `window.SSText.setupTextResizeHandlers`.
 
 ### `js/pwa-install.js`
+
 Registers the service worker (`/sw.js`) on `load` and adds the floating
 "Install App" button (`.ss-install-button`), shown on `beforeinstallprompt`.
 Loaded by `index.html`, not imported by `main.js`.
 
 ### `js/selfcheck.js`
+
 On `DOMContentLoaded` verifies every `window.*` bridge in `REQUIRED_BRIDGES`
 exists and logs `[selfcheck] All module bridges present.` or a list of missing
 ones. Open DevTools console — a missing-bridge list there is the first thing to
@@ -290,15 +312,19 @@ There are **two independent ways an image can appear on the canvas**. New edits
 several `window` bridges exist purely to reconcile them.
 
 ### 1. Canvas path (primary, used by "Upload Images")
+
 `js/layers.js` → `window.importImageToCanvas(file)` →
 `loadImageFromFile()` in `js/image-transform.js`:
+
 - Creates an entry in `state.images` (the bitmap is an `Image`/`ImageBitmap`).
 - Positions it at the center of the **rightmost slide**.
 - Everything renders onto `<canvas id="ss-image-canvas">` (z-index 100) by
   `draw()`.
 
 ### 2. DOM path (used by undo/redo restore and backups)
+
 `js/history.js` `restoreState()` → `restoreImageLayer()`:
+
 - Creates `<div class="ss-image-element">` with an inner `<img>` (object-fit:
   cover) plus resize/rotation handles.
 - `SSImage.setupImageResizeHandlers(el)` (via `setupImageResizeHandlers`)
@@ -308,6 +334,7 @@ several `window` bridges exist purely to reconcile them.
   `layer.cropData`.
 
 ### Text layers (DOM only)
+
 `.ss-text-element.ss-text2-element` divs, added by `text-editor2.js` (or
 `.ss-text-element` by `ui-helpers.js` `addTextElement()`). Text2 boxes get
 handles from `text2-transform.js`. Restored by `history.js` `restoreTextLayer()`,
@@ -327,27 +354,30 @@ which rebuilds text2 boxes with `SSTextEditor2.renderContentToElement`.
   `SSImageTransform.getSnapRegions()`.
 
 ### Constants and glue
+
 ```js
-const SNAP_THRESHOLD = 8;        // px (canvas space) to begin snapping
+const SNAP_THRESHOLD = 8; // px (canvas space) to begin snapping
 const SNAP_RELEASE_THRESHOLD = 12; // 1.5x — must drift beyond this to un-glue
 const magnetSession = { x: null, y: null }; // which line+anchor each axis is glued to
 ```
+
 Once an axis snaps, it **stays glued to that exact line** until it is dragged more
 than the release threshold away, which stops the box from flickering between
 rival anchors/lines. The session is cleared with `snapReset()` at the start/end of
 every drag gesture (selection, image-transform, keyboard) and per keyboard step.
 
 ### Key functions
-| Function | Purpose |
-| --- | --- |
-| `computeRotatedAABB(x,y,w,h,rotation)` | AABB of a rotated box (radians). |
-| `getCanvasSpaceRect(el)` | AABB of a DOM element in canvas coords (undoes zoom). |
-| `collectOtherBoxes(excludeEl, excludeImgId)` | All other objects' AABBs. |
-| `collectSnapLines(excludeEl, excludeImgId)` | All vertical/horizontal target lines. |
-| `findXSnap / findYSnap` | Best anchor (left/center/right, top/center/bottom) match within threshold. |
-| `snapAABB(aabb, excludeEl, excludeImgId)` | The engine core; returns adjusted AABB. |
-| `snapToGuidelines(x,y,w,h,rotation)` | Legacy wrapper (resets session, returns adjusted origin). |
-| `snapElementAt(x,y,el)` | Snap a DOM element targeting position (x, y). |
+
+| Function                                     | Purpose                                                                    |
+| -------------------------------------------- | -------------------------------------------------------------------------- |
+| `computeRotatedAABB(x,y,w,h,rotation)`       | AABB of a rotated box (radians).                                           |
+| `getCanvasSpaceRect(el)`                     | AABB of a DOM element in canvas coords (undoes zoom).                      |
+| `collectOtherBoxes(excludeEl, excludeImgId)` | All other objects' AABBs.                                                  |
+| `collectSnapLines(excludeEl, excludeImgId)`  | All vertical/horizontal target lines.                                      |
+| `findXSnap / findYSnap`                      | Best anchor (left/center/right, top/center/bottom) match within threshold. |
+| `snapAABB(aabb, excludeEl, excludeImgId)`    | The engine core; returns adjusted AABB.                                    |
+| `snapToGuidelines(x,y,w,h,rotation)`         | Legacy wrapper (resets session, returns adjusted origin).                  |
+| `snapElementAt(x,y,el)`                      | Snap a DOM element targeting position (x, y).                              |
 
 Bridges: `window.snapBox = snapAABB`, `window.snapElementAt`,
 `window.snapToGuidelines`, `window.snapReset`. The module also exports
@@ -378,8 +408,8 @@ Each entry in `state.images` (see `js/image-transform.js`):
 Coordinate math is exact, not CSS-approximated:
 
 ```js
-localToWorld(img, pLocal)  // position + rotate(rotation) + scale(scale)
-worldToLocal(img, pWorld)  // inverse
+localToWorld(img, pLocal); // position + rotate(rotation) + scale(scale)
+worldToLocal(img, pWorld); // inverse
 ```
 
 - `draw()` sets a **clip path to the four visibleRect corners** (world space),
@@ -403,13 +433,14 @@ worldToLocal(img, pWorld)  // inverse
   clean artwork, returning a restore function.
 
 ### Bridge APIs
+
 - `window.SSImageTransform` — `setCanvasSteps, draw, computeHandles,
-  flipHorizontal, flipVertical, duplicateImage, deleteImage, toggleLock,
-  toggleShadow, toggleGrayscale, replaceImage, hasSelectedImage,
-  getSelectedImage, prepareSnapshot, getSnapRegions`.
+flipHorizontal, flipVertical, duplicateImage, deleteImage, toggleLock,
+toggleShadow, toggleGrayscale, replaceImage, hasSelectedImage,
+getSelectedImage, prepareSnapshot, getSnapRegions`.
 - `window.SSImage` — DOM adapter: `setupImageResizeHandlers,
-  applyImageEffectsToElement, getImageForElement, updateLayerVisibleRect,
-  resetCrop, updateHandlePositions`.
+applyImageEffectsToElement, getImageForElement, updateLayerVisibleRect,
+resetCrop, updateHandlePositions`.
 - `window.ImageTransform` — `getState, getSnapRegions, importFromElement`.
 - `window.importImageToCanvas(file)` queues to `window._pendingUploads` if the
   module hasn't loaded yet.
@@ -422,11 +453,11 @@ worldToLocal(img, pWorld)  // inverse
 `layerState.layers`:
 
 - **images**: `id, type, zIndex, position, rotation, visible, disabled, size,
-  src, naturalSize, aspectRatio, transform, cropData, imageData` (data URL of the
+src, naturalSize, aspectRatio, transform, cropData, imageData` (data URL of the
   `<img>` so it can be restored),
 - **text**: `id, type, zIndex, position, rotation, visible, disabled,
-  textContent, fontSize, transform, style{fontFamily,fontSize,color,fontWeight,
-  fontStyle,textDecoration,textAlign,backgroundColor}, size`.
+textContent, fontSize, transform, style{fontFamily,fontSize,color,fontWeight,
+fontStyle,textDecoration,textAlign,backgroundColor}, size`.
 
 It only pushes a new snapshot if the JSON serialization actually changed (dedup),
 and caps `historyState.maxHistory` (1000). `undo()`/`redo()` pop/push stacks and
@@ -470,8 +501,8 @@ Spectrum/Grid/Sliders, hex, eyedropper; color math in `color-utils.js`).
   `open(selected)` when a text box is selected (the button then reads
   "Update Text"). Double-click on a `.ss-text2-element` also opens it.
 - `window.SSTextEditor2` — `open, close, openForPolaroid, isText2Element,
-  getSelected, updateAddTextButton, renderContentToElement,
-  registerWithImageTransform`.
+getSelected, updateAddTextButton, renderContentToElement,
+registerWithImageTransform`.
 
 Applying (`handleApply`) creates a new `.ss-text2-element` centered on the
 current slide, adds it to `layerState.layers` (`type: 'text'`, `isText2: true`)
@@ -500,9 +531,9 @@ duplicateSelected, toggleLock`.
    - `9-16 Stories/slide_N.png` (1080×1920),
    - `4-5 Post/slide_N.png` (1080×1350),
    - `1-1 Square/slide_N.png` (1080×1080),
-   each cropped **centered vertically** within every 1080×1920 section, packaged
-   with an in-file ZIP builder (`makeZip`). Returns
-   `{ sections, files, filename }`.
+     each cropped **centered vertically** within every 1080×1920 section, packaged
+     with an in-file ZIP builder (`makeZip`). Returns
+     `{ sections, files, filename }`.
 3. `downloadBackup(filename)` — JSON of `canvasState` + `layerState` layers
    (+ image `data:` URLs for DOM image layers) + history stacks. Known gap:
    images uploaded through the canvas path (`SSImageTransform`) are not in
@@ -536,19 +567,19 @@ The transparency slider (`#ss-transparencySlider`) drives
 Every `window.*` bridge assigned in `js/`. `js/selfcheck.js` checks the ones in
 `REQUIRED_BRIDGES` at load:
 
-| Bridge | Defined in |
-| --- | --- |
-| `layerState, canvasState, guidanceState, magnetState, historyState, freeMoveState` | `state.js` |
-| `saveState` | `history.js` |
-| `makeElementDraggable, makeElementSelectable, selectLayer, updateImageToolUIForSelection, toggleMultiSelectMode, groupElements, ungroupLayer, toggleGroupSelected, updateLayerOrderButtons` | `selection.js` |
-| `createResizeHandles, getResizeHandlesForElement, setupRotationHandler, adjustTextElementSize, addTextElement, setupTextResizeHandlers, SSText` | `ui-helpers.js` |
-| `updateImageToolButtons`, `_pendingUploads` (upload queue until `image-transform.js` loads) | `layers.js` |
-| `snapToGuidelines, snapElementAt, snapBox, snapReset` | `guidance.js` |
-| `Designer` (+ export/backup/template functions) | `designer.js` |
-| `SSImageTransform, SSImage, ImageTransform, importImageToCanvas, setupImageResizeHandlers, applyImageEffectsToElement, updateLayerVisibleRect, resetCrop, updateHandlePositions` | `image-transform.js` |
-| `SSTextEditor2` | `text-editor2.js` |
-| `SSText2Transform` | `text2-transform.js` |
-| `refreshBackgroundPalette` | `background-color.js` |
+| Bridge                                                                                                                                                                                      | Defined in            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `layerState, canvasState, guidanceState, magnetState, historyState, freeMoveState`                                                                                                          | `state.js`            |
+| `saveState`                                                                                                                                                                                 | `history.js`          |
+| `makeElementDraggable, makeElementSelectable, selectLayer, updateImageToolUIForSelection, toggleMultiSelectMode, groupElements, ungroupLayer, toggleGroupSelected, updateLayerOrderButtons` | `selection.js`        |
+| `createResizeHandles, getResizeHandlesForElement, setupRotationHandler, adjustTextElementSize, addTextElement, setupTextResizeHandlers, SSText`                                             | `ui-helpers.js`       |
+| `updateImageToolButtons`, `_pendingUploads` (upload queue until `image-transform.js` loads)                                                                                                 | `layers.js`           |
+| `snapToGuidelines, snapElementAt, snapBox, snapReset`                                                                                                                                       | `guidance.js`         |
+| `Designer` (+ export/backup/template functions)                                                                                                                                             | `designer.js`         |
+| `SSImageTransform, SSImage, ImageTransform, importImageToCanvas, setupImageResizeHandlers, applyImageEffectsToElement, updateLayerVisibleRect, resetCrop, updateHandlePositions`            | `image-transform.js`  |
+| `SSTextEditor2`                                                                                                                                                                             | `text-editor2.js`     |
+| `SSText2Transform`                                                                                                                                                                          | `text2-transform.js`  |
+| `refreshBackgroundPalette`                                                                                                                                                                  | `background-color.js` |
 
 ---
 
@@ -579,24 +610,24 @@ Misc: `ss-exportBtn`, `ss-backupBtn`, `ss-saveTemplateBtn`, `ss-loadBackupBtn`,
 
 ## Key CSS classes
 
-| Class | Purpose |
-| --- | --- |
-| `.ss-designer-canvas` | The 1080×N surface; gets `transform: scale()` + `--ss-zoom`. |
-| `.ss-image-element` / `.ss-text-element` | DOM layers; `position: absolute`, `cursor: grab`. |
-| `.ss-image-element.selected` | Green selection outline (overridden to none in an earlier rule — the visible one is at the bottom of the file). |
-| `.ss-image-element.ss-locked.selected::after` | **Locked ring** (only visible while the locked element is selected): `box-shadow: inset 0 0 0 calc(5.25px / var(--ss-zoom, 1)) rgba(231,76,60,.85)`. Constant 5.25 px on screen at any zoom. |
-| `.ss-resize-handles` / `.ss-resize-handle` | Selection handles; shown via `.selected .ss-resize-handles { display: block }`. |
-| `.ss-rotation-handle` | Rotation handle below the element. |
-| `.ss-slide-separator` | 1 px section divider. |
-| `.ss-guide-label` | Small black labels (1:1, 4:5, 9:16 #N). |
-| `.ss-guideline-label` | Legacy CSS for a snap distance label (not currently created by any JS). |
-| `.ss-slider` / `.ss-slider-thumb` / `.ss-slider-fill` | Zoom + transparency sliders. |
-| `.ss-polaroid-frame` / `.ss-polaroid-window` / `.ss-polaroid-lock-icon` | Polaroid frame style + lock badge. |
-| `.ss-active` | Active-state highlight for guidance/magnet buttons. |
-| `.ss-dark-mode` | Body-level dark theme. |
-| `.ss-sidebar-visible` / `.ss-sidebar-hidden` | Sidebar visibility. |
-| `.ss-disabled` | Disabled control state. |
-| `.ss-hidden` | `display: none` initial state for popups and the canvas container; JS shows them by setting `style.display`. |
+| Class                                                                   | Purpose                                                                                                                                                                                      |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.ss-designer-canvas`                                                   | The 1080×N surface; gets `transform: scale()` + `--ss-zoom`.                                                                                                                                 |
+| `.ss-image-element` / `.ss-text-element`                                | DOM layers; `position: absolute`, `cursor: grab`.                                                                                                                                            |
+| `.ss-image-element.selected`                                            | Green selection outline (overridden to none in an earlier rule — the visible one is at the bottom of the file).                                                                              |
+| `.ss-image-element.ss-locked.selected::after`                           | **Locked ring** (only visible while the locked element is selected): `box-shadow: inset 0 0 0 calc(5.25px / var(--ss-zoom, 1)) rgba(231,76,60,.85)`. Constant 5.25 px on screen at any zoom. |
+| `.ss-resize-handles` / `.ss-resize-handle`                              | Selection handles; shown via `.selected .ss-resize-handles { display: block }`.                                                                                                              |
+| `.ss-rotation-handle`                                                   | Rotation handle below the element.                                                                                                                                                           |
+| `.ss-slide-separator`                                                   | 1 px section divider.                                                                                                                                                                        |
+| `.ss-guide-label`                                                       | Small black labels (1:1, 4:5, 9:16 #N).                                                                                                                                                      |
+| `.ss-guideline-label`                                                   | Legacy CSS for a snap distance label (not currently created by any JS).                                                                                                                      |
+| `.ss-slider` / `.ss-slider-thumb` / `.ss-slider-fill`                   | Zoom + transparency sliders.                                                                                                                                                                 |
+| `.ss-polaroid-frame` / `.ss-polaroid-window` / `.ss-polaroid-lock-icon` | Polaroid frame style + lock badge.                                                                                                                                                           |
+| `.ss-active`                                                            | Active-state highlight for guidance/magnet buttons.                                                                                                                                          |
+| `.ss-dark-mode`                                                         | Body-level dark theme.                                                                                                                                                                       |
+| `.ss-sidebar-visible` / `.ss-sidebar-hidden`                            | Sidebar visibility.                                                                                                                                                                          |
+| `.ss-disabled`                                                          | Disabled control state.                                                                                                                                                                      |
+| `.ss-hidden`                                                            | `display: none` initial state for popups and the canvas container; JS shows them by setting `style.display`.                                                                                 |
 
 ---
 
@@ -616,7 +647,7 @@ Misc: `ss-exportBtn`, `ss-backupBtn`, `ss-saveTemplateBtn`, `ss-loadBackupBtn`,
   DOM/text layers store it in **degrees** (and inside the CSS `transform`
   string). Mind the conversion at boundaries.
 - **Zoom coupling.** Fixed-size CSS decorations inside the scaled canvas appear
-  to shrink with zoom. Anything that must stay a constant *screen* size (like the
+  to shrink with zoom. Anything that must stay a constant _screen_ size (like the
   locked ring) must divide by `--ss-zoom` (CSS) or by `img.scale * zoom` (canvas).
 - **Snapping thresholds.** `SNAP_THRESHOLD = 8`, `SNAP_RELEASE_THRESHOLD = 12`
   in canvas-space px. Always call `snapReset()` at the start/end of a gesture or

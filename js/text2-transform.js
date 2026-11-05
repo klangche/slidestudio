@@ -45,7 +45,11 @@ import { layerState } from './state.js';
     // Account for the CSS zoom scale applied to the designer canvas
     function getCanvasScale() {
         const designerCanvas = getDesignerCanvas();
-        if (designerCanvas && designerCanvas.style.transform && designerCanvas.style.transform.indexOf('scale(') !== -1) {
+        if (
+            designerCanvas &&
+            designerCanvas.style.transform &&
+            designerCanvas.style.transform.indexOf('scale(') !== -1
+        ) {
             const m = designerCanvas.style.transform.match(/scale\(([^)]+)\)/);
             if (m) {
                 const parsed = parseFloat(m[1]);
@@ -105,12 +109,16 @@ import { layerState } from './state.js';
     function buildModel(el) {
         const clip = el.querySelector ? el.querySelector('.ss-text2-clip') : null;
         const content = clip ? clip.querySelector('.ss-text-content') : null;
-        const baseW = parseFloat(el.dataset.text2BaseW) ||
+        const baseW =
+            parseFloat(el.dataset.text2BaseW) ||
             (content ? parseFloat(content.style.width) : NaN) ||
-            el.offsetWidth || 200;
-        const baseH = parseFloat(el.dataset.text2BaseH) ||
+            el.offsetWidth ||
+            200;
+        const baseH =
+            parseFloat(el.dataset.text2BaseH) ||
             (content ? parseFloat(content.style.height) : NaN) ||
-            el.offsetHeight || 60;
+            el.offsetHeight ||
+            60;
         const scale = parseScaleDataset(el) || 1;
         const deg = parseFloat(el.dataset.text2Rot) || 0;
         return {
@@ -119,7 +127,7 @@ import { layerState } from './state.js';
             baseW: baseW,
             baseH: baseH,
             scale: scale,
-            rotation: deg * Math.PI / 180,
+            rotation: (deg * Math.PI) / 180,
             visibleRect: parseCropDataset(el, baseW, baseH),
             position: { x: parseInt(el.style.left) || 0, y: parseInt(el.style.top) || 0 },
             locked: el.dataset.text2Locked === '1',
@@ -176,7 +184,9 @@ import { layerState } from './state.js';
 
     function syncLayerState(model) {
         const el = model.element;
-        const idx = layerState.layers.findIndex(function (l) { return l.element === el; });
+        const idx = layerState.layers.findIndex(function (l) {
+            return l.element === el;
+        });
         if (idx === -1) return;
         const layer = layerState.layers[idx];
         layer.position = { left: model.position.x, top: model.position.y };
@@ -184,7 +194,7 @@ import { layerState } from './state.js';
             width: model.visibleRect.width * model.scale,
             height: model.visibleRect.height * model.scale
         };
-        layer.rotation = model.rotation * 180 / Math.PI;
+        layer.rotation = (model.rotation * 180) / Math.PI;
         layerState.layers[idx] = layer;
     }
 
@@ -211,7 +221,16 @@ import { layerState } from './state.js';
             if (Math.abs(tx) < 0.01 && Math.abs(ty) < 0.01 && Math.abs(s - 1) < 0.001) {
                 model.content.style.transform = '';
             } else {
-                model.content.style.transform = 'translate(' + round(tx, 2) + 'px,' + round(ty, 2) + 'px) scale(' + round(s, 3) + ',' + round(s, 3) + ')';
+                model.content.style.transform =
+                    'translate(' +
+                    round(tx, 2) +
+                    'px,' +
+                    round(ty, 2) +
+                    'px) scale(' +
+                    round(s, 3) +
+                    ',' +
+                    round(s, 3) +
+                    ')';
             }
         }
 
@@ -220,15 +239,17 @@ import { layerState } from './state.js';
         const sin = Math.sin(rad);
         const dx = vr.x * s * cos - vr.y * s * sin;
         const dy = vr.x * s * sin + vr.y * s * cos;
-        const deg = rad * 180 / Math.PI;
+        const deg = (rad * 180) / Math.PI;
         if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01 && Math.abs(deg) < 0.001) {
             el.style.transform = '';
         } else {
-            el.style.transform = 'translate(' + round(dx, 2) + 'px,' + round(dy, 2) + 'px) rotate(' + round(deg, 3) + 'deg)';
+            el.style.transform =
+                'translate(' + round(dx, 2) + 'px,' + round(dy, 2) + 'px) rotate(' + round(deg, 3) + 'deg)';
         }
 
         el.dataset.text2Scale = String(round(s, 3));
-        el.dataset.text2Crop = round(vr.x, 1) + '|' + round(vr.y, 1) + '|' + round(vr.width, 1) + '|' + round(vr.height, 1);
+        el.dataset.text2Crop =
+            round(vr.x, 1) + '|' + round(vr.y, 1) + '|' + round(vr.width, 1) + '|' + round(vr.height, 1);
         el.dataset.text2Rot = String(round(deg, 3));
 
         syncLayerState(model);
@@ -279,7 +300,10 @@ import { layerState } from './state.js';
             tl: localToWorld(model, { x: model.visibleRect.x, y: model.visibleRect.y }),
             tr: localToWorld(model, { x: model.visibleRect.x + model.visibleRect.width, y: model.visibleRect.y }),
             bl: localToWorld(model, { x: model.visibleRect.x, y: model.visibleRect.y + model.visibleRect.height }),
-            br: localToWorld(model, { x: model.visibleRect.x + model.visibleRect.width, y: model.visibleRect.y + model.visibleRect.height })
+            br: localToWorld(model, {
+                x: model.visibleRect.x + model.visibleRect.width,
+                y: model.visibleRect.y + model.visibleRect.height
+            })
         };
 
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -291,10 +315,26 @@ import { layerState } from './state.js';
         svg.style.pointerEvents = 'none';
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', 'M ' + corners.tl.x + ' ' + corners.tl.y +
-            ' L ' + corners.tr.x + ' ' + corners.tr.y +
-            ' L ' + corners.br.x + ' ' + corners.br.y +
-            ' L ' + corners.bl.x + ' ' + corners.bl.y + ' Z');
+        path.setAttribute(
+            'd',
+            'M ' +
+                corners.tl.x +
+                ' ' +
+                corners.tl.y +
+                ' L ' +
+                corners.tr.x +
+                ' ' +
+                corners.tr.y +
+                ' L ' +
+                corners.br.x +
+                ' ' +
+                corners.br.y +
+                ' L ' +
+                corners.bl.x +
+                ' ' +
+                corners.bl.y +
+                ' Z'
+        );
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke', stroke);
         path.setAttribute('stroke-width', '2');
@@ -310,7 +350,7 @@ import { layerState } from './state.js';
 
     function getCropCursor(id, rotation) {
         const isHorizontal = id.indexOf('top') !== -1 || id.indexOf('bottom') !== -1;
-        const deg = (rotation * 180 / Math.PI) % 360;
+        const deg = ((rotation * 180) / Math.PI) % 360;
         const normalizedDeg = ((deg % 360) + 360) % 360;
         if (isHorizontal) {
             if (normalizedDeg >= 45 && normalizedDeg < 135) return 'ew-resize';
@@ -355,8 +395,8 @@ import { layerState } from './state.js';
                 el.style.background = '#1976d2';
                 el.style.border = '2px solid #fff';
                 el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-                el.style.left = (worldPos.x - size / 2) + 'px';
-                el.style.top = (worldPos.y - size / 2) + 'px';
+                el.style.left = worldPos.x - size / 2 + 'px';
+                el.style.top = worldPos.y - size / 2 + 'px';
                 el.style.cursor = getCornerCursor(h.id);
             } else if (h.type === 'crop') {
                 const isHorizontal = h.id.indexOf('top') !== -1 || h.id.indexOf('bottom') !== -1;
@@ -368,8 +408,8 @@ import { layerState } from './state.js';
                 el.style.border = '2px solid #fff';
                 el.style.borderRadius = '9px';
                 el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-                el.style.left = (worldPos.x - w / 2) + 'px';
-                el.style.top = (worldPos.y - ht / 2) + 'px';
+                el.style.left = worldPos.x - w / 2 + 'px';
+                el.style.top = worldPos.y - ht / 2 + 'px';
                 el.style.transform = 'rotate(' + model.rotation + 'rad)';
                 el.style.cursor = getCropCursor(h.id, model.rotation);
             } else if (h.type === 'rotate') {
@@ -380,8 +420,8 @@ import { layerState } from './state.js';
                 el.style.background = '#00cc66';
                 el.style.border = '2px solid #fff';
                 el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-                el.style.left = (worldPos.x - size / 2) + 'px';
-                el.style.top = (worldPos.y - size / 2) + 'px';
+                el.style.left = worldPos.x - size / 2 + 'px';
+                el.style.top = worldPos.y - size / 2 + 'px';
                 el.style.cursor = 'grab';
             }
 
@@ -418,7 +458,12 @@ import { layerState } from './state.js';
             scale: model.scale,
             rotation: model.rotation
         };
-        interaction.startVisibleRect = { x: model.visibleRect.x, y: model.visibleRect.y, width: model.visibleRect.width, height: model.visibleRect.height };
+        interaction.startVisibleRect = {
+            x: model.visibleRect.x,
+            y: model.visibleRect.y,
+            width: model.visibleRect.width,
+            height: model.visibleRect.height
+        };
         interaction.initialScale = model.scale;
         interaction.initialRotation = model.rotation;
 
@@ -427,17 +472,25 @@ import { layerState } from './state.js';
             let activeX, activeY, anchorX, anchorY;
             const r = model.visibleRect;
             if (corner === 'tl') {
-                activeX = r.x; activeY = r.y;
-                anchorX = r.x + r.width; anchorY = r.y + r.height;
+                activeX = r.x;
+                activeY = r.y;
+                anchorX = r.x + r.width;
+                anchorY = r.y + r.height;
             } else if (corner === 'tr') {
-                activeX = r.x + r.width; activeY = r.y;
-                anchorX = r.x; anchorY = r.y + r.height;
+                activeX = r.x + r.width;
+                activeY = r.y;
+                anchorX = r.x;
+                anchorY = r.y + r.height;
             } else if (corner === 'bl') {
-                activeX = r.x; activeY = r.y + r.height;
-                anchorX = r.x + r.width; anchorY = r.y;
+                activeX = r.x;
+                activeY = r.y + r.height;
+                anchorX = r.x + r.width;
+                anchorY = r.y;
             } else {
-                activeX = r.x + r.width; activeY = r.y + r.height;
-                anchorX = r.x; anchorY = r.y;
+                activeX = r.x + r.width;
+                activeY = r.y + r.height;
+                anchorX = r.x;
+                anchorY = r.y;
             }
             interaction.initialActiveLocal = { x: activeX, y: activeY };
             interaction.anchorLocal = { x: anchorX, y: anchorY };
@@ -517,8 +570,14 @@ import { layerState } from './state.js';
 
         model.visibleRect.x = Math.max(0, Math.min(model.visibleRect.x, model.baseW - MIN_SIZE));
         model.visibleRect.y = Math.max(0, Math.min(model.visibleRect.y, model.baseH - MIN_SIZE));
-        model.visibleRect.width = Math.max(MIN_SIZE, Math.min(model.visibleRect.width, model.baseW - model.visibleRect.x));
-        model.visibleRect.height = Math.max(MIN_SIZE, Math.min(model.visibleRect.height, model.baseH - model.visibleRect.y));
+        model.visibleRect.width = Math.max(
+            MIN_SIZE,
+            Math.min(model.visibleRect.width, model.baseW - model.visibleRect.x)
+        );
+        model.visibleRect.height = Math.max(
+            MIN_SIZE,
+            Math.min(model.visibleRect.height, model.baseH - model.visibleRect.y)
+        );
     }
 
     // ============================================================================
@@ -572,13 +631,15 @@ import { layerState } from './state.js';
         let newRotation = interaction.initialRotation + (angle - initialAngle);
 
         // Snap to 0, 90, 180, 270 degrees if close (within 5 degrees)
-        const snapThreshold = 5 * Math.PI / 180;
-        const snapAngles = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
+        const snapThreshold = (5 * Math.PI) / 180;
+        const snapAngles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
         const normalizedRotation = ((newRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
         for (let i = 0; i < snapAngles.length; i++) {
             const snapAngle = snapAngles[i];
-            if (Math.abs(normalizedRotation - snapAngle) < snapThreshold ||
-                Math.abs(normalizedRotation - (snapAngle + 2 * Math.PI)) < snapThreshold) {
+            if (
+                Math.abs(normalizedRotation - snapAngle) < snapThreshold ||
+                Math.abs(normalizedRotation - (snapAngle + 2 * Math.PI)) < snapThreshold
+            ) {
                 const base = ((interaction.initialRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
                 newRotation = interaction.initialRotation + (snapAngle - base);
                 break;
@@ -641,7 +702,11 @@ import { layerState } from './state.js';
 
     function deselectAll() {
         models.forEach(function (m) {
-            if (m.mo) { try { m.mo.disconnect(); } catch (e) {} }
+            if (m.mo) {
+                try {
+                    m.mo.disconnect();
+                } catch (e) {}
+            }
         });
         models.clear();
         selectedElement = null;
@@ -664,7 +729,9 @@ import { layerState } from './state.js';
         if (typeof window.saveState === 'function') window.saveState();
         el.style.display = 'none';
         el.style.pointerEvents = 'none';
-        const idx = layerState.layers.findIndex(function (l) { return l.element === el; });
+        const idx = layerState.layers.findIndex(function (l) {
+            return l.element === el;
+        });
         if (idx !== -1) {
             layerState.layers[idx].visible = false;
             layerState.layers[idx].disabled = true;
@@ -712,7 +779,7 @@ import { layerState } from './state.js';
                 height: cloneModel.visibleRect.height * cloneModel.scale
             },
             fontSize: parseFloat(clone.dataset.text2Size) || 24,
-            rotation: cloneModel.rotation * 180 / Math.PI,
+            rotation: (cloneModel.rotation * 180) / Math.PI,
             visible: true,
             disabled: false,
             textContent: (contentEl && contentEl.textContent) || 'Text',

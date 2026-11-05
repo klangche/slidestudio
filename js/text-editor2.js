@@ -19,9 +19,17 @@
 // with the rest of the app.
 import { layerState, canvasState } from './state.js';
 import {
-    MIN_PALETTE_SIZE, MAX_PALETTE_SIZE,
-    normalizeHex, hexToRgb, rgbToHex, rgbToHsl, hslToRgb, hslToHex,
-    hsvToHex, complementOf, sampleCanvasColors
+    MIN_PALETTE_SIZE,
+    MAX_PALETTE_SIZE,
+    normalizeHex,
+    hexToRgb,
+    rgbToHex,
+    rgbToHsl,
+    hslToRgb,
+    hslToHex,
+    hsvToHex,
+    complementOf,
+    sampleCanvasColors
 } from './color-utils.js';
 
 (function () {
@@ -96,24 +104,83 @@ import {
     };
 
     const SYSTEM_FONTS = [
-        'Arial', 'Trebuchet MS', 'Times New Roman', 'Georgia', 'Verdana',
-        'Tahoma', 'Courier New', 'Impact', 'Gill Sans', 'Comic Sans MS'
+        'Arial',
+        'Trebuchet MS',
+        'Times New Roman',
+        'Georgia',
+        'Verdana',
+        'Tahoma',
+        'Courier New',
+        'Impact',
+        'Gill Sans',
+        'Comic Sans MS'
     ];
 
     // Curated popular Google Fonts (any of these loads instantly on pick; a
     // custom search can load every other Google Font too).
     const GOOGLE_FONTS = [
-        'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Nunito',
-        'Raleway', 'Work Sans', 'Source Sans Pro', 'Noto Sans', 'Oswald', 'Bebas Neue',
-        'Anton', 'Jost', 'Manrope', 'Sora', 'Outfit', 'Space Grotesk', 'Archivo',
-        'Playfair Display', 'Merriweather', 'Lora', 'EB Garamond', 'Cormorant Garamond',
-        'Bitter', 'PT Serif', 'Crimson Text', 'Fraunces', 'Libre Baskerville',
-        'Pacifico', 'Lobster', 'Caveat', 'Dancing Script', 'Shadows Into Light',
-        'Satisfy', 'Righteous', 'Luckiest Guy', 'Bangers', 'Fredoka One',
-        'Sigmar One', 'Permanent Marker', 'Amatic SC', 'Kalam', 'Sriracha',
-        'Gloria Hallelujah', 'Patrick Hand', 'Indie Flower', 'Cherry Bomb One',
-        'JetBrains Mono', 'Space Mono', 'Fira Mono', 'IBM Plex Mono', 'Rubik Mono One',
-        'Frijole', 'Splash', 'Mogra', 'Streetwear', 'BlowBrush', 'Graffonti', 'Trashhand', 'Urban Jungle'
+        'Inter',
+        'Roboto',
+        'Open Sans',
+        'Lato',
+        'Montserrat',
+        'Poppins',
+        'Nunito',
+        'Raleway',
+        'Work Sans',
+        'Source Sans Pro',
+        'Noto Sans',
+        'Oswald',
+        'Bebas Neue',
+        'Anton',
+        'Jost',
+        'Manrope',
+        'Sora',
+        'Outfit',
+        'Space Grotesk',
+        'Archivo',
+        'Playfair Display',
+        'Merriweather',
+        'Lora',
+        'EB Garamond',
+        'Cormorant Garamond',
+        'Bitter',
+        'PT Serif',
+        'Crimson Text',
+        'Fraunces',
+        'Libre Baskerville',
+        'Pacifico',
+        'Lobster',
+        'Caveat',
+        'Dancing Script',
+        'Shadows Into Light',
+        'Satisfy',
+        'Righteous',
+        'Luckiest Guy',
+        'Bangers',
+        'Fredoka One',
+        'Sigmar One',
+        'Permanent Marker',
+        'Amatic SC',
+        'Kalam',
+        'Sriracha',
+        'Gloria Hallelujah',
+        'Patrick Hand',
+        'Indie Flower',
+        'Cherry Bomb One',
+        'JetBrains Mono',
+        'Space Mono',
+        'Fira Mono',
+        'IBM Plex Mono',
+        'Rubik Mono One',
+        'Frijole',
+        'Splash',
+        'Mogra',
+        'Streetwear',
+        'BlowBrush',
+        'Graffonti',
+        'Trashhand',
+        'Urban Jungle'
     ];
 
     // ------------------------------------------------------------------
@@ -172,11 +239,17 @@ import {
         overlay.addEventListener('click', close);
         closeBtn.addEventListener('click', close);
         cancelBtn.addEventListener('click', close);
-        popup.addEventListener('click', function (e) { if (e.target === popup) close(); });
+        popup.addEventListener('click', function (e) {
+            if (e.target === popup) close();
+        });
 
         document.addEventListener('keydown', function (e) {
             if (!popup || popup.style.display === 'none') return;
-            if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                close();
+                return;
+            }
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 handleApply();
@@ -213,8 +286,14 @@ import {
             });
         }
 
-        if (slidePrev) slidePrev.addEventListener('click', function () { navigateSlide(-1); });
-        if (slideNext) slideNext.addEventListener('click', function () { navigateSlide(1); });
+        if (slidePrev)
+            slidePrev.addEventListener('click', function () {
+                navigateSlide(-1);
+            });
+        if (slideNext)
+            slideNext.addEventListener('click', function () {
+                navigateSlide(1);
+            });
 
         if (weightSelect) {
             weightSelect.addEventListener('change', function () {
@@ -237,61 +316,72 @@ import {
         }
 
         if (pipetteBtn) pipetteBtn.addEventListener('click', pickScreenColor);
-        if (carPrev) carPrev.addEventListener('click', function (e) {
-            e.stopPropagation();
-            carouselIndex -= 1;
-            renderCarousel();
-        });
-        if (carNext) carNext.addEventListener('click', function (e) {
-            e.stopPropagation();
-            carouselIndex += 1;
-            renderCarousel();
-        });
-        if (canvasPrev) canvasPrev.addEventListener('click', function (e) {
-            e.stopPropagation();
-            canvasSlideIndex -= 1;
-            renderCanvasSection();
-        });
-        if (canvasNext) canvasNext.addEventListener('click', function (e) {
-            e.stopPropagation();
-            canvasSlideIndex += 1;
-            renderCanvasSection();
-        });
-        if (palettePlus) palettePlus.addEventListener('click', function (e) {
-            e.stopPropagation();
-            changePaletteSize(1);
-        });
-        if (paletteMinus) paletteMinus.addEventListener('click', function (e) {
-            e.stopPropagation();
-            changePaletteSize(-1);
-        });
-        if (equalWidthBtn) equalWidthBtn.addEventListener('click', function () {
-            editor.equalWidth = !editor.equalWidth;
-            updateEqualWidthButton();
-            renderContentAndPreview();
-        });
+        if (carPrev)
+            carPrev.addEventListener('click', function (e) {
+                e.stopPropagation();
+                carouselIndex -= 1;
+                renderCarousel();
+            });
+        if (carNext)
+            carNext.addEventListener('click', function (e) {
+                e.stopPropagation();
+                carouselIndex += 1;
+                renderCarousel();
+            });
+        if (canvasPrev)
+            canvasPrev.addEventListener('click', function (e) {
+                e.stopPropagation();
+                canvasSlideIndex -= 1;
+                renderCanvasSection();
+            });
+        if (canvasNext)
+            canvasNext.addEventListener('click', function (e) {
+                e.stopPropagation();
+                canvasSlideIndex += 1;
+                renderCanvasSection();
+            });
+        if (palettePlus)
+            palettePlus.addEventListener('click', function (e) {
+                e.stopPropagation();
+                changePaletteSize(1);
+            });
+        if (paletteMinus)
+            paletteMinus.addEventListener('click', function (e) {
+                e.stopPropagation();
+                changePaletteSize(-1);
+            });
+        if (equalWidthBtn)
+            equalWidthBtn.addEventListener('click', function () {
+                editor.equalWidth = !editor.equalWidth;
+                updateEqualWidthButton();
+                renderContentAndPreview();
+            });
 
-        if (spectrumSv) spectrumSv.addEventListener('pointerdown', function (e) {
-            e.preventDefault();
-            svDragging = true;
-            svColorFromEvent(e);
-            document.addEventListener('pointermove', svMove);
-            document.addEventListener('pointerup', svUp);
-        });
-        if (spectrumHue) spectrumHue.addEventListener('pointerdown', function (e) {
-            e.preventDefault();
-            hueDragging = true;
-            hueFromEvent(e);
-            document.addEventListener('pointermove', hueMove);
-            document.addEventListener('pointerup', hueUp);
-        });
+        if (spectrumSv)
+            spectrumSv.addEventListener('pointerdown', function (e) {
+                e.preventDefault();
+                svDragging = true;
+                svColorFromEvent(e);
+                document.addEventListener('pointermove', svMove);
+                document.addEventListener('pointerup', svUp);
+            });
+        if (spectrumHue)
+            spectrumHue.addEventListener('pointerdown', function (e) {
+                e.preventDefault();
+                hueDragging = true;
+                hueFromEvent(e);
+                document.addEventListener('pointermove', hueMove);
+                document.addEventListener('pointerup', hueUp);
+            });
 
         if (sliderPreview) attachBigSwatch(sliderPreview);
 
         const toolbar = document.getElementById('ss-text2Toolbar');
         if (toolbar) {
             toolbar.querySelectorAll('.ss-text2-tool[data-style]').forEach(function (btn) {
-                btn.addEventListener('click', function () { toggleStyle(btn.dataset.style); });
+                btn.addEventListener('click', function () {
+                    toggleStyle(btn.dataset.style);
+                });
             });
         }
 
@@ -299,7 +389,9 @@ import {
             e.stopPropagation();
             toggleFontDropdown();
         });
-        fontSearch.addEventListener('input', function () { renderFontList(fontSearch.value); });
+        fontSearch.addEventListener('input', function () {
+            renderFontList(fontSearch.value);
+        });
         fontSearch.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -321,11 +413,16 @@ import {
         if (addText2Btn) {
             addText2Btn.addEventListener('click', function () {
                 if (layerState.layers.length >= layerState.maxLayers) {
-                    alert('Maximum number of layers reached (' + layerState.maxLayers + '). Please remove some elements before adding more.');
+                    alert(
+                        'Maximum number of layers reached (' +
+                            layerState.maxLayers +
+                            '). Please remove some elements before adding more.'
+                    );
                     return;
                 }
                 const selected = getSelectedText2Element();
-                if (selected) open(selected); else open();
+                if (selected) open(selected);
+                else open();
             });
         }
         updateAddTextButton();
@@ -352,17 +449,28 @@ import {
     const WEIGHT_OPTIONS = [100, 200, 300, 400, 500, 600, 700, 800, 900];
 
     function fontUrl(name) {
-        return 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(name).replace(/%20/g, '+') + '&display=swap';
+        return (
+            'https://fonts.googleapis.com/css2?family=' +
+            encodeURIComponent(name).replace(/%20/g, '+') +
+            '&display=swap'
+        );
     }
 
     function loadGoogleFont(name, weight) {
         if (!name) return;
-        const w = (weight !== undefined && weight !== null && weight !== '') ? String(weight) : String(editor.fontWeight || 'normal');
+        const w =
+            weight !== undefined && weight !== null && weight !== ''
+                ? String(weight)
+                : String(editor.fontWeight || 'normal');
         const wantsAllWeights = (w !== 'normal' && w !== 'bold') || name;
         let url;
         if (wantsAllWeights) {
-            url = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(name).replace(/%20/g, '+') +
-                ':wght@' + WEIGHT_OPTIONS.join(';') + '&display=swap';
+            url =
+                'https://fonts.googleapis.com/css2?family=' +
+                encodeURIComponent(name).replace(/%20/g, '+') +
+                ':wght@' +
+                WEIGHT_OPTIONS.join(';') +
+                '&display=swap';
         } else {
             url = fontUrl(name);
         }
@@ -383,17 +491,27 @@ import {
             const arr = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
             if (!Array.isArray(arr)) return [];
             return arr
-                .filter(function (r) { return r && typeof r.name === 'string'; })
-                .sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); })
-                .map(function (r) { return r.name; });
-        } catch (e) { return []; }
+                .filter(function (r) {
+                    return r && typeof r.name === 'string';
+                })
+                .sort(function (a, b) {
+                    return (b.ts || 0) - (a.ts || 0);
+                })
+                .map(function (r) {
+                    return r.name;
+                });
+        } catch (e) {
+            return [];
+        }
     }
 
     function pushRecentFont(name) {
         try {
             const arr = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
             if (!Array.isArray(arr)) return;
-            const filtered = arr.filter(function (r) { return !r || r.name !== name; });
+            const filtered = arr.filter(function (r) {
+                return !r || r.name !== name;
+            });
             filtered.unshift({ name: name, ts: Date.now() });
             localStorage.setItem(RECENT_KEY, JSON.stringify(filtered.slice(0, MAX_RECENT)));
         } catch (e) {}
@@ -435,7 +553,9 @@ import {
         fontList.innerHTML = '';
 
         const unique = [];
-        fonts.forEach(function (f) { if (unique.indexOf(f) === -1) unique.push(f); });
+        fonts.forEach(function (f) {
+            if (unique.indexOf(f) === -1) unique.push(f);
+        });
         unique.forEach(function (f) {
             const row = document.createElement('button');
             row.type = 'button';
@@ -463,7 +583,12 @@ import {
             fontList.appendChild(row);
         });
 
-        if (q && !unique.some(function (f) { return f.toLowerCase() === q; })) {
+        if (
+            q &&
+            !unique.some(function (f) {
+                return f.toLowerCase() === q;
+            })
+        ) {
             const loadRow = document.createElement('button');
             loadRow.type = 'button';
             loadRow.className = 'ss-text2-font-option ss-text2-font-load';
@@ -510,7 +635,9 @@ import {
             fontSearch.value = '';
             renderRecentFonts();
             renderFontList('');
-            setTimeout(function () { fontSearch.focus(); }, 10);
+            setTimeout(function () {
+                fontSearch.focus();
+            }, 10);
         }
     }
 
@@ -545,9 +672,9 @@ import {
     }
 
     function parseTextLine(obj) {
-        obj = (obj && typeof obj === 'object') ? obj : {};
+        obj = obj && typeof obj === 'object' ? obj : {};
         return {
-            text: (obj.text !== undefined && obj.text !== null) ? String(obj.text) : ''
+            text: obj.text !== undefined && obj.text !== null ? String(obj.text) : ''
         };
     }
 
@@ -592,15 +719,27 @@ import {
 
     function rebuildLinesFromText() {
         editor.lines = readEditableLines();
-        editor.text = editor.lines.map(function (l) { return l.text; }).join('\n');
+        editor.text = editor.lines
+            .map(function (l) {
+                return l.text;
+            })
+            .join('\n');
     }
 
     function decoFrom(baseDeco, underline, strike) {
-        let parts = (baseDeco || 'none').split(/\s+/).filter(function (p) { return p && p !== 'none'; });
+        let parts = (baseDeco || 'none').split(/\s+/).filter(function (p) {
+            return p && p !== 'none';
+        });
         if (underline === true && parts.indexOf('underline') === -1) parts.push('underline');
-        if (underline === false) parts = parts.filter(function (p) { return p !== 'underline'; });
+        if (underline === false)
+            parts = parts.filter(function (p) {
+                return p !== 'underline';
+            });
         if (strike === true && parts.indexOf('line-through') === -1) parts.push('line-through');
-        if (strike === false) parts = parts.filter(function (p) { return p !== 'line-through'; });
+        if (strike === false)
+            parts = parts.filter(function (p) {
+                return p !== 'line-through';
+            });
         return parts.length ? parts.join(' ') : 'none';
     }
 
@@ -613,8 +752,10 @@ import {
         if (overrides.weight !== undefined) editor.fontWeight = String(overrides.weight);
         if (overrides.bold !== undefined) editor.fontWeight = overrides.bold ? 'bold' : 'normal';
         if (overrides.italic !== undefined) editor.fontStyle = overrides.italic ? 'italic' : 'normal';
-        if (overrides.underline !== undefined) editor.textDecoration = decoFrom(editor.textDecoration, overrides.underline, null);
-        if (overrides.strike !== undefined) editor.textDecoration = decoFrom(editor.textDecoration, null, overrides.strike);
+        if (overrides.underline !== undefined)
+            editor.textDecoration = decoFrom(editor.textDecoration, overrides.underline, null);
+        if (overrides.strike !== undefined)
+            editor.textDecoration = decoFrom(editor.textDecoration, null, overrides.strike);
         if (overrides.caps !== undefined) editor.textTransform = overrides.caps ? 'uppercase' : 'none';
         editor.textAlign = 'center';
         renderContentAndPreview();
@@ -623,11 +764,21 @@ import {
 
     function toggleStyle(style) {
         switch (style) {
-            case 'bold': applyBase({ bold: editor.fontWeight !== 'bold' }); break;
-            case 'italic': applyBase({ italic: editor.fontStyle !== 'italic' }); break;
-            case 'underline': applyBase({ underline: (editor.textDecoration || '').indexOf('underline') === -1 }); break;
-            case 'strike': applyBase({ strike: (editor.textDecoration || '').indexOf('line-through') === -1 }); break;
-            case 'caps': applyBase({ caps: editor.textTransform !== 'uppercase' }); break;
+            case 'bold':
+                applyBase({ bold: editor.fontWeight !== 'bold' });
+                break;
+            case 'italic':
+                applyBase({ italic: editor.fontStyle !== 'italic' });
+                break;
+            case 'underline':
+                applyBase({ underline: (editor.textDecoration || '').indexOf('underline') === -1 });
+                break;
+            case 'strike':
+                applyBase({ strike: (editor.textDecoration || '').indexOf('line-through') === -1 });
+                break;
+            case 'caps':
+                applyBase({ caps: editor.textTransform !== 'uppercase' });
+                break;
         }
     }
 
@@ -713,7 +864,12 @@ import {
         for (let i = 0; i < 60 && hi - lo > 0.001; i++) {
             const mid = (lo + hi) / 2;
             const w = measureTextWidth(text, family, mid, baseLS, weight, style, caps);
-            if (w <= targetW) { bestSize = mid; lo = mid; } else { hi = mid; }
+            if (w <= targetW) {
+                bestSize = mid;
+                lo = mid;
+            } else {
+                hi = mid;
+            }
         }
         // Hinting can switch width plateaus a few tenths of a pixel above
         // bestSize, and the line rounds its font size down, so drop to the
@@ -728,16 +884,28 @@ import {
     function computeLayout(base, lines, equalWidth) {
         const caps = base.textTransform === 'uppercase';
         const naturals = lines.map(function (l) {
-            return measureTextWidth(l.text, base.fontFamily, base.fontSize, base.letterSpacing, base.fontWeight, base.fontStyle, caps);
+            return measureTextWidth(
+                l.text,
+                base.fontFamily,
+                base.fontSize,
+                base.letterSpacing,
+                base.fontWeight,
+                base.fontStyle,
+                caps
+            );
         });
-        const sizes = lines.map(function () { return base.fontSize; });
-        const spacings = lines.map(function () { return base.letterSpacing; });
+        const sizes = lines.map(function () {
+            return base.fontSize;
+        });
+        const spacings = lines.map(function () {
+            return base.letterSpacing;
+        });
         let contentW = 1;
         if (equalWidth && lines.length) {
             const target = Math.max.apply(null, naturals);
             contentW = Math.max(1, target);
             lines.forEach(function (l, i) {
-                const t = caps ? l.text.toUpperCase() : (l.text || '');
+                const t = caps ? l.text.toUpperCase() : l.text || '';
                 const trimmed = t.trim();
                 if (!trimmed) return;
                 // Poster: every row fills the same width. Rows with fewer words
@@ -745,33 +913,42 @@ import {
                 // target width, so grow the font size until the row is just
                 // below the target, then finish the last few pixels with
                 // letter-spacing.
-                const fitted = sizeForWidth(t, base.fontFamily, contentW,
-                    base.letterSpacing, base.fontWeight, base.fontStyle,
-                    caps, base.fontSize);
+                const fitted = sizeForWidth(
+                    t,
+                    base.fontFamily,
+                    contentW,
+                    base.letterSpacing,
+                    base.fontWeight,
+                    base.fontStyle,
+                    caps,
+                    base.fontSize
+                );
                 sizes[i] = fitted.size;
                 spacings[i] = fitted.ls;
             });
         } else {
-            naturals.forEach(function (w) { if (w > contentW) contentW = w; });
+            naturals.forEach(function (w) {
+                if (w > contentW) contentW = w;
+            });
         }
         const contentH = lines.reduce(function (acc, l, i) {
-            const lh = equalWidth ? POSTER_LINE_HEIGHT : (base.lineHeight || 1.2);
+            const lh = equalWidth ? POSTER_LINE_HEIGHT : base.lineHeight || 1.2;
             return acc + lh * sizes[i];
         }, 0);
         return { contentW: contentW, contentH: contentH, sizes: sizes, spacings: spacings };
     }
 
     function styleLineDiv(d, base, layout, i, equalWidth) {
-        d.style.width = (Math.round(layout.contentW * 10) / 10) + 'px';
+        d.style.width = Math.round(layout.contentW * 10) / 10 + 'px';
         d.style.fontFamily = base.fontFamily;
-        d.style.fontSize = (Math.floor(layout.sizes[i] * 100) / 100) + 'px';
+        d.style.fontSize = Math.floor(layout.sizes[i] * 100) / 100 + 'px';
         d.style.color = base.color;
         d.style.fontWeight = base.fontWeight;
         d.style.fontStyle = base.fontStyle;
         d.style.textDecoration = base.textDecoration;
         d.style.textTransform = base.textTransform;
         d.style.textAlign = base.textAlign;
-        d.style.letterSpacing = (Math.round(layout.spacings[i] * 100) / 100) + 'px';
+        d.style.letterSpacing = Math.round(layout.spacings[i] * 100) / 100 + 'px';
         d.style.lineHeight = String(equalWidth ? POSTER_LINE_HEIGHT : base.lineHeight);
         // Poster rows must stay on one single line: never wrap, never hide.
         d.style.whiteSpace = equalWidth ? 'pre' : 'pre-wrap';
@@ -862,7 +1039,7 @@ import {
         const boxH = crop.h * s;
         textBox.style.width = boxW + 'px';
         textBox.style.height = boxH + 'px';
-        content.style.transform = 'translate(' + (-crop.x * s) + 'px,' + (-crop.y * s) + 'px) scale(' + s + ',' + s + ')';
+        content.style.transform = 'translate(' + -crop.x * s + 'px,' + -crop.y * s + 'px) scale(' + s + ',' + s + ')';
 
         textBox.dataset.text2Lines = JSON.stringify(lines);
         textBox.dataset.text2Equal = data.equalWidth ? '1' : '0';
@@ -877,7 +1054,11 @@ import {
 
     function collectText2Data() {
         return {
-            text: editor.lines.map(function (l) { return l.text; }).join('\n'),
+            text: editor.lines
+                .map(function (l) {
+                    return l.text;
+                })
+                .join('\n'),
             lines: editor.lines,
             base: baseStyle(),
             font: editor.font,
@@ -934,7 +1115,10 @@ import {
             const pre = range.cloneRange();
             pre.selectNodeContents(anchorEl);
             pre.setEnd(range.startContainer, range.startOffset);
-            return { line: divs.length ? divs.length - 1 : 0, offset: divs.length ? divs[divs.length - 1].textContent.length : 0 };
+            return {
+                line: divs.length ? divs.length - 1 : 0,
+                offset: divs.length ? divs[divs.length - 1].textContent.length : 0
+            };
         }
         let line = divs.indexOf(lineEl);
         if (line === -1) line = divs.length ? divs.length - 1 : 0;
@@ -975,10 +1159,14 @@ import {
         if (!sel.rangeCount) return null;
         const range = sel.getRangeAt(0);
         let lineEl = range.startContainer;
-        while (lineEl && lineEl !== editableAnchor && !(lineEl.classList && lineEl.classList.contains('ss-text2-line'))) {
+        while (
+            lineEl &&
+            lineEl !== editableAnchor &&
+            !(lineEl.classList && lineEl.classList.contains('ss-text2-line'))
+        ) {
             lineEl = lineEl.parentNode;
         }
-        return (lineEl && lineEl !== editableAnchor) ? lineEl : null;
+        return lineEl && lineEl !== editableAnchor ? lineEl : null;
     }
 
     function setLineDom(d, text) {
@@ -1027,7 +1215,12 @@ import {
         editableAnchor.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
         editableAnchor.style.transformOrigin = 'center center';
         editablePreview.style.height = Math.max(EDIT_MIN_H, Math.min(EDIT_MAX_H, layout.contentH * scale + 20)) + 'px';
-        editablePreview.classList.toggle('ss-text2-editable-preview--empty', !lines.some(function (l) { return (l.text || '').trim(); }));
+        editablePreview.classList.toggle(
+            'ss-text2-editable-preview--empty',
+            !lines.some(function (l) {
+                return (l.text || '').trim();
+            })
+        );
 
         if (caret !== null) setEditableCaretPosition(editableAnchor, caret);
     }
@@ -1048,18 +1241,21 @@ import {
         lineEl.after(newDiv);
         rebuildLinesFromText();
         renderEditablePreview();
-        setEditableCaretPosition(editableAnchor, { line: (function () {
-            const divs = Array.prototype.slice.call(editableAnchor.querySelectorAll(':scope > .ss-text2-line'));
-            const idx = divs.indexOf(newDiv);
-            return idx === -1 ? (divs.length ? divs.length - 1 : 0) : idx;
-        })(), offset: 0 });
+        setEditableCaretPosition(editableAnchor, {
+            line: (function () {
+                const divs = Array.prototype.slice.call(editableAnchor.querySelectorAll(':scope > .ss-text2-line'));
+                const idx = divs.indexOf(newDiv);
+                return idx === -1 ? (divs.length ? divs.length - 1 : 0) : idx;
+            })(),
+            offset: 0
+        });
     }
 
     function handleEditablePaste(e) {
         e.preventDefault();
         if (!editableAnchor) return;
         const src = e.clipboardData || window.clipboardData;
-        const text = (src && src.getData) ? src.getData('text/plain') : '';
+        const text = src && src.getData ? src.getData('text/plain') : '';
         if (!text) return;
 
         const lineEl = lineElFromSelection();
@@ -1078,7 +1274,11 @@ import {
             rebuildLinesFromText();
             renderEditablePreview();
             const divs = Array.prototype.slice.call(editableAnchor.querySelectorAll(':scope > .ss-text2-line'));
-            if (divs.length) setEditableCaretPosition(editableAnchor, { line: divs.length - 1, offset: divs[divs.length - 1].textContent.length });
+            if (divs.length)
+                setEditableCaretPosition(editableAnchor, {
+                    line: divs.length - 1,
+                    offset: divs[divs.length - 1].textContent.length
+                });
             return;
         }
 
@@ -1105,11 +1305,14 @@ import {
         setLineDom(anchorEl, anchorEl.textContent + after);
         rebuildLinesFromText();
         renderEditablePreview();
-        setEditableCaretPosition(editableAnchor, { line: (function () {
-            const divs = Array.prototype.slice.call(editableAnchor.querySelectorAll(':scope > .ss-text2-line'));
-            const idx = divs.indexOf(anchorEl);
-            return idx === -1 ? (divs.length ? divs.length - 1 : 0) : idx;
-        })(), offset: rest.length ? rest[rest.length - 1].length : first.length });
+        setEditableCaretPosition(editableAnchor, {
+            line: (function () {
+                const divs = Array.prototype.slice.call(editableAnchor.querySelectorAll(':scope > .ss-text2-line'));
+                const idx = divs.indexOf(anchorEl);
+                return idx === -1 ? (divs.length ? divs.length - 1 : 0) : idx;
+            })(),
+            offset: rest.length ? rest[rest.length - 1].length : first.length
+        });
     }
 
     function clampFontSize(v) {
@@ -1159,7 +1362,9 @@ import {
     }
 
     function attachSwatch(sw, c) {
-        sw.addEventListener('mouseenter', function () { previewSwatchColor(c); });
+        sw.addEventListener('mouseenter', function () {
+            previewSwatchColor(c);
+        });
         sw.addEventListener('mouseleave', revertSwatchColor);
         sw.addEventListener('click', function () {
             applyBase({ color: c });
@@ -1299,7 +1504,8 @@ import {
         if (!spectrumSv) return;
         const { h, s, v } = currentHsv();
         spectrumSv.style.backgroundColor = hslToHex(h, 1, 0.5);
-        spectrumSv.style.backgroundImage = 'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0))';
+        spectrumSv.style.backgroundImage =
+            'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0))';
         positionSpectrumMarker(spectrumSvMarker, s * 100, (1 - v) * 100);
         positionSpectrumMarker(spectrumHueMarker, (h / 360) * 100, 50);
     }
@@ -1326,19 +1532,24 @@ import {
         positionSpectrumMarker(spectrumHueMarker, x * 100, 50);
         if (spectrumSv) {
             spectrumSv.style.backgroundColor = hslToHex(h, 1, 0.5);
-            spectrumSv.style.backgroundImage = 'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0))';
+            spectrumSv.style.backgroundImage =
+                'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0))';
         }
     }
 
     let svDragging = false;
     let hueDragging = false;
-    function svMove(e) { if (svDragging) svColorFromEvent(e); }
+    function svMove(e) {
+        if (svDragging) svColorFromEvent(e);
+    }
     function svUp() {
         svDragging = false;
         document.removeEventListener('pointermove', svMove);
         document.removeEventListener('pointerup', svUp);
     }
-    function hueMove(e) { if (hueDragging) hueFromEvent(e); }
+    function hueMove(e) {
+        if (hueDragging) hueFromEvent(e);
+    }
     function hueUp() {
         hueDragging = false;
         document.removeEventListener('pointermove', hueMove);
@@ -1428,10 +1639,14 @@ import {
         const inputs = sliders.querySelectorAll('input[type="range"]');
         const vals = sliders.querySelectorAll('.ss-text2-slider-val');
         if (inputs.length === 3) {
-            inputs[0].value = r; inputs[1].value = g; inputs[2].value = b;
+            inputs[0].value = r;
+            inputs[1].value = g;
+            inputs[2].value = b;
         }
         if (vals.length === 3) {
-            vals[0].textContent = r; vals[1].textContent = g; vals[2].textContent = b;
+            vals[0].textContent = r;
+            vals[1].textContent = g;
+            vals[2].textContent = b;
         }
         const hex = rgbToHex(r, g, b);
         if (sliderPreview) {
@@ -1472,12 +1687,15 @@ import {
                     document.body.style.overflow = '';
                 }
                 setTimeout(function () {
-                    dropper.open().then(function (result) {
-                        restore();
-                        if (result && result.sRGBHex) applyBase({ color: normalizeHex(result.sRGBHex) });
-                    }).catch(function () {
-                        restore();
-                    });
+                    dropper
+                        .open()
+                        .then(function (result) {
+                            restore();
+                            if (result && result.sRGBHex) applyBase({ color: normalizeHex(result.sRGBHex) });
+                        })
+                        .catch(function () {
+                            restore();
+                        });
                 }, 60);
                 return;
             } catch (e) {}
@@ -1497,8 +1715,11 @@ import {
     function textBoxesOnSlide(slideIndex) {
         const designerCanvas = document.getElementById('ss-designer-canvas');
         if (!designerCanvas) return [];
-        return Array.prototype.slice.call(designerCanvas.querySelectorAll('.ss-text2-element'))
-            .filter(function (el) { return slideIndexOfTextBox(el) === slideIndex; })
+        return Array.prototype.slice
+            .call(designerCanvas.querySelectorAll('.ss-text2-element'))
+            .filter(function (el) {
+                return slideIndexOfTextBox(el) === slideIndex;
+            })
             .sort(function (a, b) {
                 const za = parseInt(a.style.zIndex, 10) || 0;
                 const zb = parseInt(b.style.zIndex, 10) || 0;
@@ -1563,9 +1784,13 @@ import {
         if (!popup) init();
         if (!popup) return;
 
-        editingTextBox = (existingTextBox && existingTextBox.classList && existingTextBox.classList.contains('ss-text2-element'))
-            ? existingTextBox : null;
-        editingSlideIndex = editingTextBox ? slideIndexOfTextBox(editingTextBox) : Math.max(0, (canvasState.sections || 1) - 1);
+        editingTextBox =
+            existingTextBox && existingTextBox.classList && existingTextBox.classList.contains('ss-text2-element')
+                ? existingTextBox
+                : null;
+        editingSlideIndex = editingTextBox
+            ? slideIndexOfTextBox(editingTextBox)
+            : Math.max(0, (canvasState.sections || 1) - 1);
 
         if (editingTextBox) {
             const contentEl = editingTextBox.querySelector('.ss-text-content') || editingTextBox;
@@ -1575,15 +1800,23 @@ import {
                 savedLines = JSON.parse(editingTextBox.dataset.text2Lines || '[]');
             } catch (e) {}
             if (!Array.isArray(savedLines) || !savedLines.length) {
-                savedLines = (contentEl.textContent || '').split('\n').map(function (t) { return { text: t }; });
+                savedLines = (contentEl.textContent || '').split('\n').map(function (t) {
+                    return { text: t };
+                });
             }
             editor.lines = savedLines.map(parseTextLine);
-            editor.text = editor.lines.map(function (l) { return l.text; }).join('\n');
+            editor.text = editor.lines
+                .map(function (l) {
+                    return l.text;
+                })
+                .join('\n');
             editor.font = editingTextBox.dataset.text2Font || parseFontName(cs.fontFamily) || DEFAULT_FONT;
-            editor.fontSize = clampFontSize(parseFloat(editingTextBox.dataset.text2Size) || parseFloat(cs.fontSize) || 48);
+            editor.fontSize = clampFontSize(
+                parseFloat(editingTextBox.dataset.text2Size) || parseFloat(cs.fontSize) || 48
+            );
             editor.color = normalizeHex(cs.color);
             committedColor = editor.color;
-            editor.fontWeight = (cs.fontWeight === 'bold' || parseFloat(cs.fontWeight) >= 600) ? 'bold' : 'normal';
+            editor.fontWeight = cs.fontWeight === 'bold' || parseFloat(cs.fontWeight) >= 600 ? 'bold' : 'normal';
             editor.fontStyle = cs.fontStyle === 'italic' ? 'italic' : 'normal';
             editor.textDecoration = (cs.textDecoration || 'none').toLowerCase();
             editor.textTransform = cs.textTransform === 'uppercase' ? 'uppercase' : 'none';
@@ -1630,7 +1863,7 @@ import {
             if (editableAnchor) {
                 editableAnchor.focus();
                 const lastLine = Math.max(0, (editor.lines ? editor.lines.length : 1) - 1);
-                const lastText = editor.lines && editor.lines.length ? (editor.lines[lastLine].text || '') : '';
+                const lastText = editor.lines && editor.lines.length ? editor.lines[lastLine].text || '' : '';
                 setEditableCaretPosition(editableAnchor, { line: lastLine, offset: lastText.length });
             }
         }, 10);
@@ -1647,21 +1880,32 @@ import {
         editingTextBox = null;
         editingPolaroidImg = img;
         const sections = canvasState.sections || 1;
-        editingSlideIndex = Math.max(0, Math.min(sections - 1,
-            Math.floor((img.position.x + BASE_CANVAS_WIDTH / 2) / BASE_CANVAS_WIDTH)));
+        editingSlideIndex = Math.max(
+            0,
+            Math.min(sections - 1, Math.floor((img.position.x + BASE_CANVAS_WIDTH / 2) / BASE_CANVAS_WIDTH))
+        );
 
         const pol = img.polaroid;
         if (pol.textPayload) {
             const b = pol.textPayload.base || {};
-            editor.lines = (pol.textPayload.lines && pol.textPayload.lines.length)
-                ? pol.textPayload.lines.map(parseTextLine)
-                : String(pol.textPayload.text || '').split('\n').map(function (t) { return { text: t }; });
-            editor.text = editor.lines.map(function (l) { return l.text; }).join('\n');
+            editor.lines =
+                pol.textPayload.lines && pol.textPayload.lines.length
+                    ? pol.textPayload.lines.map(parseTextLine)
+                    : String(pol.textPayload.text || '')
+                          .split('\n')
+                          .map(function (t) {
+                              return { text: t };
+                          });
+            editor.text = editor.lines
+                .map(function (l) {
+                    return l.text;
+                })
+                .join('\n');
             editor.font = pol.textPayload.font || parseFontName(b.fontFamily) || DEFAULT_FONT;
             editor.fontSize = clampFontSize(parseFloat(b.fontSize) || 48);
             editor.color = normalizeHex(b.color) || '#121212';
             committedColor = editor.color;
-            editor.fontWeight = (b.fontWeight === 'bold' || parseFloat(b.fontWeight) >= 600) ? 'bold' : 'normal';
+            editor.fontWeight = b.fontWeight === 'bold' || parseFloat(b.fontWeight) >= 600 ? 'bold' : 'normal';
             editor.fontStyle = b.fontStyle === 'italic' ? 'italic' : 'normal';
             editor.textDecoration = (b.textDecoration || 'none').toLowerCase();
             editor.textTransform = b.textTransform === 'uppercase' ? 'uppercase' : 'none';
@@ -1673,9 +1917,17 @@ import {
             editor.equalWidth = !!pol.textPayload.equalWidth;
         } else {
             // Legacy handwriting style from before the editor integration.
-            const lines = String(pol.text || '').split('\n').map(function (t) { return { text: t }; });
+            const lines = String(pol.text || '')
+                .split('\n')
+                .map(function (t) {
+                    return { text: t };
+                });
             editor.lines = lines;
-            editor.text = lines.map(function (l) { return l.text; }).join('\n');
+            editor.text = lines
+                .map(function (l) {
+                    return l.text;
+                })
+                .join('\n');
             editor.font = 'Segoe Script';
             editor.fontSize = 48;
             editor.color = '#121212';
@@ -1740,7 +1992,9 @@ import {
         closeFontDropdown();
         editingTextBox = null;
         editingPolaroidImg = null;
-        try { if (lastActiveElement && typeof lastActiveElement.focus === 'function') lastActiveElement.focus(); } catch (e) {}
+        try {
+            if (lastActiveElement && typeof lastActiveElement.focus === 'function') lastActiveElement.focus();
+        } catch (e) {}
     }
 
     // ------------------------------------------------------------------
@@ -1748,7 +2002,11 @@ import {
     // ------------------------------------------------------------------
     function handleApply() {
         if (!popup || popup.style.display === 'none') return;
-        const text = editor.lines.map(function (l) { return l.text; }).join('\n');
+        const text = editor.lines
+            .map(function (l) {
+                return l.text;
+            })
+            .join('\n');
 
         // Polaroid lip text: write the payload back to the image instead of
         // creating/updating a text layer.
@@ -1865,7 +2123,9 @@ import {
         const boxH = parseFloat(textBox.style.height) || state.boxH;
         if (!textBox.classList.contains('ss-text2-element')) textBox.classList.add('ss-text2-element');
 
-        const idx = layerState.layers.findIndex(function (l) { return l.element === textBox; });
+        const idx = layerState.layers.findIndex(function (l) {
+            return l.element === textBox;
+        });
         if (idx !== -1) {
             const layer = layerState.layers[idx];
             layer.textContent = data.text;
@@ -1917,11 +2177,15 @@ import {
         open: open,
         close: close,
         openForPolaroid: openForPolaroid,
-        isText2Element: function (el) { return !!(el && el.classList && el.classList.contains('ss-text2-element')); },
+        isText2Element: function (el) {
+            return !!(el && el.classList && el.classList.contains('ss-text2-element'));
+        },
         getSelected: getSelectedText2Element,
         updateAddTextButton: updateAddTextButton,
         renderContentToElement: renderContentToElement,
         registerWithImageTransform: registerWithImageTransform,
-        isText2Element: function (el) { return !!(el && el.classList && el.classList.contains('ss-text2-element')); }
+        isText2Element: function (el) {
+            return !!(el && el.classList && el.classList.contains('ss-text2-element'));
+        }
     };
 })();

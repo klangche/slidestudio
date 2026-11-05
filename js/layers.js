@@ -8,25 +8,25 @@ import { setupRotationHandler, getResizeHandlesForElement } from './ui-helpers.j
 // ENHANCED: Delete function that hides instead of removes
 export function deleteSelectedLayer() {
     if (!layerState.selectedLayer) return;
-    
+
     saveState();
-    
+
     const element = layerState.selectedLayer;
-    
+
     // Instead of removing, hide and disable the element
     element.style.display = 'none';
     element.style.pointerEvents = 'none';
-    
+
     // Update layer state
-    const layerIndex = layerState.layers.findIndex(function(layer) {
+    const layerIndex = layerState.layers.findIndex(function (layer) {
         return layer.element === element;
     });
-    
+
     if (layerIndex !== -1) {
         layerState.layers[layerIndex].visible = false;
         layerState.layers[layerIndex].disabled = true;
     }
-    
+
     layerState.selectedLayer = null;
     updateLayerOrderButtons();
 }
@@ -72,7 +72,7 @@ export function duplicateSelectedImageLayer() {
     // Save before duplicate
     saveState();
     const cloneEl = layer.element.cloneNode(true);
-    cloneEl.id = 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    cloneEl.id = 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const left = (parseInt(layer.element.style.left) || 0) + 20;
     const top = (parseInt(layer.element.style.top) || 0) + 20;
     cloneEl.style.left = left + 'px';
@@ -85,7 +85,7 @@ export function duplicateSelectedImageLayer() {
         element: cloneEl,
         imageElement: imgEl,
         type: 'image',
-        zIndex: parseInt(cloneEl.style.zIndex) || (layer.zIndex + 1),
+        zIndex: parseInt(cloneEl.style.zIndex) || layer.zIndex + 1,
         position: { left, top },
         size: { width: layer.element.offsetWidth, height: layer.element.offsetHeight },
         rotation: layer.rotation || 0,
@@ -113,14 +113,17 @@ export function replaceSelectedImage() {
     fileInput.type = 'file';
     fileInput.accept = 'image/*';
     fileInput.style.display = 'none';
-    fileInput.addEventListener('change', function(e) {
+    fileInput.addEventListener('change', function (e) {
         const file = e.target.files && e.target.files[0];
-        if (!file) { document.body.removeChild(fileInput); return; }
+        if (!file) {
+            document.body.removeChild(fileInput);
+            return;
+        }
         const reader = new FileReader();
-        reader.onload = function(evt) {
+        reader.onload = function (evt) {
             const src = evt.target.result;
             const img = new Image();
-            img.onload = function() {
+            img.onload = function () {
                 saveState();
                 const container = layer.element;
                 const imageEl = layer.imageElement || container.querySelector('img');
@@ -168,7 +171,7 @@ export function toggleLockSelectedImage() {
     el.style.pointerEvents = isLocked ? 'auto' : 'auto';
     // Disable resize handles when locked
     const handles = getResizeHandlesForElement(el);
-    if (handles) handles.style.display = isLocked ? 'none' : (el.classList.contains('selected') ? 'block' : 'none');
+    if (handles) handles.style.display = isLocked ? 'none' : el.classList.contains('selected') ? 'block' : 'none';
     layer.locked = isLocked;
     saveState();
 }
@@ -191,18 +194,20 @@ export function toggleGrayscaleSelectedImage() {
     if (!imageEl) return;
     const currentFilter = imageEl.style.filter || '';
     const hasGray = /grayscale\(1\)/.test(currentFilter) || /grayscale\(100%\)/.test(currentFilter);
-    imageEl.style.filter = hasGray ? currentFilter.replace(/grayscale\(1\)|grayscale\(100%\)/, '').trim() : (currentFilter + ' grayscale(1)').trim();
+    imageEl.style.filter = hasGray
+        ? currentFilter.replace(/grayscale\(1\)|grayscale\(100%\)/, '').trim()
+        : (currentFilter + ' grayscale(1)').trim();
     saveState();
 }
 
 export function moveLayerToTop() {
     if (!layerState.selectedLayer) return;
     saveState();
-    
+
     const newZIndex = layerState.nextZIndex++;
     layerState.selectedLayer.style.zIndex = newZIndex;
-    
-    const layerIndex = layerState.layers.findIndex(function(layer) {
+
+    const layerIndex = layerState.layers.findIndex(function (layer) {
         return layer.element === layerState.selectedLayer;
     });
     if (layerIndex !== -1) {
@@ -213,12 +218,12 @@ export function moveLayerToTop() {
 export function moveLayerUp() {
     if (!layerState.selectedLayer) return;
     saveState();
-    
+
     const currentZIndex = parseInt(layerState.selectedLayer.style.zIndex);
     const newZIndex = currentZIndex + 1;
     layerState.selectedLayer.style.zIndex = newZIndex;
-    
-    const layerIndex = layerState.layers.findIndex(function(layer) {
+
+    const layerIndex = layerState.layers.findIndex(function (layer) {
         return layer.element === layerState.selectedLayer;
     });
     if (layerIndex !== -1) {
@@ -229,13 +234,13 @@ export function moveLayerUp() {
 export function moveLayerDown() {
     if (!layerState.selectedLayer) return;
     saveState();
-    
+
     const currentZIndex = parseInt(layerState.selectedLayer.style.zIndex);
     if (currentZIndex > 10) {
         const newZIndex = currentZIndex - 1;
         layerState.selectedLayer.style.zIndex = newZIndex;
-        
-        const layerIndex = layerState.layers.findIndex(function(layer) {
+
+        const layerIndex = layerState.layers.findIndex(function (layer) {
             return layer.element === layerState.selectedLayer;
         });
         if (layerIndex !== -1) {
@@ -247,10 +252,10 @@ export function moveLayerDown() {
 export function moveLayerToBottom() {
     if (!layerState.selectedLayer) return;
     saveState();
-    
+
     layerState.selectedLayer.style.zIndex = '10';
-    
-    const layerIndex = layerState.layers.findIndex(function(layer) {
+
+    const layerIndex = layerState.layers.findIndex(function (layer) {
         return layer.element === layerState.selectedLayer;
     });
     if (layerIndex !== -1) {
@@ -276,24 +281,27 @@ export function updateImageToolButtons() {
         'ss-selectMultipleBtn',
         'ss-groupBtn'
     ];
-    
-    const selectedImage = window.SSImageTransform && window.SSImageTransform.getSelectedImage && window.SSImageTransform.getSelectedImage();
+
+    const selectedImage =
+        window.SSImageTransform &&
+        window.SSImageTransform.getSelectedImage &&
+        window.SSImageTransform.getSelectedImage();
     const hasSelectedImage = !!selectedImage;
     const isLocked = selectedImage && selectedImage.locked;
-    
+
     // text2 boxes are image-like: delete/duplicate/lock work on the active box,
     // the image-only tools (flips, replace, frames, shadow, ...) stay disabled.
     const sel = layerState.selectedLayer;
     const isText2Selected = !!(sel && sel.classList && sel.classList.contains('ss-text2-element'));
     const isText2Locked = isText2Selected && sel.dataset && sel.dataset.text2Locked === '1';
     const text2Allowed = ['ss-duplicateImageBtn', 'ss-deleteImageBtn', 'ss-lockImageBtn'];
-    
-    imageToolButtons.forEach(function(btnId) {
+
+    imageToolButtons.forEach(function (btnId) {
         const btn = document.getElementById(btnId);
         if (btn) {
             // Remove any background styling
             btn.style.background = 'none';
-            
+
             if (isText2Selected) {
                 const enabled = btnId === 'ss-lockImageBtn' || (text2Allowed.indexOf(btnId) !== -1 && !isText2Locked);
                 btn.disabled = !enabled;
@@ -301,7 +309,7 @@ export function updateImageToolButtons() {
                 btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
                 return;
             }
-            
+
             // Lock button is always available when image is selected
             if (btnId === 'ss-lockImageBtn' && hasSelectedImage) {
                 btn.disabled = false;
@@ -351,7 +359,7 @@ export function updateCanvasColor(hexColor) {
     if (designerCanvas) {
         designerCanvas.style.backgroundColor = hexColor;
         saveState();
-        
+
         // Update slide separator colors when background changes
         if (guidanceState.active) {
             updateSlideSeparatorColors();
@@ -361,46 +369,72 @@ export function updateCanvasColor(hexColor) {
 
 export function initializeUploadFunctionality() {
     const uploadImagesBtn = document.getElementById('ss-uploadImagesBtn');
-    
+
     if (uploadImagesBtn) {
-        uploadImagesBtn.addEventListener('click', function() {
+        uploadImagesBtn.addEventListener('click', function () {
             if (layerState.layers.length >= layerState.maxLayers) {
-                alert('Maximum number of layers reached (' + layerState.maxLayers + '). Please remove some elements before adding more.');
+                alert(
+                    'Maximum number of layers reached (' +
+                        layerState.maxLayers +
+                        '). Please remove some elements before adding more.'
+                );
                 return;
             }
-            
+
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
             fileInput.multiple = true;
             fileInput.style.display = 'none';
-            
-            fileInput.addEventListener('change', function(e) {
-                console.log('initializeUploadFunctionality: file input change event', e.target.files && e.target.files.length);
+
+            fileInput.addEventListener('change', function (e) {
+                console.log(
+                    'initializeUploadFunctionality: file input change event',
+                    e.target.files && e.target.files.length
+                );
                 const files = e.target.files;
                 if (files.length > 0) {
                     saveState();
-                    Array.from(files).forEach(function(file) {
+                    Array.from(files).forEach(function (file) {
                         if (layerState.layers.length < layerState.maxLayers) {
                             if (typeof importImageToCanvas === 'function') {
                                 console.log('designer.js: calling importImageToCanvas for', file && file.name);
-                                try { importImageToCanvas(file); } catch (err) { console.error('designer.js: importImageToCanvas threw error', err); }
+                                try {
+                                    importImageToCanvas(file);
+                                } catch (err) {
+                                    console.error('designer.js: importImageToCanvas threw error', err);
+                                }
                             } else if (window && typeof window.importImageToCanvas === 'function') {
                                 console.log('designer.js: calling window.importImageToCanvas for', file && file.name);
-                                try { window.importImageToCanvas(file); } catch (err) { console.error('designer.js: window.importImageToCanvas threw error', err); }
+                                try {
+                                    window.importImageToCanvas(file);
+                                } catch (err) {
+                                    console.error('designer.js: window.importImageToCanvas threw error', err);
+                                }
                             } else {
-                                console.warn('designer.js: importImageToCanvas is not available - queuing at window._pendingUploads', window.importImageToCanvas);
+                                console.warn(
+                                    'designer.js: importImageToCanvas is not available - queuing at window._pendingUploads',
+                                    window.importImageToCanvas
+                                );
                                 window._pendingUploads = window._pendingUploads || [];
-                                try { window._pendingUploads.push(file); } catch (e) { console.error('designer.js: failed to push to window._pendingUploads', e); }
+                                try {
+                                    window._pendingUploads.push(file);
+                                } catch (e) {
+                                    console.error('designer.js: failed to push to window._pendingUploads', e);
+                                }
                             }
                         } else {
-                            alert('Maximum number of layers reached (' + layerState.maxLayers + '). Cannot add more images.');
+                            alert(
+                                'Maximum number of layers reached (' +
+                                    layerState.maxLayers +
+                                    '). Cannot add more images.'
+                            );
                         }
                     });
                 }
                 document.body.removeChild(fileInput);
             });
-    
+
             console.log('initializeUploadFunctionality: open file dialog (triggered)');
             document.body.appendChild(fileInput);
             fileInput.click();
@@ -413,36 +447,36 @@ export function initializeTransparencySlider() {
     const transparencyFill = document.getElementById('ss-transparencyFill');
     const transparencySlider = document.getElementById('ss-transparencySlider');
     const transparencyValue = document.getElementById('ss-transparencyValue');
-    
+
     if (!transparencyThumb || !transparencyFill || !transparencySlider || !transparencyValue) return;
-    
+
     let isDragging = false;
     let currentTransparency = 75;
-    
+
     transparencyValue.textContent = '75%';
     transparencyFill.style.width = '75%';
     transparencyThumb.style.left = '75%';
-    
+
     transparencyThumb.addEventListener('mousedown', startDrag);
-    
+
     function startDrag(e) {
         isDragging = true;
         document.addEventListener('mousemove', onDrag);
         document.addEventListener('mouseup', stopDrag);
         e.preventDefault();
     }
-    
+
     function onDrag(e) {
         if (!isDragging) return;
         updateTransparencyFromPosition(e.clientX);
     }
-    
+
     function stopDrag() {
         isDragging = false;
         document.removeEventListener('mousemove', onDrag);
         document.removeEventListener('mouseup', stopDrag);
     }
-    
+
     function updateTransparencyFromPosition(clientX) {
         const sliderRect = transparencySlider.getBoundingClientRect();
         let position = (clientX - sliderRect.left) / sliderRect.width;
@@ -453,8 +487,8 @@ export function initializeTransparencySlider() {
         transparencyThumb.style.left = currentTransparency + '%';
         updateGuidanceTransparency();
     }
-    
-    transparencySlider.addEventListener('click', function(e) {
+
+    transparencySlider.addEventListener('click', function (e) {
         const sliderRect = transparencySlider.getBoundingClientRect();
         let position = (e.clientX - sliderRect.left) / sliderRect.width;
         position = Math.max(0, Math.min(1, position));

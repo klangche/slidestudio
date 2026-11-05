@@ -5,13 +5,15 @@ let guidanceOverlay = null;
 
 export function toggleGuidance() {
     const guidanceBtn = document.getElementById('ss-guidanceBtn');
-    const transparencySliderContainer = document.querySelector('#ss-transparencySlider').closest('.ss-slider-container');
-    
+    const transparencySliderContainer = document
+        .querySelector('#ss-transparencySlider')
+        .closest('.ss-slider-container');
+
     if (!guidanceState.active) {
         guidanceState.active = true;
         guidanceBtn.classList.add('ss-active');
         createEnhancedGuidanceOverlay();
-        
+
         // Enable transparency slider
         if (transparencySliderContainer) {
             transparencySliderContainer.classList.remove('ss-disabled');
@@ -20,7 +22,7 @@ export function toggleGuidance() {
         guidanceState.active = false;
         guidanceBtn.classList.remove('ss-active');
         removeGuidanceOverlay();
-        
+
         // Disable transparency slider
         if (transparencySliderContainer) {
             transparencySliderContainer.classList.add('ss-disabled');
@@ -30,10 +32,10 @@ export function toggleGuidance() {
 
 export function createEnhancedGuidanceOverlay() {
     removeGuidanceOverlay();
-    
+
     const designerCanvas = document.getElementById('ss-designer-canvas');
     if (!designerCanvas) return;
-    
+
     guidanceOverlay = document.createElement('div');
     guidanceOverlay.id = 'ss-guidance-overlay';
     guidanceOverlay.style.position = 'absolute';
@@ -44,24 +46,24 @@ export function createEnhancedGuidanceOverlay() {
     guidanceOverlay.style.pointerEvents = 'none';
     guidanceOverlay.style.zIndex = '100000';
     guidanceOverlay.style.overflow = 'visible';
-    
+
     createSlideSeparators();
     createCenterLines();
     createSocialMediaGuides();
     designerCanvas.appendChild(guidanceOverlay);
     updateGuidanceTransparency();
-    
+
     console.log('Enhanced guidance overlay created');
 }
 
 function createSlideSeparators() {
     if (!guidanceOverlay) return;
-    
+
     // Only create slide separators if there are multiple sections
     if (canvasState.sections > 1) {
         for (let i = 1; i < canvasState.sections; i++) {
             const separatorX = i * 1080;
-            
+
             // Slide separator - dynamic color based on background
             const separator = document.createElement('div');
             separator.className = 'ss-slide-separator';
@@ -74,7 +76,7 @@ function createSlideSeparators() {
             guidanceOverlay.appendChild(separator);
         }
     }
-    
+
     // Update separator colors based on background
     updateSlideSeparatorColors();
 }
@@ -82,11 +84,11 @@ function createSlideSeparators() {
 export function updateSlideSeparatorColors() {
     const designerCanvas = document.getElementById('ss-designer-canvas');
     if (!designerCanvas || !guidanceOverlay) return;
-    
+
     const backgroundColor = designerCanvas.style.backgroundColor || '#ffffff';
     const isDark = isColorDark(backgroundColor);
     const separatorColor = isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-    
+
     const separators = guidanceOverlay.querySelectorAll('.ss-slide-separator');
     separators.forEach(separator => {
         separator.style.backgroundColor = separatorColor;
@@ -96,7 +98,7 @@ export function updateSlideSeparatorColors() {
 function isColorDark(color) {
     // Convert hex color to RGB
     let r, g, b;
-    
+
     if (color.startsWith('#')) {
         r = parseInt(color.substr(1, 2), 16);
         g = parseInt(color.substr(3, 2), 16);
@@ -110,7 +112,7 @@ function isColorDark(color) {
         // Default to light if unknown format
         return false;
     }
-    
+
     // Calculate luminance
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     return luminance < 0.5;
@@ -118,7 +120,7 @@ function isColorDark(color) {
 
 function createCenterLines() {
     if (!guidanceOverlay) return;
-    
+
     // Single horizontal center line at exact center
     const horizontalCenter = document.createElement('div');
     horizontalCenter.className = 'ss-horizontal-center-line';
@@ -130,15 +132,15 @@ function createCenterLines() {
     horizontalCenter.style.backgroundColor = 'rgba(0, 100, 255, 0.6)'; // Blue
     horizontalCenter.style.zIndex = '100001';
     guidanceOverlay.appendChild(horizontalCenter);
-    
+
     // Vertical center lines for each slide
     for (let section = 0; section < canvasState.sections; section++) {
         const sectionStartX = section * 1080;
-        
+
         const verticalCenter = document.createElement('div');
         verticalCenter.className = 'ss-vertical-center-line';
         verticalCenter.style.position = 'absolute';
-        verticalCenter.style.left = (sectionStartX + 540) + 'px'; // 1080 / 2
+        verticalCenter.style.left = sectionStartX + 540 + 'px'; // 1080 / 2
         verticalCenter.style.top = '0';
         verticalCenter.style.width = '1px';
         verticalCenter.style.height = '100%';
@@ -150,15 +152,15 @@ function createCenterLines() {
 
 function createSocialMediaGuides() {
     if (!guidanceOverlay) return;
-    
+
     // Create guides for each slide
     for (let section = 0; section < canvasState.sections; section++) {
         const sectionStartX = section * 1080;
-        
+
         // 1:1 Square Guide (1080x1080px) - Instagram gradient colors
         const squareTopY = (1920 - 1080) / 2;
         const squareBottomY = squareTopY + 1080;
-        
+
         // Top horizontal line for 1:1
         const squareTopLine = document.createElement('div');
         squareTopLine.className = 'ss-social-guide-line ss-square-line';
@@ -170,7 +172,7 @@ function createSocialMediaGuides() {
         squareTopLine.style.background = 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)';
         squareTopLine.style.zIndex = '100001';
         guidanceOverlay.appendChild(squareTopLine);
-        
+
         // Bottom horizontal line for 1:1
         const squareBottomLine = document.createElement('div');
         squareBottomLine.className = 'ss-social-guide-line ss-square-line';
@@ -182,14 +184,14 @@ function createSocialMediaGuides() {
         squareBottomLine.style.background = 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)';
         squareBottomLine.style.zIndex = '100001';
         guidanceOverlay.appendChild(squareBottomLine);
-        
+
         // 1:1 Label - placed ABOVE the top line (moved from below)
         const squareLabel = document.createElement('div');
         squareLabel.className = 'ss-guide-label';
         squareLabel.textContent = '1:1 Square';
         squareLabel.style.position = 'absolute';
-        squareLabel.style.left = (sectionStartX + 10) + 'px';
-        squareLabel.style.top = (squareTopY - 25) + 'px'; // Moved above the top line
+        squareLabel.style.left = sectionStartX + 10 + 'px';
+        squareLabel.style.top = squareTopY - 25 + 'px'; // Moved above the top line
         squareLabel.style.color = 'white';
         squareLabel.style.fontSize = '14px';
         squareLabel.style.fontWeight = 'bold';
@@ -199,11 +201,11 @@ function createSocialMediaGuides() {
         squareLabel.style.borderRadius = '4px';
         squareLabel.style.zIndex = '100002';
         guidanceOverlay.appendChild(squareLabel);
-        
+
         // 4:5 Post Guide (1080x1350px) - Instagram purple color
         const postTopY = (1920 - 1350) / 2;
         const postBottomY = postTopY + 1350;
-        
+
         // Top horizontal line for 4:5
         const postTopLine = document.createElement('div');
         postTopLine.className = 'ss-social-guide-line ss-post-line';
@@ -215,7 +217,7 @@ function createSocialMediaGuides() {
         postTopLine.style.backgroundColor = '#833AB4'; // Instagram purple
         postTopLine.style.zIndex = '100001';
         guidanceOverlay.appendChild(postTopLine);
-        
+
         // Bottom horizontal line for 4:5
         const postBottomLine = document.createElement('div');
         postBottomLine.className = 'ss-social-guide-line ss-post-line';
@@ -227,14 +229,14 @@ function createSocialMediaGuides() {
         postBottomLine.style.backgroundColor = '#833AB4'; // Instagram purple
         postBottomLine.style.zIndex = '100001';
         guidanceOverlay.appendChild(postBottomLine);
-        
+
         // 4:5 Label - placed ABOVE the top line (moved from below)
         const postLabel = document.createElement('div');
         postLabel.className = 'ss-guide-label';
         postLabel.textContent = '4:5 Post';
         postLabel.style.position = 'absolute';
-        postLabel.style.left = (sectionStartX + 10) + 'px';
-        postLabel.style.top = (postTopY - 25) + 'px'; // Moved above the top line
+        postLabel.style.left = sectionStartX + 10 + 'px';
+        postLabel.style.top = postTopY - 25 + 'px'; // Moved above the top line
         postLabel.style.color = 'white';
         postLabel.style.fontSize = '14px';
         postLabel.style.fontWeight = 'bold';
@@ -244,13 +246,13 @@ function createSocialMediaGuides() {
         postLabel.style.borderRadius = '4px';
         postLabel.style.zIndex = '100002';
         guidanceOverlay.appendChild(postLabel);
-        
+
         // 9:16 Stories Guide (1080x1920px) - Page number at top
         const storiesLabel = document.createElement('div');
         storiesLabel.className = 'ss-guide-label';
         storiesLabel.textContent = `9:16 Stories #${section + 1}`; // Added page number
         storiesLabel.style.position = 'absolute';
-        storiesLabel.style.left = (sectionStartX + 10) + 'px';
+        storiesLabel.style.left = sectionStartX + 10 + 'px';
         storiesLabel.style.top = '10px';
         storiesLabel.style.color = 'white';
         storiesLabel.style.fontSize = '14px';
@@ -322,18 +324,8 @@ function computeRotatedAABB(x, y, width, height, rotation) {
     const sin = Math.sin(rotation);
     const hw = width / 2;
     const hh = height / 2;
-    const dxs = [
-        -hw * cos + hh * sin,
-         hw * cos + hh * sin,
-         hw * cos - hh * sin,
-        -hw * cos - hh * sin
-    ];
-    const dys = [
-        -hw * sin - hh * cos,
-         hw * sin - hh * cos,
-         hw * sin + hh * cos,
-        -hw * sin + hh * cos
-    ];
+    const dxs = [-hw * cos + hh * sin, hw * cos + hh * sin, hw * cos - hh * sin, -hw * cos - hh * sin];
+    const dys = [-hw * sin - hh * cos, hw * sin - hh * cos, hw * sin + hh * cos, -hw * sin + hh * cos];
     const minX = cx + Math.min.apply(null, dxs);
     const maxX = cx + Math.max.apply(null, dxs);
     const minY = cy + Math.min.apply(null, dys);
@@ -344,10 +336,13 @@ function computeRotatedAABB(x, y, width, height, rotation) {
 // AABB of a DOM element in canvas coordinates (undoes the designer zoom scale).
 function getCanvasSpaceRect(el) {
     const designerCanvas = document.getElementById('ss-designer-canvas');
-    const canvasRect = designerCanvas ? designerCanvas.getBoundingClientRect() : { left: 0, top: 0, width: 1, height: 1 };
+    const canvasRect = designerCanvas
+        ? designerCanvas.getBoundingClientRect()
+        : { left: 0, top: 0, width: 1, height: 1 };
     const er = el.getBoundingClientRect();
-    const scaleX = (designerCanvas && designerCanvas.offsetWidth > 0) ? canvasRect.width / designerCanvas.offsetWidth : 1;
-    const scaleY = (designerCanvas && designerCanvas.offsetHeight > 0) ? canvasRect.height / designerCanvas.offsetHeight : 1;
+    const scaleX = designerCanvas && designerCanvas.offsetWidth > 0 ? canvasRect.width / designerCanvas.offsetWidth : 1;
+    const scaleY =
+        designerCanvas && designerCanvas.offsetHeight > 0 ? canvasRect.height / designerCanvas.offsetHeight : 1;
     return {
         left: (er.left - canvasRect.left) / scaleX,
         top: (er.top - canvasRect.top) / scaleY,
@@ -359,7 +354,7 @@ function getCanvasSpaceRect(el) {
 // Axis-aligned bounding boxes of every other snappable object on the canvas.
 function collectOtherBoxes(excludeEl, excludeImgId) {
     const boxes = [];
-    layerState.layers.forEach(function(layer) {
+    layerState.layers.forEach(function (layer) {
         const el = layer.element;
         if (!el || el === excludeEl) return;
         if (el.style.display === 'none') return;
@@ -369,7 +364,9 @@ function collectOtherBoxes(excludeEl, excludeImgId) {
     if (window.SSImageTransform && typeof window.SSImageTransform.getSnapRegions === 'function') {
         const regions = window.SSImageTransform.getSnapRegions(excludeImgId);
         if (regions && regions.length) {
-            regions.forEach(function(r) { boxes.push(r); });
+            regions.forEach(function (r) {
+                boxes.push(r);
+            });
         }
     }
     return boxes;
@@ -379,7 +376,7 @@ function collectOtherBoxes(excludeEl, excludeImgId) {
 function collectSnapLines(excludeEl, excludeImgId) {
     const vLines = [];
     const hLines = [];
-    const addLine = function(arr, val) {
+    const addLine = function (arr, val) {
         const v = Math.round(val * 1000) / 1000;
         if (arr.indexOf(v) === -1) arr.push(v);
     };
@@ -418,7 +415,7 @@ function collectSnapLines(excludeEl, excludeImgId) {
     }
 
     // Snap to other objects (sides, corners and center)
-    collectOtherBoxes(excludeEl, excludeImgId).forEach(function(other) {
+    collectOtherBoxes(excludeEl, excludeImgId).forEach(function (other) {
         addLine(vLines, other.left);
         addLine(vLines, other.left + other.width);
         addLine(hLines, other.top);
@@ -482,7 +479,7 @@ function snapAABB(aabb, excludeEl, excludeImgId) {
     const leftX = aabb.left;
     const centerX = aabb.left + aabb.width / 2;
     const rightX = aabb.left + aabb.width;
-    const xAnchorPos = function(s) {
+    const xAnchorPos = function (s) {
         if (s.anchor === 'center') return centerX;
         if (s.anchor === 'right') return rightX;
         return leftX;
@@ -512,7 +509,7 @@ function snapAABB(aabb, excludeEl, excludeImgId) {
     const topY = aabb.top;
     const centerY = aabb.top + aabb.height / 2;
     const bottomY = aabb.top + aabb.height;
-    const yAnchorPos = function(s) {
+    const yAnchorPos = function (s) {
         if (s.anchor === 'center') return centerY;
         if (s.anchor === 'bottom') return bottomY;
         return topY;

@@ -8,8 +8,8 @@ let selfcheckOk = false;
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
-page.on('pageerror', (err) => errors.push('page error: ' + err.message));
-page.on('console', (msg) => {
+page.on('pageerror', err => errors.push('page error: ' + err.message));
+page.on('console', msg => {
     const text = msg.text();
     if (text.includes('[selfcheck] All module bridges present.')) selfcheckOk = true;
     if (text.includes('[selfcheck] MISSING')) errors.push(text);
